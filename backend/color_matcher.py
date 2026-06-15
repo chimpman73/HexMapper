@@ -78,6 +78,23 @@ def build_signatures():
                     
                     colors = get_dominant_colors(bgr, k=3, mask=mask)
                     signatures[f"Coastline/{filename}"] = { "type": "coastline", "colors": colors }
+
+    # Process Cities
+    city_dir = os.path.join(BASE_DIR, "assets", "tiles", "Cities")
+    if os.path.exists(city_dir):
+        for filename in os.listdir(city_dir):
+            if filename.endswith(".png"):
+                path = os.path.join(city_dir, filename)
+                img_bgra = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+                if img_bgra is not None:
+                    bgr = img_bgra[:, :, :3]
+                    mask = None
+                    if img_bgra.shape[2] == 4:
+                        _, mask = cv2.threshold(img_bgra[:, :, 3], 1, 255, cv2.THRESH_BINARY)
+                    
+                    colors = get_dominant_colors(bgr, k=1, mask=mask)
+                    if colors:
+                        signatures[f"Cities/{filename}"] = { "type": "city", "colors": colors }
                 
     with open(SIGNATURES_FILE, 'w') as f:
         json.dump(signatures, f, indent=2)
@@ -92,8 +109,7 @@ def load_signatures():
 def color_distance(c1, c2):
     return np.sqrt((c1['l'] - c2['l'])**2 + (c1['a'] - c2['a'])**2 + (c1['b'] - c2['b'])**2)
 
-def match_hex(hex_bgr_image, signatures):
-    hex_colors = get_dominant_colors(hex_bgr_image, k=3)
+def match_hex(hex_colors, signatures):
     if not hex_colors:
         return "Terrain/hex_061.png", "terrain" # Default fallback
         
@@ -102,6 +118,9 @@ def match_hex(hex_bgr_image, signatures):
     best_score = float('inf')
     
     for file_key, sig_data in signatures.items():
+        if sig_data["type"] == "city":
+            continue # Skip cities for base layer matching
+            
         sig_colors = sig_data["colors"]
         score = 0
         # Since both lists are sorted by ratio descending, compare them pairwise
@@ -122,3 +141,22 @@ def match_hex(hex_bgr_image, signatures):
             best_type = sig_data["type"]
             
     return best_match, best_type
+
+def extract_city(hex_colors, signatures, max_distance=30.0):
+    best_city = None
+    best_score = float('inf')
+    
+    city_sigs = {k: v for k, v in signatures.items() if v['type'] == 'city'}
+    
+    for file_key, sig_data in city_sigs.items():
+        if not sig_data['colors']: continue
+        sig_color = sig_data['colors'][0]
+        
+        for hc in hex_colors:
+            if 0.05 <= hc['ratio'] <= 0.60:
+                dist = color_distance(hc, sig_color)
+                if dist < max_distance and dist < best_score:
+                    best_score = dist
+                    best_city = file_key
+                    
+    return best_city

@@ -48,6 +48,7 @@ def scan_aligned_map(args):
     height, width, _ = img.shape
     terrain_data = {}
     coastline_data = {}
+    city_data = {}
 
     hexes = []
     if orientation == 'flat':
@@ -87,7 +88,8 @@ def scan_aligned_map(args):
             
             region = img[y_start:y_end, x_start:x_end]
             if region.size > 0:
-                best_match_key, match_type = color_matcher.match_hex(region, signatures)
+                hex_colors = color_matcher.get_dominant_colors(region, k=5)
+                best_match_key, match_type = color_matcher.match_hex(hex_colors, signatures)
                 s = -q - r
                 key = f"{q},{r},{s}"
                 
@@ -98,13 +100,18 @@ def scan_aligned_map(args):
                 else:
                     terrain_data[key] = url
 
+                # Dual-Pass: Extract City Overlays
+                city_match = color_matcher.extract_city(hex_colors, signatures)
+                if city_match:
+                    city_data[key] = get_asset_url(f"assets/tiles/{city_match}")
+
     # Return reconstructed layers
     layers = [
         { "id": '1', "name": 'Terrain', "type": 'terrain', "visible": True, "opacity": 1, "data": terrain_data },
         { "id": '2', "name": 'Cliffs', "type": 'cliff', "visible": True, "opacity": 1, "data": [] },
         { "id": '3', "name": 'Rivers', "type": 'river', "visible": True, "opacity": 1, "data": [] },
         { "id": '4', "name": 'Coastline', "type": 'coastline', "visible": True, "opacity": 1, "data": coastline_data },
-        { "id": '5', "name": 'Cities', "type": 'city', "visible": True, "opacity": 1, "data": {} },
+        { "id": '5', "name": 'Cities', "type": 'city', "visible": True, "opacity": 1, "data": city_data },
         { "id": '6', "name": 'Borders', "type": 'border', "visible": True, "opacity": 1, "data": {} },
         { "id": '7', "name": 'Labels', "type": 'label', "visible": True, "opacity": 1, "data": [] }
     ]
