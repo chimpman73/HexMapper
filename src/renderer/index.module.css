@@ -49,6 +49,35 @@
   align-items: center;
 }
 
+.projectTools {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.projectButton {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.projectButton:hover {
+  background-color: #2563eb;
+}
+
+.projectButton.export {
+  background-color: #8b5cf6;
+}
+
+.projectButton.export:hover {
+  background-color: #7c3aed;
+}
+
 .controlLabel {
   display: flex;
   align-items: center;

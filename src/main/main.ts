@@ -130,3 +130,53 @@ ipcMain.handle('fs:getDefaultTiles', async (event, folder: string = 'Terrain') =
     return [];
   }
 });
+
+ipcMain.handle('map:save', async (event, dataString: string) => {
+  if (!mainWindow) return { success: false, error: 'No main window' };
+  const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+    title: 'Save Map Project',
+    filters: [{ name: 'HexMapper Project', extensions: ['json'] }]
+  });
+  if (canceled || !filePath) return { success: false, canceled: true };
+  
+  try {
+    await fs.promises.writeFile(filePath, dataString, 'utf-8');
+    return { success: true, filePath };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('map:load', async (event) => {
+  if (!mainWindow) return { success: false, error: 'No main window' };
+  const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+    title: 'Open Map Project',
+    properties: ['openFile'],
+    filters: [{ name: 'HexMapper Project', extensions: ['json'] }]
+  });
+  if (canceled || filePaths.length === 0) return { success: false, canceled: true };
+  
+  try {
+    const data = await fs.promises.readFile(filePaths[0], 'utf-8');
+    return { success: true, data, filePath: filePaths[0] };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('map:exportImage', async (event, dataUrl: string) => {
+  if (!mainWindow) return { success: false, error: 'No main window' };
+  const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+    title: 'Export Map as PNG',
+    filters: [{ name: 'PNG Image', extensions: ['png'] }]
+  });
+  if (canceled || !filePath) return { success: false, canceled: true };
+  
+  try {
+    const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
+    await fs.promises.writeFile(filePath, base64Data, 'base64');
+    return { success: true, filePath };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+});

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Stage, Layer, Line, Group } from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import HexTile from './HexTile';
@@ -15,6 +15,10 @@ interface HexGridEngineProps {
   layers: MapLayer[];
   setLayers: React.Dispatch<React.SetStateAction<MapLayer[]>>;
   activeLayerId: string;
+}
+
+export interface HexGridEngineRef {
+  exportToDataURL: () => string | null;
 }
 
 const generateCliffHashes = (points: number[], invert: boolean | undefined, color: string, width: number, id: string, opacity: number = 1) => {
@@ -59,9 +63,20 @@ const generateCliffHashes = (points: number[], invert: boolean | undefined, colo
   return hashes;
 };
 
-const HexGridEngine: React.FC<HexGridEngineProps> = ({ 
+const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({ 
   orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeColor, activeLineWidth, layers, setLayers, activeLayerId 
-}) => {
+}, ref) => {
+  const stageRef = useRef<any>(null);
+
+  useImperativeHandle(ref, () => ({
+    exportToDataURL: () => {
+      if (stageRef.current) {
+        return stageRef.current.toDataURL({ pixelRatio: 3 });
+      }
+      return null;
+    }
+  }));
+
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 50, y: 50 });
   const [hoveredHex, setHoveredHex] = useState<HexCube | null>(null);
@@ -276,6 +291,7 @@ const HexGridEngine: React.FC<HexGridEngineProps> = ({
 
   return (
     <Stage
+      ref={stageRef}
       width={window.innerWidth - 250 - 250} // Subtract palette width AND layer panel width
       height={window.innerHeight - 50}
       draggable={false} // Custom right-click drag implementation
@@ -433,6 +449,6 @@ const HexGridEngine: React.FC<HexGridEngineProps> = ({
       </Layer>
     </Stage>
   );
-};
+});
 
 export default HexGridEngine;

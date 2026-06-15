@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import styles from './index.module.css';
-import HexGridEngine from './components/HexGridEngine';
+import HexGridEngine, { HexGridEngineRef } from './components/HexGridEngine';
 import TerrainPalette from './components/TerrainPalette';
 import LayerPanel from './components/LayerPanel';
 import { HexOrientation, MapLayer } from './utils/hexMath';
@@ -11,6 +11,9 @@ declare global {
       runPythonScript: (args: any) => Promise<any>;
       openDirectory: () => Promise<string | null>;
       readDir: (dirPath: string) => Promise<string[]>;
+      saveMap: (dataString: string) => Promise<{ success: boolean; filePath?: string; canceled?: boolean; error?: string }>;
+      loadMap: () => Promise<{ success: boolean; data?: string; filePath?: string; canceled?: boolean; error?: string }>;
+      exportImage: (dataUrl: string) => Promise<{ success: boolean; filePath?: string; canceled?: boolean; error?: string }>;
     };
   }
 }
@@ -36,6 +39,52 @@ const App: React.FC = () => {
   ]);
   const [activeLayerId, setActiveLayerId] = useState<string>('1');
 
+  const engineRef = useRef<HexGridEngineRef>(null);
+
+  const handleSaveProject = async () => {
+    const projectData = {
+      layers,
+      mapWidth,
+      mapHeight,
+      orientation
+    };
+    const result = await window.api.saveMap(JSON.stringify(projectData, null, 2));
+    if (result.success) {
+      console.log('Project saved to', result.filePath);
+    } else if (result.error) {
+      console.error('Save failed:', result.error);
+    }
+  };
+
+  const handleLoadProject = async () => {
+    const result = await window.api.loadMap();
+    if (result.success && result.data) {
+      try {
+        const projectData = JSON.parse(result.data);
+        if (projectData.layers) setLayers(projectData.layers);
+        if (projectData.mapWidth) setMapWidth(projectData.mapWidth);
+        if (projectData.mapHeight) setMapHeight(projectData.mapHeight);
+        if (projectData.orientation) setOrientation(projectData.orientation);
+      } catch (err) {
+        console.error('Invalid project file:', err);
+      }
+    }
+  };
+
+  const handleExportImage = async () => {
+    if (engineRef.current) {
+      const dataUrl = engineRef.current.exportToDataURL();
+      if (dataUrl) {
+        const result = await window.api.exportImage(dataUrl);
+        if (result.success) {
+          console.log('Exported to', result.filePath);
+        } else if (result.error) {
+          console.error('Export failed:', result.error);
+        }
+      }
+    }
+  };
+
   const handleToggleVisibility = (id: string) => {
     setLayers(prev => prev.map(l => l.id === id ? { ...l, visible: !l.visible } : l));
   };
@@ -46,6 +95,11 @@ const App: React.FC = () => {
     <div className={styles.appContainer}>
       <div className={styles.toolbar}>
         <div className={styles.toolbarTitle}>HexMapper Engine</div>
+        <div className={styles.projectTools}>
+          <button className={styles.projectButton} onClick={handleSaveProject}>Save Project</button>
+          <button className={styles.projectButton} onClick={handleLoadProject}>Load Project</button>
+          <button className={`${styles.projectButton} ${styles.export}`} onClick={handleExportImage}>Export PNG</button>
+        </div>
         <div className={styles.toolbarControls}>
           <label className={styles.controlLabel}>
             W:
@@ -103,6 +157,7 @@ const App: React.FC = () => {
         />
         <div className={styles.canvasContainer}>
           <HexGridEngine 
+            ref={engineRef}
             orientation={orientation} 
             showCoordinates={showCoordinates} 
             mapWidth={mapWidth} 
