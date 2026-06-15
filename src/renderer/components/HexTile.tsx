@@ -14,10 +14,11 @@ interface HexTileProps {
   imageSrc?: string;
   fillColor?: string;
   isBaseLayer?: boolean;
+  isActiveLayer: boolean;
 }
 
 const HexTile: React.FC<HexTileProps> = ({ 
-  hex, orientation, isHovered, onHover, onLeave, onPointerDown, showCoordinates, imageSrc, fillColor, isBaseLayer = true
+  hex, orientation, isHovered, onHover, onLeave, onPointerDown, showCoordinates, imageSrc, fillColor, isBaseLayer = true, isActiveLayer
 }) => {
   const center = useMemo(() => hexToPixel(hex, orientation), [hex, orientation]);
   const points = useMemo(() => getHexCorners({ x: 0, y: 0 }, orientation), [orientation]);
@@ -29,8 +30,9 @@ const HexTile: React.FC<HexTileProps> = ({
       x={center.x} 
       y={center.y}
       onMouseEnter={() => onHover(hex)}
-      onMouseLeave={onLeave}
+      onMouseLeave={() => onLeave(hex)}
       onPointerDown={onPointerDown}
+      listening={isActiveLayer}
     >
       <Line
         points={points}

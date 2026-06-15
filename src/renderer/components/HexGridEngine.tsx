@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Stage, Layer, Line } from 'react-konva';
+import { Stage, Layer, Line, Group } from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import HexTile from './HexTile';
-import { generateRectangularGrid, HexCube, HexOrientation, isHexEqual, MapLayer, TerrainLayer, VectorLayer, CityLayer, CoastlineLayer, hexToPixel, getHexCorners, HEX_NEIGHBORS } from '../utils/hexMath';
+import { generateRectangularGrid, HexCube, HexOrientation, isHexEqual, MapLayer, TerrainLayer, VectorLayer, CityLayer, CoastlineLayer, BorderLayer, LayerType, hexToPixel, getHexCorners, HEX_NEIGHBORS } from '../utils/hexMath';
 
 interface HexGridEngineProps {
   orientation: HexOrientation;
@@ -11,13 +11,56 @@ interface HexGridEngineProps {
   mapHeight: number;
   activeBrush: string | null;
   activeColor: string | null;
+  activeLineWidth: number;
   layers: MapLayer[];
   setLayers: React.Dispatch<React.SetStateAction<MapLayer[]>>;
   activeLayerId: string;
 }
 
+const generateCliffHashes = (points: number[], invert: boolean | undefined, color: string, width: number, id: string, opacity: number = 1) => {
+  const hashes = [];
+  const hashLength = width * 3; 
+  const hashSpacing = Math.max(10, width * 2); 
+  let distSinceLastHash = 0;
+  
+  for (let i = 0; i < points.length - 2; i += 2) {
+    const x1 = points[i];
+    const y1 = points[i+1];
+    const x2 = points[i+2];
+    const y2 = points[i+3];
+    
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist === 0) continue;
+    
+    distSinceLastHash += dist;
+    
+    if (distSinceLastHash >= hashSpacing) {
+      const nx = -dy / dist;
+      const ny = dx / dist;
+      
+      const dirX = invert ? -nx : nx;
+      const dirY = invert ? -ny : ny;
+      
+      hashes.push(
+        <Line 
+          key={`hash-${id}-${i}`}
+          points={[x1, y1, x1 + dirX * hashLength, y1 + dirY * hashLength]}
+          stroke={color}
+          strokeWidth={Math.max(1, width / 2)}
+          lineCap="round"
+          opacity={opacity}
+        />
+      );
+      distSinceLastHash = 0;
+    }
+  }
+  return hashes;
+};
+
 const HexGridEngine: React.FC<HexGridEngineProps> = ({ 
-  orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeColor, layers, setLayers, activeLayerId 
+  orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeColor, activeLineWidth, layers, setLayers, activeLayerId 
 }) => {
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 50, y: 50 });
@@ -26,18 +69,28 @@ const HexGridEngine: React.FC<HexGridEngineProps> = ({
   // Interaction states
   const [isPaintingHex, setIsPaintingHex] = useState(false);
   const [currentLine, setCurrentLine] = useState<number[] | null>(null);
+  const [isShiftPressed, setIsShiftPressed] = useState(false);
+  const [hoveredLineId, setHoveredLineId] = useState<string | null>(null);
   
   // Right-click panning state
   const [isRightClickPan, setIsRightClickPan] = useState(false);
   const [lastPanPos, setLastPanPos] = useState({ x: 0, y: 0 });
 
+  React.useEffect(() => {
+    const down = (e: KeyboardEvent) => { if (e.key === 'Shift') setIsShiftPressed(true); };
+    const up = (e: KeyboardEvent) => { if (e.key === 'Shift') setIsShiftPressed(false); };
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
+    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };
+  }, []);
+
   const grid = useMemo(() => generateRectangularGrid(mapWidth, mapHeight, orientation), [mapWidth, mapHeight, orientation]);
 
-  const coastlineEdges = useMemo(() => {
-    const edges: Array<{ id: string; points: number[]; color: string }> = [];
+  const proceduralEdges = useMemo(() => {
+    const edges: Array<{ id: string; points: number[]; color: string; type: LayerType }> = [];
     
     layers.forEach(layer => {
-      if (layer.type === 'coastline' && layer.visible) {
+      if ((layer.type === 'coastline' || layer.type === 'border') && layer.visible) {
         for (const key in layer.data) {
           const color = layer.data[key] as string;
           if (!color) continue;
@@ -72,12 +125,13 @@ const HexGridEngine: React.FC<HexGridEngineProps> = ({
                 
                 const nx = -dy / len;
                 const ny = dx / len;
-                const offsetAmount = (rand - 0.5) * 5; 
+                const offsetAmount = layer.type === 'coastline' ? (rand - 0.5) * 5 : 0; 
                 
                 edges.push({
                   id: `${layer.id}-${key}-${idx}`,
                   points: [c1.x, c1.y, midX + nx * offsetAmount, midY + ny * offsetAmount, c2.x, c2.y],
-                  color: '#222222' // Use a distinct dark color for the coastline edge, not the water fill color!
+                  color: layer.type === 'coastline' ? '#222222' : color,
+                  type: layer.type
                 });
               }
             }
@@ -89,18 +143,18 @@ const HexGridEngine: React.FC<HexGridEngineProps> = ({
   }, [layers, orientation]);
 
   const activeLayer = layers.find(l => l.id === activeLayerId);
-  const isVectorMode = activeLayer && (activeLayer.type === 'river' || activeLayer.type === 'cliff' || activeLayer.type === 'border' || activeLayer.type === 'label');
+  const isVectorMode = activeLayer && (activeLayer.type === 'river' || activeLayer.type === 'cliff' || activeLayer.type === 'label');
 
   const handlePaintHex = (hex: HexCube) => {
     if (isVectorMode) return;
     
-    // For terrain/city we use activeBrush (image), for coastline we use activeColor
-    const brushValue = activeLayer?.type === 'coastline' ? activeColor : activeBrush;
+    // For coastline and border we use activeColor
+    const brushValue = (activeLayer?.type === 'coastline' || activeLayer?.type === 'border') ? activeColor : activeBrush;
     if (brushValue === undefined) return;
     
     const key = `${hex.q},${hex.r},${hex.s}`;
     setLayers(prev => prev.map(l => {
-      if (l.id === activeLayerId && (l.type === 'terrain' || l.type === 'city' || l.type === 'coastline')) {
+      if (l.id === activeLayerId && (l.type === 'terrain' || l.type === 'city' || l.type === 'coastline' || l.type === 'border')) {
         const newData = { ...l.data };
         if (brushValue === null) {
           delete newData[key];
@@ -160,10 +214,12 @@ const HexGridEngine: React.FC<HexGridEngineProps> = ({
     
     if (e.evt.button === 0 && !e.evt.altKey) {
       if (isVectorMode) {
-        const stage = e.target.getStage();
-        if (stage) {
-          const pos = getRelativePointerPosition(stage);
-          setCurrentLine([pos.x, pos.y]);
+        if (activeColor !== null) {
+          const stage = e.target.getStage();
+          if (stage) {
+            const pos = getRelativePointerPosition(stage);
+            setCurrentLine([pos.x, pos.y]);
+          }
         }
       } else {
         setIsPaintingHex(true);
@@ -203,9 +259,10 @@ const HexGridEngine: React.FC<HexGridEngineProps> = ({
             data: [...(l.data as any[]), {
               id: Date.now().toString(),
               points: currentLine,
-              stroke: activeColor,
-              strokeWidth: 4,
-              tension: 0.5
+              stroke: activeColor || '#000000',
+              strokeWidth: activeLineWidth,
+              tension: 0.5,
+              invert: isShiftPressed
             }]
           } as VectorLayer;
         }
@@ -240,16 +297,21 @@ const HexGridEngine: React.FC<HexGridEngineProps> = ({
         {layers.map(layer => {
           if (!layer.visible) return null;
 
-          if (layer.type === 'terrain' || layer.type === 'city' || layer.type === 'coastline') {
-            const hLayer = layer as TerrainLayer | CityLayer | CoastlineLayer;
+          if (layer.type === 'terrain' || layer.type === 'city' || layer.type === 'coastline' || layer.type === 'border') {
+            const hLayer = layer as TerrainLayer | CityLayer | CoastlineLayer | BorderLayer;
             const tiles = grid.map((hex) => {
               const key = `${hex.q},${hex.r},${hex.s}`;
               // Only highlight hovered hex if we are on THIS active layer and it's terrain mode
               const isHovered = (!isVectorMode && activeLayerId === layer.id && hoveredHex) ? isHexEqual(hex, hoveredHex) : false;
               
-              const isCoastline = layer.type === 'coastline';
-              const imageSrc = isCoastline ? undefined : hLayer.data[key];
-              const fillColor = isCoastline ? hLayer.data[key] : undefined;
+              const isColorLayer = layer.type === 'coastline' || layer.type === 'border';
+              const imageSrc = isColorLayer ? undefined : hLayer.data[key];
+              
+              let fillColor = undefined;
+              if (isColorLayer && hLayer.data[key]) {
+                // If it's a border, make the hex territory fill semi-transparent (20% opacity = '33' hex)
+                fillColor = layer.type === 'border' ? hLayer.data[key] + '33' : hLayer.data[key];
+              }
 
               return (
                 <HexTile
@@ -260,6 +322,7 @@ const HexGridEngine: React.FC<HexGridEngineProps> = ({
                   imageSrc={imageSrc}
                   fillColor={fillColor}
                   isBaseLayer={layer.type === 'terrain'}
+                  isActiveLayer={activeLayerId === layer.id}
                   onHover={(h) => {
                     if (!isVectorMode) {
                       setHoveredHex(h);
@@ -279,8 +342,8 @@ const HexGridEngine: React.FC<HexGridEngineProps> = ({
               );
             });
 
-            if (layer.type === 'coastline') {
-              const edgesToDraw = coastlineEdges.filter(e => e.id.startsWith(layer.id + '-'));
+            if (layer.type === 'coastline' || layer.type === 'border') {
+              const edgesToDraw = proceduralEdges.filter(e => e.id.startsWith(layer.id + '-'));
               return (
                 <React.Fragment key={`group-${layer.id}`}>
                   {tiles}
@@ -289,7 +352,7 @@ const HexGridEngine: React.FC<HexGridEngineProps> = ({
                       key={edge.id}
                       points={edge.points}
                       stroke={edge.color}
-                      strokeWidth={3}
+                      strokeWidth={edge.type === 'coastline' ? 3 : 5}
                       tension={0}
                       lineCap="round"
                       lineJoin="round"
@@ -302,31 +365,70 @@ const HexGridEngine: React.FC<HexGridEngineProps> = ({
             return tiles;
           } else {
             const vLayer = layer as VectorLayer;
-            return vLayer.data.map((line, i) => (
-              <Line
-                key={`line-${layer.id}-${line.id}`}
-                points={line.points}
-                stroke={line.stroke}
-                strokeWidth={line.strokeWidth}
-                tension={line.tension}
-                lineCap="round"
-                lineJoin="round"
-                opacity={layer.opacity}
-              />
-            ));
+            return (
+              <React.Fragment key={`group-${layer.id}`}>
+                {vLayer.data.map((line, i) => (
+                  <Group 
+                    key={`line-frag-${layer.id}-${line.id}`}
+                    onMouseDown={(e) => {
+                      if (isVectorMode && activeColor === null && activeLayerId === layer.id) {
+                        e.cancelBubble = true;
+                        setHoveredLineId(null);
+                        setLayers(prev => prev.map(l => {
+                          if (l.id === layer.id) {
+                            const vl = l as VectorLayer;
+                            return { ...vl, data: vl.data.filter(dl => dl.id !== line.id) };
+                          }
+                          return l;
+                        }));
+                      }
+                    }}
+                    onMouseEnter={(e) => {
+                      if (isVectorMode && activeColor === null && activeLayerId === layer.id) {
+                        const stage = e.target.getStage();
+                        if (stage) stage.container().style.cursor = 'pointer';
+                        setHoveredLineId(line.id);
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (isVectorMode && activeColor === null && activeLayerId === layer.id) {
+                        const stage = e.target.getStage();
+                        if (stage) stage.container().style.cursor = 'crosshair';
+                        if (hoveredLineId === line.id) setHoveredLineId(null);
+                      }
+                    }}
+                  >
+                    <Line
+                      points={line.points}
+                      stroke={hoveredLineId === line.id ? '#ff5252' : line.stroke}
+                      strokeWidth={line.strokeWidth}
+                      hitStrokeWidth={Math.max(20, line.strokeWidth)}
+                      tension={line.tension}
+                      lineCap="round"
+                      lineJoin="round"
+                      opacity={hoveredLineId === line.id ? 0.5 : layer.opacity}
+                    />
+                    {layer.type === 'cliff' && generateCliffHashes(line.points, line.invert, hoveredLineId === line.id ? '#ff5252' : line.stroke, line.strokeWidth, line.id, hoveredLineId === line.id ? 0.5 : layer.opacity)}
+                  </Group>
+                ))}
+              </React.Fragment>
+            );
           }
         })}
 
         {/* Draw the current freehand line in progress */}
         {currentLine && (
-          <Line
-            points={currentLine}
-            stroke={activeColor}
-            strokeWidth={4}
-            tension={0.5}
-            lineCap="round"
-            lineJoin="round"
-          />
+          <React.Fragment>
+            <Line
+              points={currentLine}
+              stroke={activeColor || '#000000'}
+              strokeWidth={activeLineWidth}
+              tension={0.5}
+              lineCap="round"
+              lineJoin="round"
+            />
+            {activeLayer?.type === 'cliff' && generateCliffHashes(currentLine, isShiftPressed, activeColor || '#000000', activeLineWidth, 'current')}
+          </React.Fragment>
         )}
       </Layer>
     </Stage>

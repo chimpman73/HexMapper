@@ -23,6 +23,7 @@ const App: React.FC = () => {
   
   const [activeBrush, setActiveBrush] = useState<string | null>(null);
   const [activeColor, setActiveColor] = useState<string | null>('#3b82f6');
+  const [activeLineWidth, setActiveLineWidth] = useState<number>(4);
   
   const [layers, setLayers] = useState<MapLayer[]>([
     { id: '1', name: 'Terrain', type: 'terrain', visible: true, opacity: 1, data: {} },
@@ -30,7 +31,7 @@ const App: React.FC = () => {
     { id: '3', name: 'Rivers', type: 'river', visible: true, opacity: 1, data: [] },
     { id: '4', name: 'Coastline', type: 'coastline', visible: true, opacity: 1, data: {} },
     { id: '5', name: 'Cities', type: 'city', visible: true, opacity: 1, data: {} },
-    { id: '6', name: 'Borders', type: 'border', visible: true, opacity: 1, data: [] },
+    { id: '6', name: 'Borders', type: 'border', visible: true, opacity: 1, data: {} },
     { id: '7', name: 'Labels', type: 'label', visible: true, opacity: 1, data: [] }
   ]);
   const [activeLayerId, setActiveLayerId] = useState<string>('1');
@@ -97,6 +98,8 @@ const App: React.FC = () => {
           activeLayer={activeLayer}
           activeColor={activeColor}
           setActiveColor={setActiveColor}
+          activeLineWidth={activeLineWidth}
+          setActiveLineWidth={setActiveLineWidth}
         />
         <div className={styles.canvasContainer}>
           <HexGridEngine 
@@ -106,6 +109,7 @@ const App: React.FC = () => {
             mapHeight={mapHeight}
             activeBrush={activeBrush}
             activeColor={activeColor}
+            activeLineWidth={activeLineWidth}
             layers={layers}
             setLayers={setLayers}
             activeLayerId={activeLayerId}

@@ -9,10 +9,12 @@ interface TerrainPaletteProps {
   activeLayer: MapLayer;
   activeColor: string | null;
   setActiveColor: (c: string | null) => void;
+  activeLineWidth: number;
+  setActiveLineWidth: (w: number) => void;
 }
 
 const TerrainPalette: React.FC<TerrainPaletteProps> = ({ 
-  activeBrush, setActiveBrush, activeLayer, activeColor, setActiveColor 
+  activeBrush, setActiveBrush, activeLayer, activeColor, setActiveColor, activeLineWidth, setActiveLineWidth
 }) => {
   const [brushes, setBrushes] = useState<string[]>([]);
 
@@ -46,7 +48,7 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = ({
         <div className={styles.vectorTools}>
           <h3 style={{color: 'white', marginTop: 0}}>{activeLayer.name} Tools</h3>
           
-          {activeLayer.type === 'coastline' && (
+          {(activeLayer.type === 'coastline' || activeLayer.type === 'border' || activeLayer.type === 'river' || activeLayer.type === 'cliff') && (
             <div className={styles.brushGrid} style={{ marginBottom: '15px' }}>
               <div 
                 className={`${styles.brushItem} ${activeColor !== null ? styles.active : ''}`}
@@ -63,15 +65,30 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = ({
             </div>
           )}
 
-          <label style={{display: 'flex', flexDirection: 'column', gap: '5px', color: '#ccc'}}>
-            {activeLayer.type === 'coastline' ? 'Water Fill Color:' : 'Line Color:'}
+          <label style={{display: 'flex', flexDirection: 'column', gap: '5px', color: '#ccc', marginBottom: '15px'}}>
+            {activeLayer.type === 'coastline' ? 'Water Fill Color:' : activeLayer.type === 'border' ? 'Border Color:' : 'Line Color:'}
             <input 
               type="color" 
               value={activeColor || '#3b82f6'} 
               onChange={e => setActiveColor(e.target.value)} 
-              style={{width: '100%', height: '40px'}}
+              style={{width: '100%', height: '40px', opacity: activeColor === null ? 0.5 : 1}}
+              disabled={activeColor === null}
             />
           </label>
+
+          {(activeLayer.type === 'river' || activeLayer.type === 'cliff' || activeLayer.type === 'border' || activeLayer.type === 'label') && (
+            <label style={{display: 'flex', flexDirection: 'column', gap: '5px', color: '#ccc'}}>
+              Line Width: {activeLineWidth}px
+              <input 
+                type="range" 
+                min="1" 
+                max="15" 
+                value={activeLineWidth} 
+                onChange={e => setActiveLineWidth(Number(e.target.value))} 
+                style={{width: '100%'}}
+              />
+            </label>
+          )}
         </div>
       </div>
     );

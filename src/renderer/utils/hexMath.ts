@@ -28,7 +28,12 @@ export interface TerrainLayer extends BaseLayer {
 
 export interface CityLayer extends BaseLayer {
   type: 'city';
-  data: Record<string, string>; // hex coords to image url
+  data: Record<string, string>; 
+}
+
+export interface BorderLayer extends BaseLayer {
+  type: 'border';
+  data: Record<string, string>; 
 }
 
 export interface CoastlineLayer extends BaseLayer {
@@ -42,6 +47,7 @@ export interface VectorLine {
   stroke: string;
   strokeWidth: number;
   tension: number;
+  invert?: boolean;
 }
 
 export interface VectorLayer extends BaseLayer {
