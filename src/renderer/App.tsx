@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import styles from './index.module.css';
 import HexGridEngine, { HexGridEngineRef } from './components/HexGridEngine';
 import TerrainPalette from './components/TerrainPalette';
@@ -23,6 +23,32 @@ const App: React.FC = () => {
   const [showCoordinates, setShowCoordinates] = useState<boolean>(true);
   const [mapWidth, setMapWidth] = useState<number>(50);
   const [mapHeight, setMapHeight] = useState<number>(25);
+
+  const [bgImagePath, setBgImagePath] = useState<string | null>(null);
+  const [bgScaleX, setBgScaleX] = useState<number>(1);
+  const [bgScaleY, setBgScaleY] = useState<number>(1);
+  const [bgOffsetX, setBgOffsetX] = useState<number>(0);
+  const [bgOffsetY, setBgOffsetY] = useState<number>(0);
+  
+  useEffect(() => {
+    if (bgImagePath) {
+      const img = new window.Image();
+      img.onload = () => {
+        const imgW = img.width * bgScaleX;
+        const imgH = img.height * bgScaleY;
+        
+        const hexW = orientation === 'flat' ? 60 : 69.28;
+        const hexH = orientation === 'flat' ? 69.28 : 60;
+        
+        const reqW = (imgW + Math.max(0, bgOffsetX)) / hexW;
+        const reqH = (imgH + Math.max(0, bgOffsetY)) / hexH;
+        
+        setMapWidth(Math.max(10, Math.ceil(reqW) + 2));
+        setMapHeight(Math.max(10, Math.ceil(reqH) + 2));
+      };
+      img.src = `local://file?path=${encodeURIComponent(bgImagePath)}`;
+    }
+  }, [bgImagePath, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, orientation]);
   
   const [activeBrush, setActiveBrush] = useState<string | null>(null);
   const [activeColor, setActiveColor] = useState<string | null>('#3b82f6');
@@ -38,6 +64,7 @@ const App: React.FC = () => {
     { id: '7', name: 'Labels', type: 'label', visible: true, opacity: 1, data: [] }
   ]);
   const [activeLayerId, setActiveLayerId] = useState<string>('1');
+  const [isScanning, setIsScanning] = useState<boolean>(false);
 
   const engineRef = useRef<HexGridEngineRef>(null);
 
@@ -85,6 +112,58 @@ const App: React.FC = () => {
     }
   };
 
+  const handleImportImage = async () => {
+    const imagePath = await window.api.openImage();
+    if (!imagePath) return;
+    setBgImagePath(imagePath);
+    setBgScaleX(1);
+    setBgScaleY(1);
+    setBgOffsetX(0);
+    setBgOffsetY(0);
+    
+    // Clear old map so we can see the background image without obstruction
+    setLayers([
+      { id: '1', name: 'Terrain', type: 'terrain', visible: true, opacity: 1, data: {} },
+      { id: '2', name: 'Cliffs', type: 'cliff', visible: true, opacity: 1, data: [] },
+      { id: '3', name: 'Rivers', type: 'river', visible: true, opacity: 1, data: [] },
+      { id: '4', name: 'Coastline', type: 'coastline', visible: true, opacity: 1, data: {} },
+      { id: '5', name: 'Cities', type: 'city', visible: true, opacity: 1, data: {} },
+      { id: '6', name: 'Borders', type: 'border', visible: true, opacity: 1, data: {} },
+      { id: '7', name: 'Labels', type: 'label', visible: true, opacity: 1, data: [] }
+    ]);
+  };
+
+  const handleScanAlignedMap = async () => {
+    if (!bgImagePath) return;
+    setIsScanning(true);
+    try {
+      const result = await window.api.runPythonScript({ 
+        action: 'interpret', 
+        imagePath: bgImagePath,
+        bgScaleX,
+        bgScaleY,
+        bgOffsetX,
+        bgOffsetY,
+        mapWidth,
+        mapHeight,
+        orientation
+      });
+      console.log('Scanner result:', result);
+      if (result.status === 'success' && result.data && result.data.layers) {
+        setLayers(result.data.layers);
+        setBgImagePath(null); // Close alignment mode
+        alert('Image scanned successfully!');
+      } else {
+        alert('Scan failed: ' + (result.message || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error during scan');
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
   const handleToggleVisibility = (id: string) => {
     setLayers(prev => prev.map(l => l.id === id ? { ...l, visible: !l.visible } : l));
   };
@@ -96,9 +175,12 @@ const App: React.FC = () => {
       <div className={styles.toolbar}>
         <div className={styles.toolbarTitle}>HexMapper Engine</div>
         <div className={styles.projectTools}>
-          <button className={styles.projectButton} onClick={handleSaveProject}>Save Project</button>
-          <button className={styles.projectButton} onClick={handleLoadProject}>Load Project</button>
-          <button className={`${styles.projectButton} ${styles.export}`} onClick={handleExportImage}>Export PNG</button>
+          <button className={styles.projectButton} onClick={handleSaveProject} disabled={isScanning}>Save Project</button>
+          <button className={styles.projectButton} onClick={handleLoadProject} disabled={isScanning}>Load Project</button>
+          <button className={`${styles.projectButton} ${styles.export}`} onClick={handleExportImage} disabled={isScanning}>Export PNG</button>
+          <button className={styles.projectButton} onClick={handleImportImage} disabled={isScanning} style={{background: '#f59e0b'}}>
+            {isScanning ? 'Scanning...' : 'Import from Image'}
+          </button>
         </div>
         <div className={styles.toolbarControls}>
           <label className={styles.controlLabel}>
@@ -168,6 +250,11 @@ const App: React.FC = () => {
             layers={layers}
             setLayers={setLayers}
             activeLayerId={activeLayerId}
+            bgImagePath={bgImagePath}
+            bgScaleX={bgScaleX}
+            bgScaleY={bgScaleY}
+            bgOffsetX={bgOffsetX}
+            bgOffsetY={bgOffsetY}
           />
         </div>
         <LayerPanel
@@ -176,6 +263,36 @@ const App: React.FC = () => {
           onSelectLayer={setActiveLayerId}
           onToggleVisibility={handleToggleVisibility}
         />
+        {bgImagePath && (
+          <div className={styles.sidebar} style={{marginTop: '10px', background: '#1e1e1e', border: '1px solid #333'}}>
+            <h3 style={{ color: 'white', marginTop: '0', marginBottom: '15px' }}>Map Alignment</h3>
+            <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+              <label className={styles.controlLabel} style={{display: 'flex', justifyContent: 'space-between'}}>
+                Scale X: 
+                <input type="number" step="0.01" className={styles.numberInput} value={bgScaleX} onChange={e => setBgScaleX(Number(e.target.value))} style={{width: '60px'}}/>
+              </label>
+              <label className={styles.controlLabel} style={{display: 'flex', justifyContent: 'space-between'}}>
+                Scale Y: 
+                <input type="number" step="0.01" className={styles.numberInput} value={bgScaleY} onChange={e => setBgScaleY(Number(e.target.value))} style={{width: '60px'}}/>
+              </label>
+              <label className={styles.controlLabel} style={{display: 'flex', justifyContent: 'space-between'}}>
+                Offset X: 
+                <input type="number" step="1" className={styles.numberInput} value={bgOffsetX} onChange={e => setBgOffsetX(Number(e.target.value))} style={{width: '60px'}}/>
+              </label>
+              <label className={styles.controlLabel} style={{display: 'flex', justifyContent: 'space-between'}}>
+                Offset Y: 
+                <input type="number" step="1" className={styles.numberInput} value={bgOffsetY} onChange={e => setBgOffsetY(Number(e.target.value))} style={{width: '60px'}}/>
+              </label>
+              
+              <div style={{display: 'flex', gap: '5px', marginTop: '10px'}}>
+                <button className={`${styles.projectButton} ${styles.export}`} onClick={handleScanAlignedMap} disabled={isScanning} style={{flex: 1}}>
+                  {isScanning ? 'Scanning...' : 'Scan Aligned'}
+                </button>
+                <button className={styles.projectButton} onClick={() => setBgImagePath(null)} style={{background: '#ef4444'}}>Close</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

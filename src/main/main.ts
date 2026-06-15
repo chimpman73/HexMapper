@@ -106,6 +106,17 @@ ipcMain.handle('dialog:openDirectory', async () => {
   return filePaths[0];
 });
 
+ipcMain.handle('dialog:openImage', async () => {
+  if (!mainWindow) return null;
+  const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+    title: 'Select Map Image',
+    properties: ['openFile'],
+    filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
+  });
+  if (canceled || filePaths.length === 0) return null;
+  return filePaths[0];
+});
+
 ipcMain.handle('fs:readDir', async (event, dirPath: string) => {
   try {
     const files = await fs.promises.readdir(dirPath);

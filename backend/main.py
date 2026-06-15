@@ -2,7 +2,11 @@ import sys
 import json
 
 def process_request(data):
-    # This is where HexMapper AI/CV logic will go
+    action = data.get("action")
+    if action == "interpret":
+        import interpreter
+        return interpreter.interpret_map(data)
+
     response = {
         "status": "success",
         "message": "Python backend successfully received and processed the data.",

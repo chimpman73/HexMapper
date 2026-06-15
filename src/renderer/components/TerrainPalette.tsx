@@ -31,24 +31,27 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = ({
   useEffect(() => {
     const loadDefault = async () => {
       if ((window as any).api?.getDefaultTiles) {
-        const folder = activeLayer.type === 'city' ? 'Cities' : 'Terrain';
+        let folder = 'Terrain';
+        if (activeLayer.type === 'city') folder = 'Cities';
+        if (activeLayer.type === 'coastline') folder = 'Coastline';
+        
         const files = await (window as any).api.getDefaultTiles(folder);
         const urls = files.map((f: string) => `local://file?path=${encodeURIComponent(f)}`);
         setBrushes(urls);
       }
     };
-    if (activeLayer.type === 'terrain' || activeLayer.type === 'city') {
+    if (activeLayer.type === 'terrain' || activeLayer.type === 'city' || activeLayer.type === 'coastline') {
       loadDefault();
     }
   }, [activeLayer.type]);
 
-  if (activeLayer.type !== 'terrain' && activeLayer.type !== 'city') {
+  if (activeLayer.type !== 'terrain' && activeLayer.type !== 'city' && activeLayer.type !== 'coastline') {
     return (
       <div className={styles.paletteContainer}>
         <div className={styles.vectorTools}>
           <h3 style={{color: 'white', marginTop: 0}}>{activeLayer.name} Tools</h3>
           
-          {(activeLayer.type === 'coastline' || activeLayer.type === 'border' || activeLayer.type === 'river' || activeLayer.type === 'cliff') && (
+          {(activeLayer.type === 'border' || activeLayer.type === 'river' || activeLayer.type === 'cliff') && (
             <div className={styles.brushGrid} style={{ marginBottom: '15px' }}>
               <div 
                 className={`${styles.brushItem} ${activeColor !== null ? styles.active : ''}`}

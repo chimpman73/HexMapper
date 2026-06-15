@@ -3,3 +3,8 @@ dist/
 out/
 .env
 .DS_Store
+
+__pycache__/
+saves/
+backend/*.png
+backend/signatures.json

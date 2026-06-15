@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useImperativeHandle, forwardRef } from 'react';
-import { Stage, Layer, Line, Group } from 'react-konva';
+import { Stage, Layer, Line, Group, Image as KonvaImage } from 'react-konva';
+import * as import_react_konva from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import HexTile from './HexTile';
 import { generateRectangularGrid, HexCube, HexOrientation, isHexEqual, MapLayer, TerrainLayer, VectorLayer, CityLayer, CoastlineLayer, BorderLayer, LayerType, hexToPixel, getHexCorners, HEX_NEIGHBORS } from '../utils/hexMath';
@@ -15,6 +16,11 @@ interface HexGridEngineProps {
   layers: MapLayer[];
   setLayers: React.Dispatch<React.SetStateAction<MapLayer[]>>;
   activeLayerId: string;
+  bgImagePath: string | null;
+  bgScaleX: number;
+  bgScaleY: number;
+  bgOffsetX: number;
+  bgOffsetY: number;
 }
 
 export interface HexGridEngineRef {
@@ -64,7 +70,8 @@ const generateCliffHashes = (points: number[], invert: boolean | undefined, colo
 };
 
 const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({ 
-  orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeColor, activeLineWidth, layers, setLayers, activeLayerId 
+  orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeColor, activeLineWidth, layers, setLayers, activeLayerId,
+  bgImagePath, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY
 }, ref) => {
   const stageRef = useRef<any>(null);
 
@@ -91,6 +98,24 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
   const [isRightClickPan, setIsRightClickPan] = useState(false);
   const [lastPanPos, setLastPanPos] = useState({ x: 0, y: 0 });
 
+  const [bgImageObj, setBgImageObj] = useState<HTMLImageElement | null>(null);
+
+  React.useEffect(() => {
+    if (bgImagePath) {
+      const img = new window.Image();
+      img.onload = () => {
+        console.log("Background image loaded successfully");
+        setBgImageObj(img);
+      };
+      img.onerror = (e) => {
+        console.error("Failed to load background image", e);
+      };
+      img.src = `local://file?path=${encodeURIComponent(bgImagePath)}`;
+    } else {
+      setBgImageObj(null);
+    }
+  }, [bgImagePath]);
+
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => { if (e.key === 'Shift') setIsShiftPressed(true); };
     const up = (e: KeyboardEvent) => { if (e.key === 'Shift') setIsShiftPressed(false); };
@@ -107,8 +132,10 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
     layers.forEach(layer => {
       if ((layer.type === 'coastline' || layer.type === 'border') && layer.visible) {
         for (const key in layer.data) {
-          const color = layer.data[key] as string;
-          if (!color) continue;
+          const rawVal = layer.data[key] as string;
+          if (!rawVal) continue;
+          
+          const color = layer.type === 'coastline' ? '#3b82f6' : rawVal;
 
           const [q, r, s] = key.split(',').map(Number);
           const center = hexToPixel({ q, r, s }, orientation);
@@ -163,8 +190,8 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
   const handlePaintHex = (hex: HexCube) => {
     if (isVectorMode) return;
     
-    // For coastline and border we use activeColor
-    const brushValue = (activeLayer?.type === 'coastline' || activeLayer?.type === 'border') ? activeColor : activeBrush;
+    // For border we use activeColor, for coastline we now use activeBrush
+    const brushValue = activeLayer?.type === 'border' ? activeColor : activeBrush;
     if (brushValue === undefined) return;
     
     const key = `${hex.q},${hex.r},${hex.s}`;
@@ -206,7 +233,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
       y: (pointer.y - stage.y()) / oldScale,
     };
 
-    const newScale = e.evt.deltaY < 0 ? oldScale / scaleBy : oldScale * scaleBy;
+    const newScale = e.evt.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy;
     setScale(Math.max(0.1, Math.min(newScale, 5)));
 
     setPosition({
@@ -221,7 +248,6 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
 
   const handleMouseDown = (e: KonvaEventObject<MouseEvent>) => {
     if (e.evt.button === 2) {
-      // Right click -> start pan
       setIsRightClickPan(true);
       setLastPanPos({ x: e.evt.clientX, y: e.evt.clientY });
       return;
@@ -292,9 +318,9 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
   return (
     <Stage
       ref={stageRef}
-      width={window.innerWidth - 250 - 250} // Subtract palette width AND layer panel width
+      width={window.innerWidth - 250 - 250} 
       height={window.innerHeight - 50}
-      draggable={false} // Custom right-click drag implementation
+      draggable={false} 
       onWheel={handleWheel}
       x={position.x}
       y={position.y}
@@ -308,7 +334,15 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
       onMouseLeave={handleMouseUp}
       onContextMenu={(e) => { e.evt.preventDefault(); }}
     >
-      {/* We use a single Layer for all elements so z-indexing works via rendering order */}
+        {/* Background Image Layer */}
+        {bgImageObj && (
+          <Layer>
+            <Group x={bgOffsetX} y={bgOffsetY} scaleX={bgScaleX} scaleY={bgScaleY}>
+              <import_react_konva.Image image={bgImageObj} />
+            </Group>
+          </Layer>
+        )}
+
       <Layer>
         {layers.map(layer => {
           if (!layer.visible) return null;
@@ -317,16 +351,17 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
             const hLayer = layer as TerrainLayer | CityLayer | CoastlineLayer | BorderLayer;
             const tiles = grid.map((hex) => {
               const key = `${hex.q},${hex.r},${hex.s}`;
-              // Only highlight hovered hex if we are on THIS active layer and it's terrain mode
               const isHovered = (!isVectorMode && activeLayerId === layer.id && hoveredHex) ? isHexEqual(hex, hoveredHex) : false;
               
-              const isColorLayer = layer.type === 'coastline' || layer.type === 'border';
-              const imageSrc = isColorLayer ? undefined : hLayer.data[key];
+              const isColorLayer = layer.type === 'border';
+              const isImageLayer = layer.type === 'terrain' || layer.type === 'city' || layer.type === 'coastline';
+              const imageSrc = isImageLayer ? hLayer.data[key] : undefined;
               
               let fillColor = undefined;
               if (isColorLayer && hLayer.data[key]) {
-                // If it's a border, make the hex territory fill semi-transparent (20% opacity = '33' hex)
                 fillColor = layer.type === 'border' ? hLayer.data[key] + '33' : hLayer.data[key];
+              } else if ((layer.type === 'terrain' || layer.type === 'coastline') && bgImagePath && !hLayer.data[key]) {
+                fillColor = 'transparent';
               }
 
               return (
