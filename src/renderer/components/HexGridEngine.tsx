@@ -22,6 +22,7 @@ interface HexGridEngineProps {
   bgOffsetX: number;
   bgOffsetY: number;
   globalCoastlines?: any[];
+  globalBorders?: any[];
   highlightedHexKey?: string | null;
 }
 
@@ -73,7 +74,7 @@ const generateCliffHashes = (points: number[], invert: boolean | undefined, colo
 
 const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({ 
   orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeColor, activeLineWidth, layers, setLayers, activeLayerId,
-  bgImagePath, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines = [], highlightedHexKey
+  bgImagePath, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines = [], globalBorders = [], highlightedHexKey
 }, ref) => {
   const stageRef = useRef<any>(null);
 
@@ -422,10 +423,34 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
                   </Group>
                 );
               }
+              let renderedGlobalBorders = null;
+              if (layer.type === 'border' && globalBorders && globalBorders.length > 0) {
+                renderedGlobalBorders = (
+                  <Group>
+                    {globalBorders.map((pathPoints, i) => {
+                      if (pathPoints.length > 0) {
+                        const flattenedPoints = pathPoints.flatMap((p: any) => [p.x, p.y]);
+                        return (
+                          <Line
+                            key={`global-border-${i}`}
+                            points={flattenedPoints}
+                            fill="#dc2626" 
+                            closed={true}
+                            opacity={layer.opacity}
+                            tension={0}
+                          />
+                        );
+                      }
+                      return null;
+                    })}
+                  </Group>
+                );
+              }
 
               return (
                 <React.Fragment key={`group-${layer.id}`}>
                   {renderedTiles}
+                  {renderedGlobalBorders}
                   {edgesToDraw.map(edge => (
                     <Line
                       key={edge.id}

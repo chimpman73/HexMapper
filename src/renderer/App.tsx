@@ -32,6 +32,7 @@ const App: React.FC = () => {
   const [mapHeight, setMapHeight] = useState<number>(25);
   
   const [globalCoastlines, setGlobalCoastlines] = useState<any[]>([]);
+  const [globalBorders, setGlobalBorders] = useState<any[]>([]);
   const [unknowns, setUnknowns] = useState<any[]>([]);
   const [highlightedHexKey, setHighlightedHexKey] = useState<string | null>(null);
 
@@ -163,6 +164,9 @@ const App: React.FC = () => {
         setLayers(result.data.layers);
         if (result.data.globalCoastlines) {
           setGlobalCoastlines(result.data.globalCoastlines);
+        }
+        if (result.data.globalBorders) {
+          setGlobalBorders(result.data.globalBorders);
         }
         if (result.data.unknowns) {
           setUnknowns(result.data.unknowns);
@@ -318,6 +322,7 @@ const App: React.FC = () => {
             bgOffsetX={bgOffsetX}
             bgOffsetY={bgOffsetY}
             globalCoastlines={globalCoastlines}
+            globalBorders={globalBorders}
             highlightedHexKey={highlightedHexKey}
           />
         </div>

@@ -65,6 +65,47 @@ def scan_aligned_map(args):
     height, width, _ = img.shape
     
     # -------------------------------------------------------------------------
+    # STEP 0: BORDER EXTRACTION AND INPAINTING
+    # -------------------------------------------------------------------------
+    # Convert to HSV to isolate the Red borders
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    
+    # Red has hue near 0 and 180
+    lower_red1 = np.array([0, 70, 50])
+    upper_red1 = np.array([10, 255, 255])
+    mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
+    
+    lower_red2 = np.array([170, 70, 50])
+    upper_red2 = np.array([180, 255, 255])
+    mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
+    
+    red_mask = mask1 | mask2
+    
+    # Clean up the mask with morphology
+    kernel_border = np.ones((3,3), np.uint8)
+    red_mask_clean = cv2.morphologyEx(red_mask, cv2.MORPH_OPEN, kernel_border)
+    
+    # Extract Contours for the borders to render on the frontend
+    border_contours, _ = cv2.findContours(red_mask_clean, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    global_borders = []
+    
+    for cnt in border_contours:
+        epsilon = 0.0005 * cv2.arcLength(cnt, True)
+        approx = cv2.approxPolyDP(cnt, epsilon, True)
+        path_points = []
+        for p in approx:
+            x, y = p[0]
+            cx = x * bg_scale_x + bg_offset_x
+            cy = y * bg_scale_y + bg_offset_y
+            path_points.append({"x": cx, "y": cy})
+            
+        if len(path_points) > 2:
+            global_borders.append(path_points)
+            
+    # Inpaint the original image to physically erase the red borders so they don't block water/terrain
+    img = cv2.inpaint(img, red_mask_clean, 3, cv2.INPAINT_TELEA)
+    
+    # -------------------------------------------------------------------------
     # STEP 1: GLOBAL SHORELINE GEOMETRY
     # -------------------------------------------------------------------------
     img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2Lab).astype(np.float32)
@@ -302,6 +343,7 @@ def scan_aligned_map(args):
         "data": {
             "layers": layers,
             "globalCoastlines": global_coastlines,
+            "globalBorders": global_borders,
             "unknowns": unknown_hexes,
             "mapWidth": map_width,
             "mapHeight": map_height,
