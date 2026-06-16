@@ -3,6 +3,7 @@ import styles from './index.module.css';
 import HexGridEngine, { HexGridEngineRef } from './components/HexGridEngine';
 import TerrainPalette from './components/TerrainPalette';
 import LayerPanel from './components/LayerPanel';
+import UnknownsPanel from './components/UnknownsPanel';
 import { HexOrientation, MapLayer } from './utils/hexMath';
 
 declare global {
@@ -10,10 +11,16 @@ declare global {
     api: {
       runPythonScript: (args: any) => Promise<any>;
       openDirectory: () => Promise<string | null>;
+      openImage: () => Promise<string | null>;
       readDir: (dirPath: string) => Promise<string[]>;
       saveMap: (dataString: string) => Promise<{ success: boolean; filePath?: string; canceled?: boolean; error?: string }>;
       loadMap: () => Promise<{ success: boolean; data?: string; filePath?: string; canceled?: boolean; error?: string }>;
       exportImage: (dataUrl: string) => Promise<{ success: boolean; filePath?: string; canceled?: boolean; error?: string }>;
+    };
+    electron: {
+      ipcRenderer: {
+        invoke: (channel: string, data: any) => Promise<any>;
+      }
     };
   }
 }
@@ -23,6 +30,10 @@ const App: React.FC = () => {
   const [showCoordinates, setShowCoordinates] = useState<boolean>(true);
   const [mapWidth, setMapWidth] = useState<number>(50);
   const [mapHeight, setMapHeight] = useState<number>(25);
+  
+  const [globalCoastlines, setGlobalCoastlines] = useState<any[]>([]);
+  const [unknowns, setUnknowns] = useState<any[]>([]);
+  const [highlightedHexKey, setHighlightedHexKey] = useState<string | null>(null);
 
   const [bgImagePath, setBgImagePath] = useState<string | null>(null);
   const [bgScaleX, setBgScaleX] = useState<number>(1);
@@ -121,7 +132,6 @@ const App: React.FC = () => {
     setBgOffsetX(0);
     setBgOffsetY(0);
     
-    // Clear old map so we can see the background image without obstruction
     setLayers([
       { id: '1', name: 'Terrain', type: 'terrain', visible: true, opacity: 1, data: {} },
       { id: '2', name: 'Cliffs', type: 'cliff', visible: true, opacity: 1, data: [] },
@@ -151,7 +161,13 @@ const App: React.FC = () => {
       console.log('Scanner result:', result);
       if (result.status === 'success' && result.data && result.data.layers) {
         setLayers(result.data.layers);
-        setBgImagePath(null); // Close alignment mode
+        if (result.data.globalCoastlines) {
+          setGlobalCoastlines(result.data.globalCoastlines);
+        }
+        if (result.data.unknowns) {
+          setUnknowns(result.data.unknowns);
+        }
+        setBgImagePath(null);
         alert('Image scanned successfully!');
       } else {
         alert('Scan failed: ' + (result.message || 'Unknown error'));
@@ -166,6 +182,52 @@ const App: React.FC = () => {
 
   const handleToggleVisibility = (id: string) => {
     setLayers(prev => prev.map(l => l.id === id ? { ...l, visible: !l.visible } : l));
+  };
+
+  const handleResolveUnknown = async (unknownId: string, action: 'ignore' | 'map' | 'save', payload?: any) => {
+    const unk = unknowns.find(u => u.id === unknownId);
+    if (!unk) return;
+
+    if (action === 'ignore') {
+      try {
+        await window.api.runPythonScript({
+          command: 'ignore_brush',
+          id: unknownId
+        });
+      } catch(e) {
+        console.error("Failed to ignore brush:", e);
+      }
+    } else if (action === 'map') {
+      setLayers(prev => prev.map(l => {
+        if (l.type === 'city') {
+          return { ...l, data: { ...l.data, [unk.key]: `local://file?path=${encodeURIComponent('C:/John/Code/HexMapper/assets/tiles/' + payload.tile)}` } };
+        }
+        return l;
+      }));
+    } else if (action === 'save') {
+      try {
+        const result = await window.api.runPythonScript({
+          command: 'save_brush',
+          id: unknownId, 
+          name: payload.name
+        });
+        if (result.status === 'success') {
+          alert('Brush saved and signatures rebuilt!');
+          setLayers(prev => prev.map(l => {
+            if (l.type === 'city') {
+              return { ...l, data: { ...l.data, [unk.key]: `local://file?path=${encodeURIComponent('C:/John/Code/HexMapper/assets/tiles/Cities/' + payload.name)}` } };
+            }
+            return l;
+          }));
+        } else {
+          alert('Failed to save brush: ' + result.message);
+        }
+      } catch(e) {
+        console.error(e);
+      }
+    }
+
+    setUnknowns(prev => prev.filter(u => u.id !== unknownId));
   };
 
   const activeLayer = layers.find(l => l.id === activeLayerId) || layers[0];
@@ -255,14 +317,25 @@ const App: React.FC = () => {
             bgScaleY={bgScaleY}
             bgOffsetX={bgOffsetX}
             bgOffsetY={bgOffsetY}
+            globalCoastlines={globalCoastlines}
+            highlightedHexKey={highlightedHexKey}
           />
         </div>
-        <LayerPanel
-          layers={layers}
-          activeLayerId={activeLayerId}
-          onSelectLayer={setActiveLayerId}
-          onToggleVisibility={handleToggleVisibility}
-        />
+        <div className={styles.rightPanel}>
+          <LayerPanel
+            layers={layers}
+            activeLayerId={activeLayerId}
+            onSelectLayer={setActiveLayerId}
+            onToggleVisibility={handleToggleVisibility}
+          />
+          {unknowns.length > 0 && (
+            <UnknownsPanel 
+              unknowns={unknowns} 
+              onResolve={handleResolveUnknown} 
+              onHover={setHighlightedHexKey} 
+            />
+          )}
+        </div>
         {bgImagePath && (
           <div className={styles.sidebar} style={{marginTop: '10px', background: '#1e1e1e', border: '1px solid #333'}}>
             <h3 style={{ color: 'white', marginTop: '0', marginBottom: '15px' }}>Map Alignment</h3>

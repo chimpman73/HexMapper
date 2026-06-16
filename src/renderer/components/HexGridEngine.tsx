@@ -21,6 +21,8 @@ interface HexGridEngineProps {
   bgScaleY: number;
   bgOffsetX: number;
   bgOffsetY: number;
+  globalCoastlines?: any[];
+  highlightedHexKey?: string | null;
 }
 
 export interface HexGridEngineRef {
@@ -71,7 +73,7 @@ const generateCliffHashes = (points: number[], invert: boolean | undefined, colo
 
 const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({ 
   orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeColor, activeLineWidth, layers, setLayers, activeLayerId,
-  bgImagePath, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY
+  bgImagePath, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines = [], highlightedHexKey
 }, ref) => {
   const stageRef = useRef<any>(null);
 
@@ -351,7 +353,8 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
             const hLayer = layer as TerrainLayer | CityLayer | CoastlineLayer | BorderLayer;
             const tiles = grid.map((hex) => {
               const key = `${hex.q},${hex.r},${hex.s}`;
-              const isHovered = (!isVectorMode && activeLayerId === layer.id && hoveredHex) ? isHexEqual(hex, hoveredHex) : false;
+              const isMouseHovered = (!isVectorMode && activeLayerId === layer.id && hoveredHex) ? isHexEqual(hex, hoveredHex) : false;
+              const isHovered = isMouseHovered || highlightedHexKey === key;
               
               const isColorLayer = layer.type === 'border';
               const isImageLayer = layer.type === 'terrain' || layer.type === 'city' || layer.type === 'coastline';
@@ -395,9 +398,34 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
 
             if (layer.type === 'coastline' || layer.type === 'border') {
               const edgesToDraw = proceduralEdges.filter(e => e.id.startsWith(layer.id + '-'));
+              
+              // Apply clipping mask ONLY to the coastline image tiles, NOT the procedural edges
+              let renderedTiles = <>{tiles}</>;
+              if (layer.type === 'coastline' && globalCoastlines && globalCoastlines.length > 0) {
+                renderedTiles = (
+                  <Group 
+                    clipFunc={(ctx) => {
+                      ctx.beginPath();
+                      globalCoastlines.forEach((pathPoints: any[]) => {
+                        if (pathPoints.length > 0) {
+                          ctx.moveTo(pathPoints[0].x, pathPoints[0].y);
+                          for (let i = 1; i < pathPoints.length; i++) {
+                            ctx.lineTo(pathPoints[i].x, pathPoints[i].y);
+                          }
+                          ctx.closePath();
+                        }
+                      });
+                      ctx.clip('evenodd');
+                    }}
+                  >
+                    {tiles}
+                  </Group>
+                );
+              }
+
               return (
                 <React.Fragment key={`group-${layer.id}`}>
-                  {tiles}
+                  {renderedTiles}
                   {edgesToDraw.map(edge => (
                     <Line
                       key={edge.id}
