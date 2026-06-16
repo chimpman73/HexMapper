@@ -23,6 +23,7 @@ interface HexGridEngineProps {
   bgOffsetY: number;
   globalCoastlines?: any[];
   globalBorders?: any[];
+  globalRivers?: any[];
   highlightedHexKey?: string | null;
 }
 
@@ -74,7 +75,7 @@ const generateCliffHashes = (points: number[], invert: boolean | undefined, colo
 
 const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({ 
   orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeColor, activeLineWidth, layers, setLayers, activeLayerId,
-  bgImagePath, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines = [], globalBorders = [], highlightedHexKey
+  bgImagePath, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines = [], globalBorders = [], globalRivers = [], highlightedHexKey
 }, ref) => {
   const stageRef = useRef<any>(null);
 
@@ -423,10 +424,9 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
                   </Group>
                 );
               }
-              let renderedGlobalBorders = null;
               if (layer.type === 'border' && globalBorders && globalBorders.length > 0) {
-                renderedGlobalBorders = (
-                  <Group>
+                return (
+                  <Group key={layer.id} opacity={layer.opacity}>
                     {globalBorders.map((pathPoints, i) => {
                       if (pathPoints.length > 0) {
                         const flattenedPoints = pathPoints.flatMap((p: any) => [p.x, p.y]);
@@ -446,11 +446,31 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
                   </Group>
                 );
               }
+              
+              if (layer.type === 'river' && globalRivers && globalRivers.length > 0) {
+                return (
+                  <Group key={layer.id} opacity={layer.opacity}>
+                    {globalRivers.map((pathPoints, i) => {
+                      const flatPoints = pathPoints.flatMap((p: any) => [p.x, p.y]);
+                      return (
+                        <Line
+                          key={i}
+                          points={flatPoints}
+                          stroke="#3b82f6" // blue-500
+                          strokeWidth={4}
+                          tension={0.3}
+                          lineJoin="round"
+                          lineCap="round"
+                        />
+                      );
+                    })}
+                  </Group>
+                );
+              }
 
               return (
                 <React.Fragment key={`group-${layer.id}`}>
                   {renderedTiles}
-                  {renderedGlobalBorders}
                   {edgesToDraw.map(edge => (
                     <Line
                       key={edge.id}
@@ -515,6 +535,25 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
                     {layer.type === 'cliff' && generateCliffHashes(line.points, line.invert, hoveredLineId === line.id ? '#ff5252' : line.stroke, line.strokeWidth, line.id, hoveredLineId === line.id ? 0.5 : layer.opacity)}
                   </Group>
                 ))}
+                
+                {layer.type === 'river' && globalRivers && globalRivers.length > 0 && (
+                  <Group key={`${layer.id}-global`} opacity={layer.opacity}>
+                    {globalRivers.map((pathPoints, i) => {
+                      const flatPoints = pathPoints.flatMap((p: any) => [p.x, p.y]);
+                      return (
+                        <Line
+                          key={`gr-${i}`}
+                          points={flatPoints}
+                          stroke="#3b82f6" // blue-500
+                          strokeWidth={4}
+                          tension={0.3}
+                          lineJoin="round"
+                          lineCap="round"
+                        />
+                      );
+                    })}
+                  </Group>
+                )}
               </React.Fragment>
             );
           }

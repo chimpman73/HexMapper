@@ -33,6 +33,7 @@ const App: React.FC = () => {
   
   const [globalCoastlines, setGlobalCoastlines] = useState<any[]>([]);
   const [globalBorders, setGlobalBorders] = useState<any[]>([]);
+  const [globalRivers, setGlobalRivers] = useState<any[]>([]);
   const [unknowns, setUnknowns] = useState<any[]>([]);
   const [highlightedHexKey, setHighlightedHexKey] = useState<string | null>(null);
 
@@ -41,6 +42,9 @@ const App: React.FC = () => {
   const [bgScaleY, setBgScaleY] = useState<number>(1);
   const [bgOffsetX, setBgOffsetX] = useState<number>(0);
   const [bgOffsetY, setBgOffsetY] = useState<number>(0);
+  const [importType, setImportType] = useState<'image' | 'directory' | null>(null);
+  const [importDirPath, setImportDirPath] = useState<string | null>(null);
+  const [showImportModal, setShowImportModal] = useState<boolean>(false);
   
   useEffect(() => {
     if (bgImagePath) {
@@ -124,10 +128,48 @@ const App: React.FC = () => {
     }
   };
 
-  const handleImportImage = async () => {
+  const handleImportImageSelect = async () => {
+    setShowImportModal(false);
     const imagePath = await window.api.openImage();
     if (!imagePath) return;
     setBgImagePath(imagePath);
+    setImportDirPath(null);
+    setImportType('image');
+    setBgScaleX(1);
+    setBgScaleY(1);
+    setBgOffsetX(0);
+    setBgOffsetY(0);
+    
+    setLayers([
+      { id: '1', name: 'Terrain', type: 'terrain', visible: true, opacity: 1, data: {} },
+      { id: '2', name: 'Cliffs', type: 'cliff', visible: true, opacity: 1, data: [] },
+      { id: '3', name: 'Rivers', type: 'river', visible: true, opacity: 1, data: [] },
+      { id: '4', name: 'Coastline', type: 'coastline', visible: true, opacity: 1, data: {} },
+      { id: '5', name: 'Cities', type: 'city', visible: true, opacity: 1, data: {} },
+      { id: '6', name: 'Borders', type: 'border', visible: true, opacity: 1, data: {} },
+      { id: '7', name: 'Labels', type: 'label', visible: true, opacity: 1, data: [] }
+    ]);
+  };
+
+  const handleImportDirectorySelect = async () => {
+    setShowImportModal(false);
+    const dirPath = await window.api.openDirectory();
+    if (!dirPath) return;
+    
+    setImportDirPath(dirPath);
+    setImportType('directory');
+    
+    const files = await window.api.readDir(dirPath);
+    const previewFile = files.find(f => f.toLowerCase().endsWith('terrain.png')) || 
+                        files.find(f => f.toLowerCase().endsWith('borders.png')) ||
+                        files[0];
+                        
+    if (previewFile) {
+      setBgImagePath(previewFile);
+    } else {
+      setBgImagePath(null);
+    }
+    
     setBgScaleX(1);
     setBgScaleY(1);
     setBgOffsetX(0);
@@ -145,12 +187,15 @@ const App: React.FC = () => {
   };
 
   const handleScanAlignedMap = async () => {
-    if (!bgImagePath) return;
+    if (importType === 'image' && !bgImagePath) return;
+    if (importType === 'directory' && !importDirPath) return;
+    
     setIsScanning(true);
     try {
       const result = await window.api.runPythonScript({ 
         action: 'interpret', 
-        imagePath: bgImagePath,
+        mode: importType === 'directory' ? 'multi_layer' : 'composite',
+        imagePath: importType === 'directory' ? importDirPath : bgImagePath,
         bgScaleX,
         bgScaleY,
         bgOffsetX,
@@ -168,11 +213,16 @@ const App: React.FC = () => {
         if (result.data.globalBorders) {
           setGlobalBorders(result.data.globalBorders);
         }
+        if (result.data.globalRivers) {
+          setGlobalRivers(result.data.globalRivers);
+        }
         if (result.data.unknowns) {
           setUnknowns(result.data.unknowns);
         }
         setBgImagePath(null);
-        alert('Image scanned successfully!');
+        setImportDirPath(null);
+        setImportType(null);
+        alert(importType === 'directory' ? 'Directory scanned successfully!' : 'Image scanned successfully!');
       } else {
         alert('Scan failed: ' + (result.message || 'Unknown error'));
       }
@@ -244,8 +294,8 @@ const App: React.FC = () => {
           <button className={styles.projectButton} onClick={handleSaveProject} disabled={isScanning}>Save Project</button>
           <button className={styles.projectButton} onClick={handleLoadProject} disabled={isScanning}>Load Project</button>
           <button className={`${styles.projectButton} ${styles.export}`} onClick={handleExportImage} disabled={isScanning}>Export PNG</button>
-          <button className={styles.projectButton} onClick={handleImportImage} disabled={isScanning} style={{background: '#f59e0b'}}>
-            {isScanning ? 'Scanning...' : 'Import from Image'}
+          <button className={styles.projectButton} onClick={() => setShowImportModal(true)} disabled={isScanning} style={{background: '#f59e0b'}}>
+            {isScanning ? 'Scanning...' : 'Extract Map'}
           </button>
         </div>
         <div className={styles.toolbarControls}>
@@ -323,6 +373,7 @@ const App: React.FC = () => {
             bgOffsetY={bgOffsetY}
             globalCoastlines={globalCoastlines}
             globalBorders={globalBorders}
+            globalRivers={globalRivers}
             highlightedHexKey={highlightedHexKey}
           />
         </div>
@@ -343,7 +394,9 @@ const App: React.FC = () => {
         </div>
         {bgImagePath && (
           <div className={styles.sidebar} style={{marginTop: '10px', background: '#1e1e1e', border: '1px solid #333'}}>
-            <h3 style={{ color: 'white', marginTop: '0', marginBottom: '15px' }}>Map Alignment</h3>
+            <h3 style={{ color: 'white', marginTop: '0', marginBottom: '15px' }}>
+              {importType === 'directory' ? 'Multi-Layer Alignment' : 'Map Alignment'}
+            </h3>
             <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
               <label className={styles.controlLabel} style={{display: 'flex', justifyContent: 'space-between'}}>
                 Scale X: 
@@ -366,12 +419,28 @@ const App: React.FC = () => {
                 <button className={`${styles.projectButton} ${styles.export}`} onClick={handleScanAlignedMap} disabled={isScanning} style={{flex: 1}}>
                   {isScanning ? 'Scanning...' : 'Scan Aligned'}
                 </button>
-                <button className={styles.projectButton} onClick={() => setBgImagePath(null)} style={{background: '#ef4444'}}>Close</button>
+                <button className={styles.projectButton} onClick={() => { setBgImagePath(null); setImportDirPath(null); setImportType(null); }} style={{background: '#ef4444'}}>Close</button>
               </div>
             </div>
           </div>
         )}
+
       </div>
+
+      {showImportModal && (
+        <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+          <div style={{background: '#1e1e1e', padding: '30px', borderRadius: '8px', border: '1px solid #333', textAlign: 'center'}}>
+            <h2 style={{color: 'white', marginTop: '0'}}>Select Extraction Source</h2>
+            <p style={{color: '#aaa', marginBottom: '25px'}}>Are you extracting a single composite image or a folder of separated map layers?</p>
+            <div style={{display: 'flex', gap: '15px', justifyContent: 'center'}}>
+              <button className={styles.projectButton} onClick={handleImportImageSelect} style={{background: '#f59e0b', padding: '10px 20px', fontSize: '16px'}}>Single File</button>
+              <button className={styles.projectButton} onClick={handleImportDirectorySelect} style={{background: '#f59e0b', padding: '10px 20px', fontSize: '16px'}}>Layer Folder</button>
+            </div>
+            <button className={styles.projectButton} onClick={() => setShowImportModal(false)} style={{marginTop: '20px', background: '#ef4444'}}>Cancel</button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
