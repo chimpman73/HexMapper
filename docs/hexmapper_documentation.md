@@ -55,10 +55,11 @@ Because the layers are pre-separated, the engine bypasses the error-prone telea 
 - **Coastlines**: Processed via alpha channel detection or global color thresholding.
 
 ### Multi-File Sub-Layer Extraction
-The extraction engine dynamically processes an unlimited number of isolated files belonging to the same layer type. For example, a user can provide `Terrain_Forest.png` and `Terrain_Desert.png`. 
+The extraction engine dynamically processes an unlimited number of isolated files belonging to the same layer type. For example, a user can provide `Terrain_Forest.png` and `Terrain_Desert.png` or `Coastline_1.png` and `Coastline_2.png`. 
 - The engine optically extracts data from each file sequentially.
 - It seamlessly merges the result back into the frontend UI, preserving them as distinct layers with names mapped directly to the original file names (e.g. `Terrain_Forest`).
 - An intelligent `sourceFilename` anchor guarantees that even if a user manually renames a layer in the UI (e.g. to "Whispering Woods"), subsequent rescan operations will successfully locate and `.update()` that exact layer instead of improperly overriding data.
+- **Precision Masking & Clipping**: When multiple layers of the same type (like Coastlines) overlap, they are processed with rigorous mathematical boundaries. The optical scanner utilizes exact geometric polygon tracing rather than rectangular bounding boxes to completely eliminate neighboring-hex "ghost" artifacts. Furthermore, the React renderer clips the vector paths of overlapping layers (e.g. coastlines drawn on top of each other) individually via layer-isolated `evenodd` clipping functions to ensure transparent holes are not accidentally punched into the digital map.
 
 ### Alpha-Aware Compositing & Ink Detection
 For the `Terrain.png` layer, the engine leverages the alpha transparency channel (via `cv2.IMREAD_UNCHANGED`):
@@ -72,3 +73,9 @@ To solve this, HexMapper employs a **Machine Learning Terrain Profile Engine**:
 1. **Offline Training (`backend/train_profile.py`)**: Users can supply a manually corrected `.json` map alongside their `Terrain.png` layer. The trainer script parses the map using the specific scale factor (`bgScaleX/Y`) to perfectly isolate the pixels of every painted hex. It extracts the **mean BGR color** and the **Laplacian variance** (texture roughness) for every terrain type and saves it to an `assets/user_terrain_profile.json` knowledge base.
 2. **Runtime Classification**: During the scan, HexMapper extracts the color and variance of each unknown painted hex. It uses a **K-Nearest Neighbors (k-NN)** distance algorithm to compare the hex's features against the trained profile.
 3. **Template Bypass**: If the distance to a trained label is extremely small (highly confident), the engine forcibly maps the hex to that terrain type, bypassing OpenCV shape-matching entirely. This guarantees near-perfect accuracy for custom brush strokes and flat colors.
+
+## 5. Map Styles Architecture
+To support dynamic aesthetic themes across the entire mapping platform, HexMapper implements a scalable Map Styles engine:
+- **Dynamic Asset Resolution:** Hardcoded tile paths are replaced with relative internal templates (e.g. `"Terrain/hex_101.png"`). At render-time, these are intelligently intercepted and encoded by the `HexGridEngine` and UI Palette into absolute `local://` URLs pointing to the active style's directory (e.g. `assets/styles/Hollow Moon/tiles/`).
+- **Real-Time Swapping:** Users can change the active Map Style via a central UI dropdown. Because the extracted map JSON strictly saves the *template keys* rather than absolute file references, swapping the style instantly recalculates all asset sources across the grid, allowing seamless visual overhauls of massive maps with zero re-scanning.
+- **Extensibility:** New styles can be added simply by dropping a new folder containing the appropriately categorized tile subfolders into `assets/styles/`. 

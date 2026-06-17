@@ -16,11 +16,11 @@ This backlog is prioritized based on structural dependencies. Foundational infra
 - Create a background layer (placed at the absolute bottom) that displays the original image used during an import.
 - Support a variable number of background image layers if multiple image imports occur.
 
-**3. Brush Categories and Map Styles**
+**3. ~~Brush Categories and Map Styles~~ [COMPLETED]**
 *Why it's important:* Structuring the asset libraries (brushes, templates) into logical categories must happen before we build new drawing tools that rely on those assets.
-- Give hex brushes specific names and categories to make them easier to manage and resource.
-- Organize brushes and map utilities into "style categories" (themes).
-- Implement the ability for a map to swap between different style categories to dynamically change its aesthetic.
+- ~~Give hex brushes specific names and categories to make them easier to manage and resource.~~
+- ~~Organize brushes and map utilities into "style categories" (themes).~~
+- ~~Implement the ability for a map to swap between different style categories to dynamically change its aesthetic.~~
 
 **4. Refactor Remaining Python Utility Scripts**
 *Why it's important:* We need to finish paying off the technical debt in the backend before pushing the engine to extract new features (like complex rivers).
@@ -32,7 +32,7 @@ This backlog is prioritized based on structural dependencies. Foundational infra
 
 ## 🟡 Medium Priority (Feature Enhancements & QoL)
 
-**5. Unknown Objects UI Rework**
+**5. Unknown Objects UI Rework** *(Moved to High Priority)*
 *Why it's important:* Resolves immediate user friction regarding screen real estate.
 - Allow users to explicitly close the Unknowns panel even if items cannot currently be resolved.
 - Add a menu toggle or button to easily reopen the Unknowns panel later.
