@@ -37,8 +37,8 @@ const HexTile: React.FC<HexTileProps> = ({
       <Line
         points={points}
         fill={fillColor || (imageSrc ? undefined : (isHovered ? '#bb86fc' : (isBaseLayer ? '#1e1e1e' : 'transparent')))}
-        stroke={isHovered ? '#03dac6' : (isBaseLayer ? '#333333' : 'transparent')}
-        strokeWidth={isHovered ? 3 : (isBaseLayer ? 2 : 0)}
+        stroke={isHovered ? '#03dac6' : 'transparent'}
+        strokeWidth={isHovered ? 3 : 0}
         closed
       />
       {image && (

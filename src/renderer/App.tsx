@@ -72,10 +72,11 @@ const App: React.FC = () => {
   
   const [layers, setLayers] = useState<MapLayer[]>([
     { id: '1', name: 'Terrain', type: 'terrain', visible: true, opacity: 1, data: {} },
+    { id: '4', name: 'Coastline', type: 'coastline', visible: true, opacity: 1, data: {} },
     { id: '2', name: 'Cliffs', type: 'cliff', visible: true, opacity: 1, data: [] },
     { id: '3', name: 'Rivers', type: 'river', visible: true, opacity: 1, data: [] },
-    { id: '4', name: 'Coastline', type: 'coastline', visible: true, opacity: 1, data: {} },
     { id: '5', name: 'Cities', type: 'city', visible: true, opacity: 1, data: {} },
+    { id: '8', name: 'Hex Grid', type: 'grid', visible: true, opacity: 1, data: {} },
     { id: '6', name: 'Borders', type: 'border', visible: true, opacity: 1, data: {} },
     { id: '7', name: 'Labels', type: 'label', visible: true, opacity: 1, data: [] }
   ]);
@@ -104,7 +105,19 @@ const App: React.FC = () => {
     if (result.success && result.data) {
       try {
         const projectData = JSON.parse(result.data);
-        if (projectData.layers) setLayers(projectData.layers);
+        if (projectData.layers) {
+          let loadedLayers = projectData.layers as MapLayer[];
+          if (!loadedLayers.some(l => l.type === 'grid')) {
+            const gridLayer: MapLayer = { id: '8', name: 'Hex Grid', type: 'grid', visible: true, opacity: 1, data: {} };
+            const citiesIdx = loadedLayers.findIndex(l => l.type === 'city');
+            if (citiesIdx !== -1) {
+              loadedLayers.splice(citiesIdx, 0, gridLayer);
+            } else {
+              loadedLayers.push(gridLayer);
+            }
+          }
+          setLayers(loadedLayers);
+        }
         if (projectData.mapWidth) setMapWidth(projectData.mapWidth);
         if (projectData.mapHeight) setMapHeight(projectData.mapHeight);
         if (projectData.orientation) setOrientation(projectData.orientation);
@@ -142,10 +155,11 @@ const App: React.FC = () => {
     
     setLayers([
       { id: '1', name: 'Terrain', type: 'terrain', visible: true, opacity: 1, data: {} },
+      { id: '4', name: 'Coastline', type: 'coastline', visible: true, opacity: 1, data: {} },
       { id: '2', name: 'Cliffs', type: 'cliff', visible: true, opacity: 1, data: [] },
       { id: '3', name: 'Rivers', type: 'river', visible: true, opacity: 1, data: [] },
-      { id: '4', name: 'Coastline', type: 'coastline', visible: true, opacity: 1, data: {} },
       { id: '5', name: 'Cities', type: 'city', visible: true, opacity: 1, data: {} },
+      { id: '8', name: 'Hex Grid', type: 'grid', visible: true, opacity: 1, data: {} },
       { id: '6', name: 'Borders', type: 'border', visible: true, opacity: 1, data: {} },
       { id: '7', name: 'Labels', type: 'label', visible: true, opacity: 1, data: [] }
     ]);
@@ -177,10 +191,11 @@ const App: React.FC = () => {
     
     setLayers([
       { id: '1', name: 'Terrain', type: 'terrain', visible: true, opacity: 1, data: {} },
+      { id: '4', name: 'Coastline', type: 'coastline', visible: true, opacity: 1, data: {} },
       { id: '2', name: 'Cliffs', type: 'cliff', visible: true, opacity: 1, data: [] },
       { id: '3', name: 'Rivers', type: 'river', visible: true, opacity: 1, data: [] },
-      { id: '4', name: 'Coastline', type: 'coastline', visible: true, opacity: 1, data: {} },
       { id: '5', name: 'Cities', type: 'city', visible: true, opacity: 1, data: {} },
+      { id: '8', name: 'Hex Grid', type: 'grid', visible: true, opacity: 1, data: {} },
       { id: '6', name: 'Borders', type: 'border', visible: true, opacity: 1, data: {} },
       { id: '7', name: 'Labels', type: 'label', visible: true, opacity: 1, data: [] }
     ]);

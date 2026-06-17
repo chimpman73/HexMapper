@@ -11,7 +11,7 @@ export interface HexCube {
   s: number;
 }
 
-export type LayerType = 'terrain' | 'river' | 'cliff' | 'coastline' | 'city' | 'border' | 'label' | 'legend';
+export type LayerType = 'terrain' | 'river' | 'cliff' | 'coastline' | 'city' | 'border' | 'label' | 'legend' | 'grid';
 
 export interface BaseLayer {
   id: string;
@@ -55,7 +55,12 @@ export interface VectorLayer extends BaseLayer {
   data: VectorLine[];
 }
 
-export type MapLayer = TerrainLayer | CityLayer | CoastlineLayer | VectorLayer;
+export interface GridLayer extends BaseLayer {
+  type: 'grid';
+  data: Record<string, string>;
+}
+
+export type MapLayer = TerrainLayer | CityLayer | CoastlineLayer | VectorLayer | GridLayer;
 
 export const HEX_SIZE = 40; // distance from center to corner
 

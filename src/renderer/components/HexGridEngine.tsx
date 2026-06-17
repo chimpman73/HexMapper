@@ -351,6 +351,26 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
         {layers.map(layer => {
           if (!layer.visible) return null;
 
+          if (layer.type === 'grid') {
+            return (
+              <Group key={`group-${layer.id}`} opacity={layer.opacity} listening={false}>
+                {grid.map((hex) => {
+                  const key = `${hex.q},${hex.r},${hex.s}`;
+                  return (
+                    <Line
+                      key={`grid-${key}`}
+                      points={getHexCorners(hexToPixel(hex, orientation), orientation)}
+                      stroke="#333333"
+                      strokeWidth={2}
+                      closed
+                      listening={false}
+                    />
+                  );
+                })}
+              </Group>
+            );
+          }
+
           if (layer.type === 'terrain' || layer.type === 'city' || layer.type === 'coastline' || layer.type === 'border') {
             const hLayer = layer as TerrainLayer | CityLayer | CoastlineLayer | BorderLayer;
             const tiles = grid.map((hex) => {

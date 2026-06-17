@@ -1,7 +1,11 @@
 import sys
 import json
+import os
+import shutil
+import cv2
+from typing import Dict, Any
 
-def process_request(data):
+def process_request(data: Dict[str, Any]) -> Dict[str, Any]:
     action = data.get("action")
     command = data.get("command")
     
@@ -10,11 +14,8 @@ def process_request(data):
         return interpreter.interpret_map(data)
         
     if command == "save_brush":
-        import os
-        import shutil
-        
-        uid = data.get("id")
-        name = data.get("name")
+        uid = data.get("id", "")
+        name = data.get("name", "")
         
         src_path = os.path.join("saves", ".temp_unknowns", f"{uid}.png")
         if not name.endswith(".png"):
@@ -29,16 +30,15 @@ def process_request(data):
             return {"status": "error", "message": str(e)}
             
     if command == "ignore_brush":
-        import os
-        import cv2
-        import numpy as np
-        
-        uid = data.get("id")
+        uid = data.get("id", "")
         src_path = os.path.join("saves", ".temp_unknowns", f"{uid}.png")
         
         try:
             # We need to extract the ink and save it as an alpha-masked PNG in Ignored
             img = cv2.imread(src_path)
+            if img is None:
+                return {"status": "error", "message": f"Could not read image {src_path}"}
+                
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             ink_mask = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 15, 6)
             
@@ -56,7 +56,7 @@ def process_request(data):
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
-    response = {
+    response: Dict[str, Any] = {
         "status": "success",
         "message": "Python backend successfully received and processed the data.",
         "received_data": data

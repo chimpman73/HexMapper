@@ -11,14 +11,20 @@ HexMapper is built on a hybrid stack to leverage the strengths of modern web tec
 ## 2. Core Features & UI
 - **Interactive Hex Grid**: A fully interactive canvas that supports zooming, panning, and rendering hex tiles natively. It supports both Flat-top and Pointy-top hex orientations.
 - **Map Alignment Engine**: Users can import an image of a physical map and visually align a digital hex overlay to perfectly match the scale and offset of the scanned image.
-- **Layer System**: The app separates map data into semantic layers: Terrain, Rivers, Cliffs, Coastline, Cities/Structures, Borders, and Labels. Layers can be toggled on and off.
+- **Layer System**: The app separates map data into 8 semantic layers with a strict top-to-bottom visual hierarchy: Labels, Borders, Hex Grid, Cities/Structures, Rivers, Cliffs, Coastline, and Terrain. Each layer can be toggled independently to control visibility.
 - **Unknowns Resolution Panel**: When the engine detects a symbol it does not recognize, it prompts the user in the UI. The user can choose to add the symbol to the application's permanent asset library, map it to an existing known asset, or explicitly ignore it.
 - **Project Serialization**: Maps can be saved to and loaded from local `.json` files.
 - **Exporting**: The canvas can be exported directly to a high-resolution PNG file.
 
 ## 3. Optical Map Reconstruction Engine
-The crown jewel of HexMapper is its multi-pass computer vision pipeline (`backend/interpreter.py`), which deconstructs a flat image into fully editable digital vector and raster layers.
+The crown jewel of HexMapper is its multi-pass computer vision pipeline. The engine operates using a modular, object-oriented architecture with strict type-safety to enforce the Single Responsibility Principle:
+- **`template_manager.py`**: Loads, caches, and pre-processes template tiles, isolating alpha channels and computing inherent ink masks.
+- **`image_processor.py`**: Handles the heavyweight OpenCV operations, masking out regions, contour analysis for vectors, and image inpainting.
+- **`hex_grid.py`**: Encapsulates all mathematical conversions between axial hex coordinates and pixel space for various orientations.
+- **`hex_scanner.py`**: Performs the sliding-window template matching algorithm over the mapped hex grid to classify terrain, coastlines, and cities.
+- **`interpreter.py`**: A lightweight orchestrator that initializes the pipeline, connects the components, and specifically catches internal errors (like `cv2.error` or `FileNotFoundError`).
 
+These components work together to deconstruct a flat image into fully editable digital vector and raster layers.
 ### Pass 0: Border Extraction & Image Inpainting
 Borders are often drawn as thick red lines *over* the physical map, destroying the visual data beneath them.
 - **Extraction**: The engine runs an HSV color threshold to isolate all red pixels into a binary mask. It traces the physical boundaries of these pixels to generate closed geometric vector polygons that perfectly replicate the style and thickness of the drawn borders.
@@ -51,9 +57,10 @@ For the `Terrain.png` layer, the engine leverages the alpha transparency channel
 - **Ink Isolation**: It uses the alpha channel to accurately determine where ink has been painted, ensuring blank map tiles cannot accidentally match if a user painted something in that hex.
 - **Parchment Compositing**: Because the internal asset templates are drawn on a specific parchment-colored background (`[200, 240, 253]`), the engine mathematically composites the user's transparent terrain strokes over this exact background color before running `TM_SQDIFF` template matching. This completely eliminates massive background errors and restores 90%+ accuracy for sparse templates (like Forests and Mountains).
 
-### Solid Block Color Heuristics
-A common issue in digital map painting is representing terrain (like Glaciers) as solid blocks of color without internal line art. Template matching inherently fails to recognize solid blocks of color because the templates are line drawings. 
-To solve this, HexMapper employs a robust **Solid Block Heuristic**:
-1. It analyzes the alpha channel and the dark ink lines independently.
-2. If it detects a hex is heavily painted but lacks dark lines, it is flagged as a "Solid Paint Block".
-3. The engine computes the mean BGR color of the paint. If it matches a specific color profile (e.g., the exact light blue `[B: 65-115, G: 150-205, R: 120-205]` used for Glaciers), it forcibly maps the hex to the correct template (`hex_098.png`), bypassing shape-matching entirely.
+### Machine Learning Terrain Classification (k-NN Profile Engine)
+A common issue in digital map painting is representing terrain (like Glaciers or Forests) as solid blocks of color or custom brush strokes that lack internal line art. OpenCV Template matching inherently fails on these hexes because the templates are precise line drawings. 
+
+To solve this, HexMapper employs a **Machine Learning Terrain Profile Engine**:
+1. **Offline Training (`backend/train_profile.py`)**: Users can supply a manually corrected `.json` map alongside their `Terrain.png` layer. The trainer script parses the map using the specific scale factor (`bgScaleX/Y`) to perfectly isolate the pixels of every painted hex. It extracts the **mean BGR color** and the **Laplacian variance** (texture roughness) for every terrain type and saves it to an `assets/user_terrain_profile.json` knowledge base.
+2. **Runtime Classification**: During the scan, HexMapper extracts the color and variance of each unknown painted hex. It uses a **K-Nearest Neighbors (k-NN)** distance algorithm to compare the hex's features against the trained profile.
+3. **Template Bypass**: If the distance to a trained label is extremely small (highly confident), the engine forcibly maps the hex to that terrain type, bypassing OpenCV shape-matching entirely. This guarantees near-perfect accuracy for custom brush strokes and flat colors.
