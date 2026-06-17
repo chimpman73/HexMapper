@@ -10,8 +10,10 @@ HexMapper is built on a hybrid stack to leverage the strengths of modern web tec
 
 ## 2. Core Features & UI
 - **Interactive Hex Grid**: A fully interactive canvas that supports zooming, panning, and rendering hex tiles natively. It supports both Flat-top and Pointy-top hex orientations.
-- **Map Alignment Engine**: Users can import an image of a physical map and visually align a digital hex overlay to perfectly match the scale and offset of the scanned image.
-- **Layer System**: The app separates map data into 8 semantic layers with a strict top-to-bottom visual hierarchy: Labels, Borders, Hex Grid, Cities/Structures, Rivers, Cliffs, Coastline, and Terrain. Each layer can be toggled independently to control visibility.
+- **Map Alignment Engine**: Users can import an image of a physical map and visually align a digital hex overlay to perfectly match the scale and offset of the scanned image. Importing a directory of layers will spawn synchronized `BgImageLayer` items for each source file to allow easy cross-referencing.
+- **Layer System & Management**: The app separates map data into 8 semantic layers with a strict top-to-bottom visual hierarchy (Z-index): Labels, Borders, Hex Grid, Cities/Structures, Rivers, Cliffs, Coastline, and Terrain. 
+  - The dynamic **Layer Panel UI** allows users to visually reorder layers via Up/Down buttons, create new layers, delete unneeded layers, and toggle visibility. 
+  - Users can double-click any layer name in the panel to instantly rename it directly on the canvas.
 - **Unknowns Resolution Panel**: When the engine detects a symbol it does not recognize, it prompts the user in the UI. The user can choose to add the symbol to the application's permanent asset library, map it to an existing known asset, or explicitly ignore it.
 - **Project Serialization**: Maps can be saved to and loaded from local `.json` files.
 - **Exporting**: The canvas can be exported directly to a high-resolution PNG file.
@@ -51,6 +53,12 @@ In addition to scanning single composite maps, HexMapper supports a highly accur
 Because the layers are pre-separated, the engine bypasses the error-prone telea inpainting and K-Means clustering steps.
 - **Rivers & Borders**: Processed completely independently using direct grayscale thresholding to map global vectors.
 - **Coastlines**: Processed via alpha channel detection or global color thresholding.
+
+### Multi-File Sub-Layer Extraction
+The extraction engine dynamically processes an unlimited number of isolated files belonging to the same layer type. For example, a user can provide `Terrain_Forest.png` and `Terrain_Desert.png`. 
+- The engine optically extracts data from each file sequentially.
+- It seamlessly merges the result back into the frontend UI, preserving them as distinct layers with names mapped directly to the original file names (e.g. `Terrain_Forest`).
+- An intelligent `sourceFilename` anchor guarantees that even if a user manually renames a layer in the UI (e.g. to "Whispering Woods"), subsequent rescan operations will successfully locate and `.update()` that exact layer instead of improperly overriding data.
 
 ### Alpha-Aware Compositing & Ink Detection
 For the `Terrain.png` layer, the engine leverages the alpha transparency channel (via `cv2.IMREAD_UNCHANGED`):

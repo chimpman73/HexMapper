@@ -1,5 +1,6 @@
 import os
 import traceback
+import cv2
 from typing import Dict, Any
 
 from template_manager import TemplateManager
@@ -35,7 +36,8 @@ def interpret_map(args: Dict[str, Any]) -> Dict[str, Any]:
             map_data = image_processor.process_aligned_map(image_path, template_manager.templates["coastline"])
 
         # 3. Scan Grid
-        return hex_scanner.scan(map_data, map_width, map_height, orientation, use_ink_filter=(mode != "multi_layer"))
+        existing_layers = args.get("layers", [])
+        return hex_scanner.scan(map_data, map_width, map_height, orientation, existing_layers, use_ink_filter=(mode != "multi_layer"))
 
     except FileNotFoundError as e:
         return {"status": "error", "message": f"File Not Found: {str(e)}", "trace": traceback.format_exc()}

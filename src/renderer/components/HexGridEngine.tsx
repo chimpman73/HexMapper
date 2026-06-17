@@ -16,7 +16,6 @@ interface HexGridEngineProps {
   layers: MapLayer[];
   setLayers: React.Dispatch<React.SetStateAction<MapLayer[]>>;
   activeLayerId: string;
-  bgImagePath: string | null;
   bgScaleX: number;
   bgScaleY: number;
   bgOffsetX: number;
@@ -75,7 +74,7 @@ const generateCliffHashes = (points: number[], invert: boolean | undefined, colo
 
 const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({ 
   orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeColor, activeLineWidth, layers, setLayers, activeLayerId,
-  bgImagePath, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines = [], globalBorders = [], globalRivers = [], highlightedHexKey
+  bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines = [], globalBorders = [], globalRivers = [], highlightedHexKey
 }, ref) => {
   const stageRef = useRef<any>(null);
 
@@ -102,23 +101,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
   const [isRightClickPan, setIsRightClickPan] = useState(false);
   const [lastPanPos, setLastPanPos] = useState({ x: 0, y: 0 });
 
-  const [bgImageObj, setBgImageObj] = useState<HTMLImageElement | null>(null);
-
-  React.useEffect(() => {
-    if (bgImagePath) {
-      const img = new window.Image();
-      img.onload = () => {
-        console.log("Background image loaded successfully");
-        setBgImageObj(img);
-      };
-      img.onerror = (e) => {
-        console.error("Failed to load background image", e);
-      };
-      img.src = `local://file?path=${encodeURIComponent(bgImagePath)}`;
-    } else {
-      setBgImageObj(null);
-    }
-  }, [bgImagePath]);
+  const hasBgImage = layers.some(l => l.type === 'bg_image');
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => { if (e.key === 'Shift') setIsShiftPressed(true); };
@@ -338,18 +321,26 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
       onMouseLeave={handleMouseUp}
       onContextMenu={(e) => { e.evt.preventDefault(); }}
     >
-        {/* Background Image Layer */}
-        {bgImageObj && (
-          <Layer>
-            <Group x={bgOffsetX} y={bgOffsetY} scaleX={bgScaleX} scaleY={bgScaleY}>
-              <import_react_konva.Image image={bgImageObj} />
-            </Group>
-          </Layer>
-        )}
-
       <Layer>
         {layers.map(layer => {
           if (!layer.visible) return null;
+
+          if (layer.type === 'bg_image') {
+            return (
+              <BgImageRenderer 
+                key={`bg-${layer.id}`}
+                layer={layer}
+                bgScaleX={bgScaleX}
+                bgScaleY={bgScaleY}
+                bgOffsetX={bgOffsetX}
+                bgOffsetY={bgOffsetY}
+              />
+            );
+          }
+
+          if (layer.type === 'group') {
+            return null;
+          }
 
           if (layer.type === 'grid') {
             return (
@@ -385,7 +376,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
               let fillColor = undefined;
               if (isColorLayer && hLayer.data[key]) {
                 fillColor = layer.type === 'border' ? hLayer.data[key] + '33' : hLayer.data[key];
-              } else if ((layer.type === 'terrain' || layer.type === 'coastline') && bgImagePath && !hLayer.data[key]) {
+              } else if ((layer.type === 'terrain' || layer.type === 'coastline') && hasBgImage && !hLayer.data[key]) {
                 fillColor = 'transparent';
               }
 
@@ -597,5 +588,25 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
     </Stage>
   );
 });
+
+const BgImageRenderer = ({ layer, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY }: any) => {
+  const [imageObj, setImageObj] = useState<HTMLImageElement | null>(null);
+  
+  React.useEffect(() => {
+    if (layer.data?.imagePath) {
+      const img = new window.Image();
+      img.onload = () => setImageObj(img);
+      img.src = `local://file?path=${encodeURIComponent(layer.data.imagePath)}`;
+    }
+  }, [layer.data?.imagePath]);
+
+  if (!imageObj) return null;
+
+  return (
+    <Group x={bgOffsetX} y={bgOffsetY} scaleX={bgScaleX} scaleY={bgScaleY} opacity={layer.opacity}>
+      <import_react_konva.Image image={imageObj} />
+    </Group>
+  );
+};
 
 export default HexGridEngine;

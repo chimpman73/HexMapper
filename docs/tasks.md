@@ -54,16 +54,20 @@ This backlog is prioritized based on structural dependencies. Foundational infra
 *Why it's important:* Links semantic data between layers. This is complex and should only be tackled once the advanced layer management is absolutely stable.
 - Tie map labels to specific painted objects (e.g., locking a text label to a specific terrain feature or city object) rather than floating them independently.
 
+**10. PSD File Export**
+*Why it's important:* Gives users professional interoperability by letting them pull generated maps back into Photoshop with intact layer structures.
+- Implement an export feature to save the resulting digital map as a fully layered `.psd` file.
+
 ---
 
 ## 🟢 Low Priority (Polish & Stability)
 
-**10. Add Customization UI for the Hex Grid Layer**
+**11. Add Customization UI for the Hex Grid Layer**
 *Why it's important:* A simple visual polish task that isn't blocking any other development.
 - Expose the newly separated `Hex Grid` layer properties to the React frontend UI.
 - Add controls (e.g., in `TerrainPalette` or layer options) to allow users to dynamically change the grid line color and stroke thickness.
 
-**11. Implement Frontend Test Coverage**
+**12. Implement Frontend Test Coverage**
 *Why it's important:* Vital for long-term stability, but we should write these tests *after* we finish the massive Layer Management UI rework (Priority 1 & 2), otherwise the tests will need to be rewritten immediately.
 - Set up a JavaScript/TypeScript testing framework (like Jest or React Testing Library) for the React frontend.
 - Write unit tests to ensure UI state (such as layer ordering and visibility toggles) remains robust and prevents accidental regressions during future feature additions.

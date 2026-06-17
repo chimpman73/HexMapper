@@ -4,6 +4,12 @@ import os
 import math
 from typing import List, Dict, Any, Tuple, Optional
 
+class LayerData:
+    def __init__(self, name: str, img_bgr: np.ndarray, ink_mask: Optional[np.ndarray] = None):
+        self.name = name
+        self.img_bgr = img_bgr
+        self.ink_mask = ink_mask
+
 class MapData:
     """Data class to hold the preprocessed image layers and global vectors."""
     def __init__(self):
@@ -13,11 +19,10 @@ class MapData:
         self.global_coastlines: List[List[Dict[str, float]]] = []
         self.global_borders: List[List[Dict[str, float]]] = []
         self.global_rivers: List[List[Dict[str, float]]] = []
-        self.source_coastlines: Optional[np.ndarray] = None
-        self.source_terrain: Optional[np.ndarray] = None
-        self.terrain_ink_mask: Optional[np.ndarray] = None
-        self.source_cities: Optional[np.ndarray] = None
-        self.city_ink_mask: Optional[np.ndarray] = None
+        
+        self.terrain_layers: List[LayerData] = []
+        self.coastline_layers: List[LayerData] = []
+        self.city_layers: List[LayerData] = []
         self.source_unknowns: Optional[np.ndarray] = None
 
 class ImageProcessor:
@@ -134,17 +139,15 @@ class ImageProcessor:
             if len(path_points) > 2:
                 data.global_coastlines.append(path_points)
 
-        data.source_coastlines = img
-        data.source_terrain = img
+        data.coastline_layers.append(LayerData("Coastline", img, None))
+        data.terrain_layers.append(LayerData("Terrain", img, None))
         
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         _, ink_mask = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY_INV)
         kernel_ink = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
         ink_mask = cv2.morphologyEx(ink_mask, cv2.MORPH_OPEN, kernel_ink)
         
-        data.terrain_ink_mask = None
-        data.city_ink_mask = ink_mask
-        data.source_cities = img
+        data.city_layers.append(LayerData("Cities", img, ink_mask))
         data.source_unknowns = img
         
         return data
@@ -152,18 +155,6 @@ class ImageProcessor:
     def process_multi_layer(self, dir_path: str) -> MapData:
         data = MapData()
         
-        def load_layer(name: str) -> Optional[np.ndarray]:
-            path = os.path.join(dir_path, name)
-            if not os.path.exists(path):
-                return None
-            return cv2.imread(path, cv2.IMREAD_UNCHANGED)
-
-        img_borders = load_layer("Borders.png")
-        img_rivers = load_layer("Rivers.png")
-        img_coastlines = load_layer("Coastlines.png")
-        img_terrain = load_layer("Terrain.png")
-        img_cities = load_layer("Cities.png")
-
         def get_layer_mask(img: np.ndarray) -> Optional[np.ndarray]:
             if img is None: return None
             if len(img.shape) == 3 and img.shape[2] == 4:
@@ -190,100 +181,114 @@ class ImageProcessor:
                 return img[:, :, :3]
             return img
 
-        img_coastlines_bgr = composite_over_bg(img_coastlines)
-        img_terrain_bgr = composite_over_bg(img_terrain)
-
+        accumulated_water_mask = None
         width, height = 0, 0
-        for img in [img_borders, img_rivers, img_coastlines, img_terrain, img_cities]:
-            if img is not None:
+
+        for filename in os.listdir(dir_path):
+            if not filename.lower().endswith(".png"): continue
+            
+            path = os.path.join(dir_path, filename)
+            img = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+            if img is None: continue
+            
+            if width == 0:
                 height, width = img.shape[:2]
-                break
+                data.width = width
+                data.height = height
+                accumulated_water_mask = np.zeros((height, width), dtype=np.uint8)
+
+            lname = filename.lower()
+            layer_name = os.path.splitext(filename)[0]
+
+            if lname.startswith("border"):
+                mask = get_layer_mask(img)
+                if mask is not None:
+                    kernel_border = np.ones((3, 3), np.uint8)
+                    mask_clean = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_border)
+                    border_contours, _ = cv2.findContours(mask_clean, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+                    for cnt in border_contours:
+                        epsilon = 0.0005 * cv2.arcLength(cnt, True)
+                        approx = cv2.approxPolyDP(cnt, epsilon, True)
+                        path_points = []
+                        for p in approx:
+                            cx = p[0][0] * self.bg_scale_x + self.bg_offset_x
+                            cy = p[0][1] * self.bg_scale_y + self.bg_offset_y
+                            path_points.append({"x": cx, "y": cy})
+                        if len(path_points) > 2:
+                            data.global_borders.append(path_points)
+                            
+            elif lname.startswith("river"):
+                mask = get_layer_mask(img)
+                if mask is not None:
+                    kernel_tiny = np.ones((2, 2), np.uint8)
+                    mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel_tiny, iterations=1)
+                    skeleton_rivers = cv2.ximgproc.thinning(mask, thinningType=cv2.ximgproc.THINNING_ZHANGSUEN)
+                    river_contours, _ = cv2.findContours(skeleton_rivers, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                    for cnt in river_contours:
+                        perimeter = cv2.arcLength(cnt, True)
+                        if perimeter < 30: continue
+                        epsilon = 0.005 * perimeter
+                        approx = cv2.approxPolyDP(cnt, epsilon, False)
+                        path_points = []
+                        for pt in approx:
+                            cx = pt[0][0] * self.bg_scale_x + self.bg_offset_x
+                            cy = pt[0][1] * self.bg_scale_y + self.bg_offset_y
+                            path_points.append({"x": cx, "y": cy})
+                        if len(path_points) > 1:
+                            data.global_rivers.append(path_points)
+                            
+            elif lname.startswith("coastline"):
+                water_mask = get_layer_mask(img)
+                if water_mask is not None:
+                    accumulated_water_mask = cv2.bitwise_or(accumulated_water_mask, water_mask)
+                    kernel = np.ones((5, 5), np.uint8)
+                    water_mask_clean = cv2.morphologyEx(water_mask, cv2.MORPH_OPEN, kernel)
+                    water_mask_clean = cv2.morphologyEx(water_mask_clean, cv2.MORPH_CLOSE, kernel)
+                    
+                    contours, _ = cv2.findContours(water_mask_clean, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+                    for cnt in contours:
+                        perimeter = cv2.arcLength(cnt, True)
+                        epsilon = 0.0005 * perimeter
+                        approx = cv2.approxPolyDP(cnt, epsilon, True)
+                        path_points = []
+                        for p in approx:
+                            cx = p[0][0] * self.bg_scale_x + self.bg_offset_x
+                            cy = p[0][1] * self.bg_scale_y + self.bg_offset_y
+                            path_points.append({"x": cx, "y": cy})
+                        if len(path_points) > 2:
+                            data.global_coastlines.append(path_points)
                 
+                bgr = composite_over_bg(img)
+                data.coastline_layers.append(LayerData(layer_name, bgr, water_mask))
+                
+            elif lname.startswith("cit"):
+                c_mask = get_layer_mask(img)
+                ink_mask = None
+                if c_mask is not None:
+                    kernel_city = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+                    ink_mask = cv2.morphologyEx(c_mask, cv2.MORPH_OPEN, kernel_city)
+                
+                bgr = img[:, :, :3] if len(img.shape) == 3 else cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+                data.city_layers.append(LayerData(layer_name, img, ink_mask))
+                
+                if data.source_unknowns is None:
+                    data.source_unknowns = img
+                    
+            elif lname.startswith("terrain"):
+                bgr = composite_over_bg(img)
+                ink_mask = None
+                if len(img.shape) == 3 and img.shape[2] == 4:
+                    _, ink_mask = cv2.threshold(img[:, :, 3], 10, 255, cv2.THRESH_BINARY)
+                elif bgr is not None:
+                    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+                    _, ink_mask = cv2.threshold(gray, 220, 255, cv2.THRESH_BINARY_INV)
+                
+                data.terrain_layers.append(LayerData(layer_name, bgr, ink_mask))
+
         if width == 0:
             raise FileNotFoundError("No valid PNG layer files found in the selected directory")
-            
-        data.width = width
-        data.height = height
 
-        if img_borders is not None:
-            mask = get_layer_mask(img_borders)
-            if mask is not None:
-                kernel_border = np.ones((3, 3), np.uint8)
-                mask_clean = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_border)
-                border_contours, _ = cv2.findContours(mask_clean, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-                for cnt in border_contours:
-                    epsilon = 0.0005 * cv2.arcLength(cnt, True)
-                    approx = cv2.approxPolyDP(cnt, epsilon, True)
-                    path_points = []
-                    for p in approx:
-                        cx = p[0][0] * self.bg_scale_x + self.bg_offset_x
-                        cy = p[0][1] * self.bg_scale_y + self.bg_offset_y
-                        path_points.append({"x": cx, "y": cy})
-                    if len(path_points) > 2:
-                        data.global_borders.append(path_points)
+        if accumulated_water_mask is not None:
+            data.water_mask = accumulated_water_mask
 
-        if img_rivers is not None:
-            mask = get_layer_mask(img_rivers)
-            if mask is not None:
-                kernel_tiny = np.ones((2, 2), np.uint8)
-                mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel_tiny, iterations=1)
-                skeleton_rivers = cv2.ximgproc.thinning(mask, thinningType=cv2.ximgproc.THINNING_ZHANGSUEN)
-                river_contours, _ = cv2.findContours(skeleton_rivers, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                for cnt in river_contours:
-                    perimeter = cv2.arcLength(cnt, True)
-                    if perimeter < 30: continue
-                    epsilon = 0.005 * perimeter
-                    approx = cv2.approxPolyDP(cnt, epsilon, False)
-                    path_points = []
-                    for pt in approx:
-                        cx = pt[0][0] * self.bg_scale_x + self.bg_offset_x
-                        cy = pt[0][1] * self.bg_scale_y + self.bg_offset_y
-                        path_points.append({"x": cx, "y": cy})
-                    if len(path_points) > 1:
-                        data.global_rivers.append(path_points)
-
-        data.water_mask = np.zeros((height, width), dtype=np.uint8)
-        if img_coastlines is not None:
-            water_mask = get_layer_mask(img_coastlines)
-            if water_mask is not None:
-                kernel = np.ones((5, 5), np.uint8)
-                water_mask_clean = cv2.morphologyEx(water_mask, cv2.MORPH_OPEN, kernel)
-                water_mask_clean = cv2.morphologyEx(water_mask_clean, cv2.MORPH_CLOSE, kernel)
-                data.water_mask = water_mask
-                
-                contours, _ = cv2.findContours(water_mask_clean, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-                for cnt in contours:
-                    perimeter = cv2.arcLength(cnt, True)
-                    epsilon = 0.0005 * perimeter
-                    approx = cv2.approxPolyDP(cnt, epsilon, True)
-                    path_points = []
-                    for p in approx:
-                        cx = p[0][0] * self.bg_scale_x + self.bg_offset_x
-                        cy = p[0][1] * self.bg_scale_y + self.bg_offset_y
-                        path_points.append({"x": cx, "y": cy})
-                    if len(path_points) > 2:
-                        data.global_coastlines.append(path_points)
-
-        cities_mask_global = np.zeros((height, width), dtype=np.uint8)
-        if img_cities is not None:
-            c_mask = get_layer_mask(img_cities)
-            if c_mask is not None:
-                kernel_city = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-                cities_mask_global = cv2.morphologyEx(c_mask, cv2.MORPH_OPEN, kernel_city)
-
-        data.source_coastlines = img_coastlines_bgr
-        data.source_terrain = img_terrain_bgr
-        
-        data.terrain_ink_mask = None
-        if img_terrain is not None:
-            if len(img_terrain.shape) == 3 and img_terrain.shape[2] == 4:
-                _, data.terrain_ink_mask = cv2.threshold(img_terrain[:, :, 3], 10, 255, cv2.THRESH_BINARY)
-            elif img_terrain_bgr is not None:
-                gray = cv2.cvtColor(img_terrain_bgr, cv2.COLOR_BGR2GRAY)
-                _, data.terrain_ink_mask = cv2.threshold(gray, 220, 255, cv2.THRESH_BINARY_INV)
-                
-        data.city_ink_mask = cities_mask_global
-        data.source_cities = img_cities
-        data.source_unknowns = img_cities
-        
         return data

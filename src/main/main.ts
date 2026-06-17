@@ -129,6 +129,20 @@ ipcMain.handle('fs:readDir', async (event, dirPath: string) => {
   }
 });
 
+ipcMain.handle('fs:readMapDescription', async (event, targetPath: string) => {
+  try {
+    const stat = await fs.promises.stat(targetPath);
+    const dirPath = stat.isDirectory() ? targetPath : path.dirname(targetPath);
+    const descPath = path.join(dirPath, 'map_description.json');
+    if (!fs.existsSync(descPath)) return null;
+    const data = await fs.promises.readFile(descPath, 'utf-8');
+    return JSON.parse(data);
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+});
+
 ipcMain.handle('fs:getDefaultTiles', async (event, folder: string = 'Terrain') => {
   try {
     const dirPath = path.join(app.getAppPath(), 'assets', 'tiles', folder);

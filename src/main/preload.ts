@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('api', {
   openDirectory: () => ipcRenderer.invoke('dialog:openDirectory'),
   openImage: () => ipcRenderer.invoke('dialog:openImage'),
   readDir: (dirPath: string) => ipcRenderer.invoke('fs:readDir', dirPath),
+  readMapDescription: (targetPath: string) => ipcRenderer.invoke('fs:readMapDescription', targetPath),
   getDefaultTiles: (folder?: string) => ipcRenderer.invoke('fs:getDefaultTiles', folder),
   saveMap: (dataString: string) => ipcRenderer.invoke('map:save', dataString),
   loadMap: () => ipcRenderer.invoke('map:load'),

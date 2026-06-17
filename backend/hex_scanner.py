@@ -21,10 +21,10 @@ class HexScanner:
         self.bg_offset_x = bg_offset_x
         self.bg_offset_y = bg_offset_y
 
-    def scan(self, data: MapData, map_width: int, map_height: int, orientation: str, use_ink_filter: bool = True) -> Dict[str, Any]:
-        terrain_data: Dict[str, str] = {}
-        coastline_data: Dict[str, str] = {}
-        city_data: Dict[str, str] = {}
+    def scan(self, data: MapData, map_width: int, map_height: int, orientation: str, existing_layers: List[Dict[str, Any]] = None, use_ink_filter: bool = True) -> Dict[str, Any]:
+        if existing_layers is None:
+            existing_layers = []
+        extracted_layers = {}
         unknown_hexes: List[Dict[str, str]] = []
 
         hexes: List[Tuple[int, int]] = []
@@ -81,184 +81,249 @@ class HexScanner:
                 is_coastline = (water_pixels / total_pixels) > 0.05
                 
                 # --- COASTLINE ---
-                if data.source_coastlines is not None and is_coastline:
-                    region_bgr = data.source_coastlines[y_start:y_end, x_start:x_end]
-                    best_score = float('inf')
-                    best_coast = None
-                    for t in self.template_manager.templates["coastline"]:
-                        resized = cv2.resize(t["bgr"], (hex_w, hex_h))
-                        t_cx, t_cy = hex_w // 2, hex_h // 2
-                        t_crop = resized[max(0, t_cy - t_margin_y):min(hex_h, t_cy + t_margin_y), 
-                                         max(0, t_cx - t_margin_x):min(hex_w, t_cx + t_margin_x)]
+                for c_layer in data.coastline_layers:
+                    ext_key = f"coastline_{c_layer.name}"
+                    if ext_key not in extracted_layers:
+                        extracted_layers[ext_key] = {"name": c_layer.name, "type": "coastline", "data": {}}
                         
-                        if region_bgr.shape[0] <= t_crop.shape[0] and region_bgr.shape[1] <= t_crop.shape[1]:
-                            mask_3ch = cv2.merge([region_mask, region_mask, region_mask])
-                            score_map = cv2.matchTemplate(t_crop, region_bgr, cv2.TM_SQDIFF, mask=mask_3ch)
-                            score = np.min(score_map)
-                            if score < best_score:
-                                best_score = score
-                                best_coast = t["key"]
-                                
-                    if best_coast:
-                        coastline_data[key] = self.template_manager.get_asset_url(f"assets/tiles/{best_coast}")
-                    else:
-                        coastline_data[key] = self.template_manager.get_asset_url("assets/tiles/Coastline/hex_104.png")
+                    if c_layer.img_bgr is not None:
+                        c_is_coastline = is_coastline
+                        if c_layer.ink_mask is not None:
+                            c_water_region = c_layer.ink_mask[y_start:y_end, x_start:x_end]
+                            c_water_pixels = np.count_nonzero(c_water_region)
+                            c_is_coastline = (c_water_pixels / total_pixels) > 0.05
+                            
+                        if not c_is_coastline:
+                            continue
+                            
+                        region_bgr = c_layer.img_bgr[y_start:y_end, x_start:x_end]
+                        best_score = float('inf')
+                        best_coast = None
+                        for t in self.template_manager.templates["coastline"]:
+                            resized = cv2.resize(t["bgr"], (hex_w, hex_h))
+                            t_cx, t_cy = hex_w // 2, hex_h // 2
+                            t_crop = resized[max(0, t_cy - t_margin_y):min(hex_h, t_cy + t_margin_y), 
+                                             max(0, t_cx - t_margin_x):min(hex_w, t_cx + t_margin_x)]
+                            
+                            if region_bgr.shape[0] <= t_crop.shape[0] and region_bgr.shape[1] <= t_crop.shape[1]:
+                                use_mask = c_water_region if c_layer.ink_mask is not None else region_mask
+                                mask_3ch = cv2.merge([use_mask, use_mask, use_mask])
+                                score_map = cv2.matchTemplate(t_crop, region_bgr, cv2.TM_SQDIFF, mask=mask_3ch)
+                                score = np.min(score_map)
+                                if score < best_score:
+                                    best_score = score
+                                    best_coast = t["key"]
+                                    
+                        if best_coast:
+                            extracted_layers[ext_key]["data"][key] = self.template_manager.get_asset_url(f"assets/tiles/{best_coast}")
+                        else:
+                            extracted_layers[ext_key]["data"][key] = self.template_manager.get_asset_url("assets/tiles/Coastline/hex_104.png")
 
                 # --- TERRAIN ---
-                if data.source_terrain is not None:
-                    land_mask = cv2.bitwise_not(region_mask)
-                    
-                    has_drawn_ink = False
-                    is_custom_paint = False
-                    mean_color = None
-                    variance = 0.0
-                    ink_density = 0.0
-                    
-                    if data.terrain_ink_mask is not None:
-                        t_ink_region = data.terrain_ink_mask[y_start:y_end, x_start:x_end]
-                        painted_count = np.count_nonzero(t_ink_region)
-                        has_drawn_ink = painted_count > 20
+                for t_layer in data.terrain_layers:
+                    ext_key = f"terrain_{t_layer.name}"
+                    if ext_key not in extracted_layers:
+                        extracted_layers[ext_key] = {"name": t_layer.name, "type": "terrain", "data": {}}
                         
-                        total_pixels = (y_end - y_start) * (x_end - x_start)
-                        if total_pixels > 0 and painted_count > total_pixels * 0.3:
-                            is_custom_paint = True
-                            region_bgr = data.source_terrain[y_start:y_end, x_start:x_end]
-                            mean_color = cv2.mean(region_bgr, mask=t_ink_region)[:3]
-                            gray = cv2.cvtColor(region_bgr, cv2.COLOR_BGR2GRAY)
-                            variance = cv2.Laplacian(gray, cv2.CV_64F).var()
-                            ink_density = painted_count / total_pixels
-                    
-                    if np.count_nonzero(land_mask) > 10 or has_drawn_ink:
-                        region_bgr = data.source_terrain[y_start:y_end, x_start:x_end]
-                        best_score = float('inf')
-                        best_match_key = None
+                    if t_layer.img_bgr is not None:
+                        land_mask = cv2.bitwise_not(region_mask)
                         
-                        profile_path = os.path.join(self.base_dir, "assets", "user_terrain_profile.json")
-                        profile_match = None
+                        has_drawn_ink = False
+                        is_custom_paint = False
+                        mean_color = None
+                        variance = 0.0
+                        ink_density = 0.0
                         
-                        if is_custom_paint and os.path.exists(profile_path):
-                            try:
-                                with open(profile_path, "r") as f:
-                                    profile = json.load(f)
+                        if t_layer.ink_mask is not None:
+                            t_ink_region = t_layer.ink_mask[y_start:y_end, x_start:x_end]
+                            painted_count = np.count_nonzero(t_ink_region)
+                            has_drawn_ink = painted_count > 20
+                            
+                            if painted_count < 10:
+                                continue
                                 
-                                best_profile_dist = float('inf')
-                                for p in profile:
-                                    if mean_color is None: continue
-                                    db = (mean_color[0] - p["b"]) ** 2
-                                    dg = (mean_color[1] - p["g"]) ** 2
-                                    dr = (mean_color[2] - p["r"]) ** 2
-                                    color_dist = math.sqrt(db + dg + dr)
+                            if total_pixels > 0 and painted_count > total_pixels * 0.3:
+                                is_custom_paint = True
+                                region_bgr = t_layer.img_bgr[y_start:y_end, x_start:x_end]
+                                mean_color = cv2.mean(region_bgr, mask=t_ink_region)[:3]
+                                gray = cv2.cvtColor(region_bgr, cv2.COLOR_BGR2GRAY)
+                                variance = cv2.Laplacian(gray, cv2.CV_64F).var()
+                                ink_density = painted_count / total_pixels
+                        
+                        if np.count_nonzero(land_mask) > 10 or has_drawn_ink:
+                            region_bgr = t_layer.img_bgr[y_start:y_end, x_start:x_end]
+                            best_score = float('inf')
+                            best_match_key = None
+                            
+                            profile_path = os.path.join(self.base_dir, "assets", "user_terrain_profile.json")
+                            profile_match = None
+                            
+                            if is_custom_paint and os.path.exists(profile_path):
+                                try:
+                                    with open(profile_path, "r") as f:
+                                        profile = json.load(f)
                                     
-                                    var_dist = abs(variance - p["variance"]) / 1000.0
-                                    
-                                    total_dist = color_dist + var_dist
-                                    if total_dist < best_profile_dist:
-                                        best_profile_dist = total_dist
-                                        profile_match = p["label"]
+                                    best_profile_dist = float('inf')
+                                    for p in profile:
+                                        if mean_color is None: continue
+                                        db = (mean_color[0] - p["b"]) ** 2
+                                        dg = (mean_color[1] - p["g"]) ** 2
+                                        dr = (mean_color[2] - p["r"]) ** 2
+                                        color_dist = math.sqrt(db + dg + dr)
                                         
-                                if best_profile_dist < 15.0 and profile_match:
-                                    best_match_key = f"Terrain/{profile_match}"
-                            except Exception:
-                                pass
-                                
-                        if not best_match_key:
-                            for t in self.template_manager.templates["terrain"]:
-                                if use_ink_filter:
-                                    if not has_drawn_ink and t.get("ink_count", 0) > 200:
-                                        continue
-                                    if has_drawn_ink and t.get("ink_count", 0) < 50:
-                                        continue
-
-                                resized = cv2.resize(t["bgr"], (hex_w, hex_h))
-                                t_cx, t_cy = hex_w // 2, hex_h // 2
-                                t_crop = resized[max(0, t_cy - t_margin_y):min(hex_h, t_cy + t_margin_y), 
-                                                 max(0, t_cx - t_margin_x):min(hex_w, t_cx + t_margin_x)]
-                                
-                                if region_bgr.shape[0] <= t_crop.shape[0] and region_bgr.shape[1] <= t_crop.shape[1]:
-                                    mask_3ch = cv2.merge([land_mask, land_mask, land_mask])
-                                    score_map = cv2.matchTemplate(t_crop, region_bgr, cv2.TM_SQDIFF_NORMED, mask=mask_3ch)
-                                    score = np.min(score_map)
-                                    
-                                    if score < best_score:
-                                        best_score = score
-                                        best_match_key = t["key"]
+                                        var_dist = abs(variance - p["variance"]) / 1000.0
                                         
-                            if is_custom_paint and mean_color is not None and best_score > 0.05:
-                                best_dist = float('inf')
-                                b, g, r = mean_color
+                                        total_dist = color_dist + var_dist
+                                        if total_dist < best_profile_dist:
+                                            best_profile_dist = total_dist
+                                            profile_match = p["label"]
+                                            
+                                    if best_profile_dist < 15.0 and profile_match:
+                                        best_match_key = f"Terrain/{profile_match}"
+                                except Exception:
+                                    pass
+                                    
+                            if not best_match_key:
                                 for t in self.template_manager.templates["terrain"]:
-                                    if t.get("mean_color") is not None:
-                                        tb, tg, tr = t["mean_color"]
-                                        dist = math.sqrt((b - tb)**2 + (g - tg)**2 + (r - tr)**2)
-                                        if dist < best_dist:
-                                            best_dist = dist
-                                            best_match_key = t["key"]
+                                    if use_ink_filter:
+                                        if not has_drawn_ink and t.get("ink_count", 0) > 200:
+                                            continue
+                                        if has_drawn_ink and t.get("ink_count", 0) < 50:
+                                            continue
+    
+                                    resized = cv2.resize(t["bgr"], (hex_w, hex_h))
+                                    t_cx, t_cy = hex_w // 2, hex_h // 2
+                                    t_crop = resized[max(0, t_cy - t_margin_y):min(hex_h, t_cy + t_margin_y), 
+                                                     max(0, t_cx - t_margin_x):min(hex_w, t_cx + t_margin_x)]
                                     
-                        if best_match_key:
-                            terrain_data[key] = self.template_manager.get_asset_url(f"assets/tiles/{best_match_key}")
+                                    if region_bgr.shape[0] <= t_crop.shape[0] and region_bgr.shape[1] <= t_crop.shape[1]:
+                                        mask_3ch = cv2.merge([land_mask, land_mask, land_mask])
+                                        score_map = cv2.matchTemplate(t_crop, region_bgr, cv2.TM_SQDIFF_NORMED, mask=mask_3ch)
+                                        score = np.min(score_map)
+                                        
+                                        if score < best_score:
+                                            best_score = score
+                                            best_match_key = t["key"]
+                                            
+                                if is_custom_paint and mean_color is not None and best_score > 0.05:
+                                    best_dist = float('inf')
+                                    b, g, r = mean_color
+                                    for t in self.template_manager.templates["terrain"]:
+                                        if t.get("mean_color") is not None:
+                                            tb, tg, tr = t["mean_color"]
+                                            dist = math.sqrt((b - tb)**2 + (g - tg)**2 + (r - tr)**2)
+                                            if dist < best_dist:
+                                                best_dist = dist
+                                                best_match_key = t["key"]
+                                        
+                            if best_match_key:
+                                extracted_layers[ext_key]["data"][key] = self.template_manager.get_asset_url(f"assets/tiles/{best_match_key}")
 
                 # --- CITIES & UNKNOWNS ---
-                if data.source_cities is not None and data.city_ink_mask is not None:
-                    ink_region = data.city_ink_mask[y_start:y_end, x_start:x_end]
-                    
-                    is_coastal_hex_sym = False
-                    for path in data.global_coastlines:
-                        for pt in path:
-                            if math.hypot(pt["x"] - cx, pt["y"] - cy) < self.hex_grid.hex_size * 0.8:
-                                is_coastal_hex_sym = True
-                                break
-                        if is_coastal_hex_sym:
-                            break
-
-                    if np.count_nonzero(ink_region) > 20:
-                        best_score = float('inf')
-                        best_match = None
-                        match_type = None
+                for city_layer in data.city_layers:
+                    ext_key = f"city_{city_layer.name}"
+                    if ext_key not in extracted_layers:
+                        extracted_layers[ext_key] = {"name": city_layer.name, "type": "city", "data": {}}
                         
-                        for cat in ["city", "ignore"]:
-                            for t in self.template_manager.templates[cat]:
-                                resized = cv2.resize(t["mask"], (hex_w, hex_h))
-                                t_cx, t_cy = hex_w // 2, hex_h // 2
-                                t_crop = resized[max(0, t_cy - t_margin_y):min(hex_h, t_cy + t_margin_y), 
-                                                 max(0, t_cx - t_margin_x):min(hex_w, t_cx + t_margin_x)]
-                                                 
-                                if ink_region.shape[0] <= t_crop.shape[0] and ink_region.shape[1] <= t_crop.shape[1]:
-                                    score_map = cv2.matchTemplate(t_crop, ink_region, cv2.TM_SQDIFF_NORMED)
-                                    score = np.min(score_map)
-                                    if score < best_score:
-                                        best_score = score
-                                        best_match = t["key"]
-                                        match_type = cat
-                                    
-                        if best_score < 0.3 and best_match:
-                            if match_type == 'city':
-                                city_data[key] = self.template_manager.get_asset_url(f"assets/tiles/{best_match}")
-                        elif not is_coastal_hex_sym and data.source_unknowns is not None:
-                            os.makedirs(os.path.join(self.base_dir, "saves", ".temp_unknowns"), exist_ok=True)
-                            uid = str(uuid.uuid4())
-                            img_path = os.path.join(self.base_dir, "saves", ".temp_unknowns", f"{uid}.png")
-                            cv2.imwrite(img_path, data.source_unknowns[y_start:y_end, x_start:x_end])
-                            unknown_hexes.append({
-                                "id": uid,
-                                "key": key,
-                                "image": self.template_manager.get_asset_url(f"saves/.temp_unknowns/{uid}.png")
-                            })
+                    if city_layer.img_bgr is not None and city_layer.ink_mask is not None:
+                        ink_region = city_layer.ink_mask[y_start:y_end, x_start:x_end]
+                        
+                        is_coastal_hex_sym = False
+                        for path in data.global_coastlines:
+                            for pt in path:
+                                if math.hypot(pt["x"] - cx, pt["y"] - cy) < self.hex_grid.hex_size * 0.8:
+                                    is_coastal_hex_sym = True
+                                    break
+                            if is_coastal_hex_sym:
+                                break
+    
+                        if np.count_nonzero(ink_region) > 20:
+                            best_score = float('inf')
+                            best_match = None
+                            match_type = None
+                            
+                            for cat in ["city", "ignore"]:
+                                for t in self.template_manager.templates[cat]:
+                                    resized = cv2.resize(t["mask"], (hex_w, hex_h))
+                                    t_cx, t_cy = hex_w // 2, hex_h // 2
+                                    t_crop = resized[max(0, t_cy - t_margin_y):min(hex_h, t_cy + t_margin_y), 
+                                                     max(0, t_cx - t_margin_x):min(hex_w, t_cx + t_margin_x)]
+                                                     
+                                    if ink_region.shape[0] <= t_crop.shape[0] and ink_region.shape[1] <= t_crop.shape[1]:
+                                        score_map = cv2.matchTemplate(t_crop, ink_region, cv2.TM_SQDIFF_NORMED)
+                                        score = np.min(score_map)
+                                        if score < best_score:
+                                            best_score = score
+                                            best_match = t["key"]
+                                            match_type = cat
+                                        
+                            if best_score < 0.3 and best_match:
+                                if match_type == 'city':
+                                    extracted_layers[ext_key]["data"][key] = self.template_manager.get_asset_url(f"assets/tiles/{best_match}")
+                            elif not is_coastal_hex_sym and data.source_unknowns is not None:
+                                os.makedirs(os.path.join(self.base_dir, "saves", ".temp_unknowns"), exist_ok=True)
+                                uid = str(uuid.uuid4())
+                                img_path = os.path.join(self.base_dir, "saves", ".temp_unknowns", f"{uid}.png")
+                                cv2.imwrite(img_path, data.source_unknowns[y_start:y_end, x_start:x_end])
+                                unknown_hexes.append({
+                                    "id": uid,
+                                    "key": key,
+                                    "image": self.template_manager.get_asset_url(f"saves/.temp_unknowns/{uid}.png")
+                                })
 
-        layers = [
-            { "id": '1', "name": 'Terrain', "type": 'terrain', "visible": True, "opacity": 1, "data": terrain_data },
-            { "id": '4', "name": 'Coastline', "type": 'coastline', "visible": True, "opacity": 1, "data": coastline_data },
-            { "id": '2', "name": 'Cliffs', "type": 'cliff', "visible": True, "opacity": 1, "data": [] },
-            { "id": '3', "name": 'Rivers', "type": 'river', "visible": True, "opacity": 1, "data": [] },
-            { "id": '5', "name": 'Cities', "type": 'city', "visible": True, "opacity": 1, "data": city_data },
-            { "id": '8', "name": 'Hex Grid', "type": 'grid', "visible": True, "opacity": 1, "data": {} },
-            { "id": '6', "name": 'Borders', "type": 'border', "visible": True, "opacity": 1, "data": {} },
-            { "id": '7', "name": 'Labels', "type": 'label', "visible": True, "opacity": 1, "data": [] }
-        ]
+        if not existing_layers:
+            existing_layers = [
+                { "id": '1', "name": 'Terrain', "type": 'terrain', "visible": True, "opacity": 1, "data": {} },
+                { "id": '4', "name": 'Coastline', "type": 'coastline', "visible": True, "opacity": 1, "data": {} },
+                { "id": '2', "name": 'Cliffs', "type": 'cliff', "visible": True, "opacity": 1, "data": [] },
+                { "id": '3', "name": 'Rivers', "type": 'river', "visible": True, "opacity": 1, "data": [] },
+                { "id": '5', "name": 'Cities', "type": 'city', "visible": True, "opacity": 1, "data": {} },
+                { "id": '8', "name": 'Hex Grid', "type": 'grid', "visible": True, "opacity": 1, "data": {} },
+                { "id": '6', "name": 'Borders', "type": 'border', "visible": True, "opacity": 1, "data": {} },
+                { "id": '7', "name": 'Labels', "type": 'label', "visible": True, "opacity": 1, "data": [] }
+            ]
+
+        # Merge extracted layers back into existing_layers
+        for ext_key, ext_info in extracted_layers.items():
+            matched = False
+            for layer in existing_layers:
+                # Prioritize matching by sourceFilename, fallback to matching by display name
+                is_match = (layer.get("sourceFilename") == ext_info["name"] and layer.get("type") == ext_info["type"])
+                if not is_match:
+                    is_match = (layer.get("name") == ext_info["name"] and layer.get("type") == ext_info["type"])
+                    
+                if is_match:
+                    if isinstance(layer.get("data"), dict):
+                        layer["data"].update(ext_info["data"])
+                    matched = True
+                    break
+                    
+            if not matched:
+                insert_idx = -1
+                for i, layer in enumerate(existing_layers):
+                    if layer.get("type") == ext_info["type"]:
+                        insert_idx = i
+                        break
+                        
+                new_layer = {
+                    "id": f"layer_{str(uuid.uuid4())[:8]}",
+                    "name": ext_info["name"],
+                    "type": ext_info["type"],
+                    "visible": True,
+                    "opacity": 1,
+                    "sourceFilename": ext_info["name"],
+                    "data": ext_info["data"]
+                }
+                
+                if insert_idx != -1:
+                    existing_layers.insert(insert_idx, new_layer)
+                else:
+                    existing_layers.append(new_layer)
 
         return {
             "status": "success",
             "data": {
-                "layers": layers,
+                "layers": existing_layers,
                 "globalCoastlines": data.global_coastlines,
                 "globalBorders": data.global_borders,
                 "globalRivers": data.global_rivers,

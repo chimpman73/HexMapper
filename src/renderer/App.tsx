@@ -13,6 +13,7 @@ declare global {
       openDirectory: () => Promise<string | null>;
       openImage: () => Promise<string | null>;
       readDir: (dirPath: string) => Promise<string[]>;
+      readMapDescription: (targetPath: string) => Promise<any | null>;
       saveMap: (dataString: string) => Promise<{ success: boolean; filePath?: string; canceled?: boolean; error?: string }>;
       loadMap: () => Promise<{ success: boolean; data?: string; filePath?: string; canceled?: boolean; error?: string }>;
       exportImage: (dataUrl: string) => Promise<{ success: boolean; filePath?: string; canceled?: boolean; error?: string }>;
@@ -37,7 +38,6 @@ const App: React.FC = () => {
   const [unknowns, setUnknowns] = useState<any[]>([]);
   const [highlightedHexKey, setHighlightedHexKey] = useState<string | null>(null);
 
-  const [bgImagePath, setBgImagePath] = useState<string | null>(null);
   const [bgScaleX, setBgScaleX] = useState<number>(1);
   const [bgScaleY, setBgScaleY] = useState<number>(1);
   const [bgOffsetX, setBgOffsetX] = useState<number>(0);
@@ -45,26 +45,6 @@ const App: React.FC = () => {
   const [importType, setImportType] = useState<'image' | 'directory' | null>(null);
   const [importDirPath, setImportDirPath] = useState<string | null>(null);
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
-  
-  useEffect(() => {
-    if (bgImagePath) {
-      const img = new window.Image();
-      img.onload = () => {
-        const imgW = img.width * bgScaleX;
-        const imgH = img.height * bgScaleY;
-        
-        const hexW = orientation === 'flat' ? 60 : 69.28;
-        const hexH = orientation === 'flat' ? 69.28 : 60;
-        
-        const reqW = (imgW + Math.max(0, bgOffsetX)) / hexW;
-        const reqH = (imgH + Math.max(0, bgOffsetY)) / hexH;
-        
-        setMapWidth(Math.max(10, Math.ceil(reqW) + 2));
-        setMapHeight(Math.max(10, Math.ceil(reqH) + 2));
-      };
-      img.src = `local://file?path=${encodeURIComponent(bgImagePath)}`;
-    }
-  }, [bgImagePath, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, orientation]);
   
   const [activeBrush, setActiveBrush] = useState<string | null>(null);
   const [activeColor, setActiveColor] = useState<string | null>('#3b82f6');
@@ -83,7 +63,53 @@ const App: React.FC = () => {
   const [activeLayerId, setActiveLayerId] = useState<string>('1');
   const [isScanning, setIsScanning] = useState<boolean>(false);
 
+  // Determine the primary background image to use for auto-sizing the map
+  const firstBgImagePath = layers.find(l => l.type === 'bg_image')?.data.imagePath;
+
+  useEffect(() => {
+    if (firstBgImagePath) {
+      const img = new window.Image();
+      img.onload = () => {
+        const imgW = img.width * bgScaleX;
+        const imgH = img.height * bgScaleY;
+        
+        const hexW = orientation === 'flat' ? 60 : 69.28;
+        const hexH = orientation === 'flat' ? 69.28 : 60;
+        
+        const reqW = (imgW + Math.max(0, bgOffsetX)) / hexW;
+        const reqH = (imgH + Math.max(0, bgOffsetY)) / hexH;
+        
+        setMapWidth(Math.max(10, Math.ceil(reqW) + 2));
+        setMapHeight(Math.max(10, Math.ceil(reqH) + 2));
+      };
+      img.src = `local://file?path=${encodeURIComponent(firstBgImagePath)}`;
+    }
+  }, [firstBgImagePath, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, orientation]);
+  
   const engineRef = useRef<HexGridEngineRef>(null);
+
+  const moveLayer = (id: string, direction: 'up' | 'down') => {
+    setLayers(prev => {
+      const idx = prev.findIndex(l => l.id === id);
+      if (idx === -1) return prev;
+      
+      // Index 0 is the bottom, Index length-1 is the top.
+      if (direction === 'up' && idx < prev.length - 1) {
+        const next = [...prev];
+        const temp = next[idx];
+        next[idx] = next[idx + 1];
+        next[idx + 1] = temp;
+        return next;
+      } else if (direction === 'down' && idx > 0) {
+        const next = [...prev];
+        const temp = next[idx];
+        next[idx] = next[idx - 1];
+        next[idx - 1] = temp;
+        return next;
+      }
+      return prev;
+    });
+  };
 
   const handleSaveProject = async () => {
     const projectData = {
@@ -145,24 +171,46 @@ const App: React.FC = () => {
     setShowImportModal(false);
     const imagePath = await window.api.openImage();
     if (!imagePath) return;
-    setBgImagePath(imagePath);
     setImportDirPath(null);
     setImportType('image');
-    setBgScaleX(1);
-    setBgScaleY(1);
-    setBgOffsetX(0);
-    setBgOffsetY(0);
     
-    setLayers([
-      { id: '1', name: 'Terrain', type: 'terrain', visible: true, opacity: 1, data: {} },
-      { id: '4', name: 'Coastline', type: 'coastline', visible: true, opacity: 1, data: {} },
-      { id: '2', name: 'Cliffs', type: 'cliff', visible: true, opacity: 1, data: [] },
-      { id: '3', name: 'Rivers', type: 'river', visible: true, opacity: 1, data: [] },
-      { id: '5', name: 'Cities', type: 'city', visible: true, opacity: 1, data: {} },
-      { id: '8', name: 'Hex Grid', type: 'grid', visible: true, opacity: 1, data: {} },
-      { id: '6', name: 'Borders', type: 'border', visible: true, opacity: 1, data: {} },
-      { id: '7', name: 'Labels', type: 'label', visible: true, opacity: 1, data: [] }
-    ]);
+    const desc = await window.api.readMapDescription(imagePath);
+    if (desc) {
+      setBgScaleX(desc['Scale x'] !== undefined ? desc['Scale x'] : 1);
+      setBgScaleY(desc['Scale y'] !== undefined ? desc['Scale y'] : 1);
+      setBgOffsetX(desc['Offset X'] !== undefined ? desc['Offset X'] : 0);
+      setBgOffsetY(desc['Offset Y'] !== undefined ? desc['Offset Y'] : 0);
+    } else {
+      setBgScaleX(1);
+      setBgScaleY(1);
+      setBgOffsetX(0);
+      setBgOffsetY(0);
+    }
+    
+    const filename = imagePath.split(/[/\\]/).pop() || 'Background';
+    const basename = filename.split('.').slice(0, -1).join('.') || filename;
+    const groupId = `group_${Date.now()}`;
+    const groupLayer = {
+      id: groupId,
+      name: 'Reference Images',
+      type: 'group' as const,
+      visible: true,
+      opacity: 1,
+      data: {}
+    };
+
+    const newBgLayer = {
+      id: `bg_${Date.now()}`,
+      name: basename,
+      type: 'bg_image' as const,
+      visible: true,
+      opacity: 1,
+      parentId: groupId,
+      sourceFilename: basename,
+      data: { imagePath }
+    };
+    
+    setLayers(prev => [newBgLayer, groupLayer, ...prev]);
   };
 
   const handleImportDirectorySelect = async () => {
@@ -173,36 +221,50 @@ const App: React.FC = () => {
     setImportDirPath(dirPath);
     setImportType('directory');
     
-    const files = await window.api.readDir(dirPath);
-    const previewFile = files.find(f => f.toLowerCase().endsWith('terrain.png')) || 
-                        files.find(f => f.toLowerCase().endsWith('borders.png')) ||
-                        files[0];
-                        
-    if (previewFile) {
-      setBgImagePath(previewFile);
+    const desc = await window.api.readMapDescription(dirPath);
+    if (desc) {
+      setBgScaleX(desc['Scale x'] !== undefined ? desc['Scale x'] : 1);
+      setBgScaleY(desc['Scale y'] !== undefined ? desc['Scale y'] : 1);
+      setBgOffsetX(desc['Offset X'] !== undefined ? desc['Offset X'] : 0);
+      setBgOffsetY(desc['Offset Y'] !== undefined ? desc['Offset Y'] : 0);
     } else {
-      setBgImagePath(null);
+      setBgScaleX(1);
+      setBgScaleY(1);
+      setBgOffsetX(0);
+      setBgOffsetY(0);
     }
     
-    setBgScaleX(1);
-    setBgScaleY(1);
-    setBgOffsetX(0);
-    setBgOffsetY(0);
+    const files = await window.api.readDir(dirPath);
+    const groupId = `group_${Date.now()}`;
+    const groupLayer = {
+      id: groupId,
+      name: 'Reference Images',
+      type: 'group' as const,
+      visible: true,
+      opacity: 1,
+      data: {}
+    };
+
+    const newBgLayers = files.map((file, i) => {
+      const filename = file.split(/[/\\]/).pop() || `Layer ${i}`;
+      const basename = filename.split('.').slice(0, -1).join('.') || filename;
+      return {
+        id: `bg_${Date.now()}_${i}`,
+        name: basename,
+        type: 'bg_image' as const,
+        visible: true,
+        opacity: 1,
+        parentId: groupId,
+        sourceFilename: basename,
+        data: { imagePath: file }
+      };
+    });
     
-    setLayers([
-      { id: '1', name: 'Terrain', type: 'terrain', visible: true, opacity: 1, data: {} },
-      { id: '4', name: 'Coastline', type: 'coastline', visible: true, opacity: 1, data: {} },
-      { id: '2', name: 'Cliffs', type: 'cliff', visible: true, opacity: 1, data: [] },
-      { id: '3', name: 'Rivers', type: 'river', visible: true, opacity: 1, data: [] },
-      { id: '5', name: 'Cities', type: 'city', visible: true, opacity: 1, data: {} },
-      { id: '8', name: 'Hex Grid', type: 'grid', visible: true, opacity: 1, data: {} },
-      { id: '6', name: 'Borders', type: 'border', visible: true, opacity: 1, data: {} },
-      { id: '7', name: 'Labels', type: 'label', visible: true, opacity: 1, data: [] }
-    ]);
+    setLayers(prev => [...newBgLayers, groupLayer, ...prev]);
   };
 
   const handleScanAlignedMap = async () => {
-    if (importType === 'image' && !bgImagePath) return;
+    if (importType === 'image' && !firstBgImagePath) return;
     if (importType === 'directory' && !importDirPath) return;
     
     setIsScanning(true);
@@ -210,14 +272,15 @@ const App: React.FC = () => {
       const result = await window.api.runPythonScript({ 
         action: 'interpret', 
         mode: importType === 'directory' ? 'multi_layer' : 'composite',
-        imagePath: importType === 'directory' ? importDirPath : bgImagePath,
+        imagePath: importType === 'directory' ? importDirPath : firstBgImagePath,
         bgScaleX,
         bgScaleY,
         bgOffsetX,
         bgOffsetY,
         mapWidth,
         mapHeight,
-        orientation
+        orientation,
+        layers: layers
       });
       console.log('Scanner result:', result);
       if (result.status === 'success' && result.data && result.data.layers) {
@@ -234,7 +297,6 @@ const App: React.FC = () => {
         if (result.data.unknowns) {
           setUnknowns(result.data.unknowns);
         }
-        setBgImagePath(null);
         setImportDirPath(null);
         setImportType(null);
         alert(importType === 'directory' ? 'Directory scanned successfully!' : 'Image scanned successfully!');
@@ -250,7 +312,17 @@ const App: React.FC = () => {
   };
 
   const handleToggleVisibility = (id: string) => {
-    setLayers(prev => prev.map(l => l.id === id ? { ...l, visible: !l.visible } : l));
+    setLayers(prev => {
+      const targetLayer = prev.find(l => l.id === id);
+      if (!targetLayer) return prev;
+      const newVisible = !targetLayer.visible;
+      
+      return prev.map(l => {
+        if (l.id === id) return { ...l, visible: newVisible };
+        if (l.parentId === id) return { ...l, visible: newVisible };
+        return l;
+      });
+    });
   };
 
   const handleResolveUnknown = async (unknownId: string, action: 'ignore' | 'map' | 'save', payload?: any) => {
@@ -297,6 +369,33 @@ const App: React.FC = () => {
     }
 
     setUnknowns(prev => prev.filter(u => u.id !== unknownId));
+  };
+
+  const addLayer = (type: string) => {
+    setLayers(prev => {
+      const newLayer = {
+        id: `layer_${Date.now()}`,
+        name: `New ${type.charAt(0).toUpperCase() + type.slice(1)}`,
+        type: type as any,
+        visible: true,
+        opacity: 1,
+        data: type === 'cliff' || type === 'river' || type === 'label' ? [] : {}
+      };
+      return [...prev, newLayer];
+    });
+  };
+
+  const deleteLayer = (id: string) => {
+    if (layers.length <= 1) return; // Prevent deleting last layer
+    setLayers(prev => prev.filter(l => l.id !== id));
+    if (activeLayerId === id) {
+      const nextLayer = layers.find(l => l.id !== id);
+      if (nextLayer) setActiveLayerId(nextLayer.id);
+    }
+  };
+
+  const renameLayer = (id: string, newName: string) => {
+    setLayers(prev => prev.map(l => l.id === id ? { ...l, name: newName } : l));
   };
 
   const activeLayer = layers.find(l => l.id === activeLayerId) || layers[0];
@@ -381,7 +480,6 @@ const App: React.FC = () => {
             layers={layers}
             setLayers={setLayers}
             activeLayerId={activeLayerId}
-            bgImagePath={bgImagePath}
             bgScaleX={bgScaleX}
             bgScaleY={bgScaleY}
             bgOffsetX={bgOffsetX}
@@ -398,6 +496,10 @@ const App: React.FC = () => {
             activeLayerId={activeLayerId}
             onSelectLayer={setActiveLayerId}
             onToggleVisibility={handleToggleVisibility}
+            onMoveLayer={moveLayer}
+            onAddLayer={addLayer}
+            onDeleteLayer={deleteLayer}
+            onRenameLayer={renameLayer}
           />
           {unknowns.length > 0 && (
             <UnknownsPanel 
@@ -407,7 +509,7 @@ const App: React.FC = () => {
             />
           )}
         </div>
-        {bgImagePath && (
+        {importType && (
           <div className={styles.sidebar} style={{marginTop: '10px', background: '#1e1e1e', border: '1px solid #333'}}>
             <h3 style={{ color: 'white', marginTop: '0', marginBottom: '15px' }}>
               {importType === 'directory' ? 'Multi-Layer Alignment' : 'Map Alignment'}
@@ -434,7 +536,7 @@ const App: React.FC = () => {
                 <button className={`${styles.projectButton} ${styles.export}`} onClick={handleScanAlignedMap} disabled={isScanning} style={{flex: 1}}>
                   {isScanning ? 'Scanning...' : 'Scan Aligned'}
                 </button>
-                <button className={styles.projectButton} onClick={() => { setBgImagePath(null); setImportDirPath(null); setImportType(null); }} style={{background: '#ef4444'}}>Close</button>
+                <button className={styles.projectButton} onClick={() => { setImportDirPath(null); setImportType(null); }} style={{background: '#ef4444'}}>Close</button>
               </div>
             </div>
           </div>

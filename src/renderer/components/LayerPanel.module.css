@@ -50,16 +50,28 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  overflow: hidden;
+  flex: 1;
 }
 
 .layerTypeIcon {
   font-size: 16px;
   color: var(--accent-color);
+  flex-shrink: 0;
 }
 
 .layerName {
   font-size: 14px;
   color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.layerActions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
 }
 
 .iconBtn {
