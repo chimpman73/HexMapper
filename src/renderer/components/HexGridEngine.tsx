@@ -24,6 +24,8 @@ interface HexGridEngineProps {
   globalBorders?: any[];
   globalRivers?: any[];
   highlightedHexKey?: string | null;
+  currentStyle?: string;
+  assetsBasePath?: string;
 }
 
 export interface HexGridEngineRef {
@@ -74,7 +76,7 @@ const generateCliffHashes = (points: number[], invert: boolean | undefined, colo
 
 const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({ 
   orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeColor, activeLineWidth, layers, setLayers, activeLayerId,
-  bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines = [], globalBorders = [], globalRivers = [], highlightedHexKey
+  bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines = [], globalBorders = [], globalRivers = [], highlightedHexKey, currentStyle, assetsBasePath
 }, ref) => {
   const stageRef = useRef<any>(null);
 
@@ -398,7 +400,12 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
               
               const isColorLayer = layer.type === 'border';
               const isImageLayer = layer.type === 'terrain' || layer.type === 'city' || layer.type === 'coastline';
-              const imageSrc = isImageLayer ? hLayer.data[key] : undefined;
+              
+              let imageSrc = isImageLayer ? hLayer.data[key] : undefined;
+              
+              if (imageSrc && !imageSrc.startsWith('local://') && assetsBasePath && currentStyle) {
+                imageSrc = `local://file?path=${encodeURIComponent(`${assetsBasePath}/styles/${currentStyle}/tiles/${imageSrc}`)}`;
+              }
               
               let fillColor = undefined;
               if (isColorLayer && hLayer.data[key]) {
@@ -441,26 +448,29 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
               
               // Apply clipping mask ONLY to the coastline image tiles, NOT the procedural edges
               let renderedTiles = <>{tiles}</>;
-              if (layer.type === 'coastline' && globalCoastlines && globalCoastlines.length > 0) {
-                renderedTiles = (
-                  <Group 
-                    clipFunc={(ctx) => {
-                      ctx.beginPath();
-                      globalCoastlines.forEach((pathPoints: any[]) => {
-                        if (pathPoints.length > 0) {
-                          ctx.moveTo(pathPoints[0].x, pathPoints[0].y);
-                          for (let i = 1; i < pathPoints.length; i++) {
-                            ctx.lineTo(pathPoints[i].x, pathPoints[i].y);
+              if (layer.type === 'coastline') {
+                const layerVectors = layer.vectors || globalCoastlines;
+                if (layerVectors && layerVectors.length > 0) {
+                  renderedTiles = (
+                    <Group 
+                      clipFunc={(ctx) => {
+                        ctx.beginPath();
+                        layerVectors.forEach((pathPoints: any[]) => {
+                          if (pathPoints.length > 0) {
+                            ctx.moveTo(pathPoints[0].x, pathPoints[0].y);
+                            for (let i = 1; i < pathPoints.length; i++) {
+                              ctx.lineTo(pathPoints[i].x, pathPoints[i].y);
+                            }
+                            ctx.closePath();
                           }
-                          ctx.closePath();
-                        }
-                      });
-                      ctx.clip('evenodd');
-                    }}
-                  >
-                    {tiles}
-                  </Group>
-                );
+                        });
+                        ctx.clip('evenodd');
+                      }}
+                    >
+                      {tiles}
+                    </Group>
+                  );
+                }
               }
               if (layer.type === 'border' && globalBorders && globalBorders.length > 0) {
                 return (

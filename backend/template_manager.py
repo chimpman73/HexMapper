@@ -5,8 +5,9 @@ import urllib.parse
 from typing import Dict, List, Any, Optional, Tuple
 
 class TemplateManager:
-    def __init__(self, base_dir: str):
+    def __init__(self, base_dir: str, style: str = "Hollow Moon"):
         self.base_dir = base_dir
+        self.style = style
         self.templates: Dict[str, List[Dict[str, Any]]] = {
             "terrain": [],
             "coastline": [],
@@ -30,7 +31,7 @@ class TemplateManager:
 
     def _load_dir(self, dir_name: str, category: str, use_alpha: bool = False) -> None:
         """Load a specific directory of template images into memory."""
-        d_path = os.path.join(self.base_dir, "assets", "tiles", dir_name)
+        d_path = os.path.join(self.base_dir, "assets", "styles", self.style, "tiles", dir_name)
         if not os.path.exists(d_path):
             return
 

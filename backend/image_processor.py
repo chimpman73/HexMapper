@@ -5,10 +5,11 @@ import math
 from typing import List, Dict, Any, Tuple, Optional
 
 class LayerData:
-    def __init__(self, name: str, img_bgr: np.ndarray, ink_mask: Optional[np.ndarray] = None):
+    def __init__(self, name: str, img_bgr: np.ndarray, ink_mask: Optional[np.ndarray] = None, vectors: Optional[List] = None):
         self.name = name
         self.img_bgr = img_bgr
         self.ink_mask = ink_mask
+        self.vectors = vectors or []
 
 class MapData:
     """Data class to hold the preprocessed image layers and global vectors."""
@@ -239,6 +240,7 @@ class ImageProcessor:
                             
             elif lname.startswith("coastline"):
                 water_mask = get_layer_mask(img)
+                layer_coastlines = []
                 if water_mask is not None:
                     accumulated_water_mask = cv2.bitwise_or(accumulated_water_mask, water_mask)
                     kernel = np.ones((5, 5), np.uint8)
@@ -256,10 +258,11 @@ class ImageProcessor:
                             cy = p[0][1] * self.bg_scale_y + self.bg_offset_y
                             path_points.append({"x": cx, "y": cy})
                         if len(path_points) > 2:
-                            data.global_coastlines.append(path_points)
+                            layer_coastlines.append(path_points)
+                    data.global_coastlines.extend(layer_coastlines)
                 
                 bgr = composite_over_bg(img)
-                data.coastline_layers.append(LayerData(layer_name, bgr, water_mask))
+                data.coastline_layers.append(LayerData(layer_name, bgr, water_mask, layer_coastlines))
                 
             elif lname.startswith("cit"):
                 c_mask = get_layer_mask(img)

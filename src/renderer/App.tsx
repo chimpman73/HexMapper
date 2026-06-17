@@ -17,6 +17,8 @@ declare global {
       saveMap: (dataString: string) => Promise<{ success: boolean; filePath?: string; canceled?: boolean; error?: string }>;
       loadMap: () => Promise<{ success: boolean; data?: string; filePath?: string; canceled?: boolean; error?: string }>;
       exportImage: (dataUrl: string) => Promise<{ success: boolean; filePath?: string; canceled?: boolean; error?: string }>;
+      getStyles: () => Promise<string[]>;
+      getAssetsBasePath: () => Promise<string>;
     };
     electron: {
       ipcRenderer: {
@@ -62,6 +64,17 @@ const App: React.FC = () => {
   ]);
   const [activeLayerId, setActiveLayerId] = useState<string>('1');
   const [isScanning, setIsScanning] = useState<boolean>(false);
+
+  const [stylesList, setStylesList] = useState<string[]>(['Hollow Moon']);
+  const [currentStyle, setCurrentStyle] = useState<string>('Hollow Moon');
+  const [assetsBasePath, setAssetsBasePath] = useState<string>('');
+
+  useEffect(() => {
+    if (window.api && window.api.getStyles) {
+      window.api.getStyles().then(setStylesList);
+      window.api.getAssetsBasePath().then(setAssetsBasePath);
+    }
+  }, []);
 
   // Determine the primary background image to use for auto-sizing the map
   const firstBgImagePath = layers.find(l => l.type === 'bg_image')?.data.imagePath;
@@ -176,6 +189,7 @@ const App: React.FC = () => {
     
     const desc = await window.api.readMapDescription(imagePath);
     if (desc) {
+      if (desc['Default Style']) setCurrentStyle(desc['Default Style']);
       setBgScaleX(desc['Scale x'] !== undefined ? desc['Scale x'] : 1);
       setBgScaleY(desc['Scale y'] !== undefined ? desc['Scale y'] : 1);
       setBgOffsetX(desc['Offset X'] !== undefined ? desc['Offset X'] : 0);
@@ -223,6 +237,7 @@ const App: React.FC = () => {
     
     const desc = await window.api.readMapDescription(dirPath);
     if (desc) {
+      if (desc['Default Style']) setCurrentStyle(desc['Default Style']);
       setBgScaleX(desc['Scale x'] !== undefined ? desc['Scale x'] : 1);
       setBgScaleY(desc['Scale y'] !== undefined ? desc['Scale y'] : 1);
       setBgOffsetX(desc['Offset X'] !== undefined ? desc['Offset X'] : 0);
@@ -447,6 +462,16 @@ const App: React.FC = () => {
             </select>
           </label>
           <label className={styles.controlLabel}>
+            Style:
+            <select 
+              className={styles.select} 
+              value={currentStyle} 
+              onChange={(e) => setCurrentStyle(e.target.value)}
+            >
+              {stylesList.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </label>
+          <label className={styles.controlLabel}>
             <input 
               type="checkbox" 
               checked={showCoordinates} 
@@ -466,6 +491,7 @@ const App: React.FC = () => {
           setActiveColor={setActiveColor}
           activeLineWidth={activeLineWidth}
           setActiveLineWidth={setActiveLineWidth}
+          currentStyle={currentStyle}
         />
         <div className={styles.canvasContainer}>
           <HexGridEngine 
@@ -488,6 +514,8 @@ const App: React.FC = () => {
             globalBorders={globalBorders}
             globalRivers={globalRivers}
             highlightedHexKey={highlightedHexKey}
+            currentStyle={currentStyle}
+            assetsBasePath={assetsBasePath}
           />
         </div>
         <div className={styles.rightPanel}>

@@ -11,22 +11,14 @@ interface TerrainPaletteProps {
   setActiveColor: (c: string | null) => void;
   activeLineWidth: number;
   setActiveLineWidth: (w: number) => void;
+  currentStyle?: string;
 }
 
 const TerrainPalette: React.FC<TerrainPaletteProps> = ({ 
-  activeBrush, setActiveBrush, activeLayer, activeColor, setActiveColor, activeLineWidth, setActiveLineWidth
+  activeBrush, setActiveBrush, activeLayer, activeColor, setActiveColor, activeLineWidth, setActiveLineWidth, currentStyle
 }) => {
   const [brushes, setBrushes] = useState<string[]>([]);
 
-  const loadFolder = async () => {
-    if (!window.api?.openDirectory) return;
-    const dirPath = await window.api.openDirectory();
-    if (dirPath) {
-      const files = await window.api.readDir(dirPath);
-      const urls = files.map((f: string) => `local://file?path=${encodeURIComponent(f)}`);
-      setBrushes(urls);
-    }
-  };
 
   useEffect(() => {
     const loadDefault = async () => {
@@ -35,7 +27,7 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = ({
         if (activeLayer.type === 'city') folder = 'Cities';
         if (activeLayer.type === 'coastline') folder = 'Coastline';
         
-        const files = await (window as any).api.getDefaultTiles(folder);
+        const files = await (window as any).api.getDefaultTiles(currentStyle || 'Hollow Moon', folder);
         const urls = files.map((f: string) => `local://file?path=${encodeURIComponent(f)}`);
         setBrushes(urls);
       }
@@ -43,7 +35,7 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = ({
     if (activeLayer.type === 'terrain' || activeLayer.type === 'city' || activeLayer.type === 'coastline') {
       loadDefault();
     }
-  }, [activeLayer.type]);
+  }, [activeLayer.type, currentStyle]);
 
   if (activeLayer.type !== 'terrain' && activeLayer.type !== 'city' && activeLayer.type !== 'coastline') {
     return (
@@ -99,9 +91,6 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = ({
 
   return (
     <div className={styles.paletteContainer}>
-      <button className={styles.loadButton} onClick={loadFolder}>
-        Load Tileset Folder
-      </button>
       <div className={styles.brushGrid}>
         <div 
           className={`${styles.brushItem} ${activeBrush === null ? styles.active : ''}`}

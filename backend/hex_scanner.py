@@ -56,6 +56,15 @@ class HexScanner:
                     hex_w = int((math.sqrt(3) * self.hex_grid.hex_size) / self.bg_scale_x)
                     hex_h = int((2 * self.hex_grid.hex_size) / self.bg_scale_y)
                 
+                # Generate exact hex polygon for accurate masks
+                R_x = self.hex_grid.hex_size / self.bg_scale_x
+                R_y = self.hex_grid.hex_size / self.bg_scale_y
+                hex_poly = []
+                for i in range(6):
+                    angle_deg = 60 * i + (0 if orientation == 'flat' else 30)
+                    angle_rad = math.pi / 180 * angle_deg
+                    hex_poly.append({'x': img_x + R_x * math.cos(angle_rad), 'y': img_y + R_y * math.sin(angle_rad)})
+                
                 margin_x = max(2, int(hex_w * 0.35))
                 margin_y = max(2, int(hex_h * 0.35))
                 
@@ -84,14 +93,19 @@ class HexScanner:
                 for c_layer in data.coastline_layers:
                     ext_key = f"coastline_{c_layer.name}"
                     if ext_key not in extracted_layers:
-                        extracted_layers[ext_key] = {"name": c_layer.name, "type": "coastline", "data": {}}
+                        extracted_layers[ext_key] = {"name": c_layer.name, "type": "coastline", "data": {}, "vectors": c_layer.vectors}
                         
                     if c_layer.img_bgr is not None:
                         c_is_coastline = is_coastline
                         if c_layer.ink_mask is not None:
                             c_water_region = c_layer.ink_mask[y_start:y_end, x_start:x_end]
+                            hex_poly_shifted = np.array([[p['x'] - x_start, p['y'] - y_start] for p in hex_poly], np.int32)
+                            hex_mask = np.zeros((y_end - y_start, x_end - x_start), dtype=np.uint8)
+                            cv2.fillPoly(hex_mask, [hex_poly_shifted], 255)
+                            c_water_region = cv2.bitwise_and(c_water_region, hex_mask)
                             c_water_pixels = np.count_nonzero(c_water_region)
-                            c_is_coastline = (c_water_pixels / total_pixels) > 0.05
+                            hex_area = np.count_nonzero(hex_mask)
+                            c_is_coastline = (c_water_pixels / hex_area) > 0.05 if hex_area > 0 else False
                             
                         if not c_is_coastline:
                             continue
@@ -115,9 +129,9 @@ class HexScanner:
                                     best_coast = t["key"]
                                     
                         if best_coast:
-                            extracted_layers[ext_key]["data"][key] = self.template_manager.get_asset_url(f"assets/tiles/{best_coast}")
+                            extracted_layers[ext_key]["data"][key] = best_coast
                         else:
-                            extracted_layers[ext_key]["data"][key] = self.template_manager.get_asset_url("assets/tiles/Coastline/hex_104.png")
+                            extracted_layers[ext_key]["data"][key] = "Coastline/hex_104.png"
 
                 # --- TERRAIN ---
                 for t_layer in data.terrain_layers:
@@ -136,6 +150,10 @@ class HexScanner:
                         
                         if t_layer.ink_mask is not None:
                             t_ink_region = t_layer.ink_mask[y_start:y_end, x_start:x_end]
+                            hex_poly_shifted = np.array([[p['x'] - x_start, p['y'] - y_start] for p in hex_poly], np.int32)
+                            hex_mask = np.zeros((y_end - y_start, x_end - x_start), dtype=np.uint8)
+                            cv2.fillPoly(hex_mask, [hex_poly_shifted], 255)
+                            t_ink_region = cv2.bitwise_and(t_ink_region, hex_mask)
                             painted_count = np.count_nonzero(t_ink_region)
                             has_drawn_ink = painted_count > 20
                             
@@ -217,7 +235,7 @@ class HexScanner:
                                                 best_match_key = t["key"]
                                         
                             if best_match_key:
-                                extracted_layers[ext_key]["data"][key] = self.template_manager.get_asset_url(f"assets/tiles/{best_match_key}")
+                                extracted_layers[ext_key]["data"][key] = best_match_key
 
                 # --- CITIES & UNKNOWNS ---
                 for city_layer in data.city_layers:
@@ -259,7 +277,7 @@ class HexScanner:
                                         
                             if best_score < 0.3 and best_match:
                                 if match_type == 'city':
-                                    extracted_layers[ext_key]["data"][key] = self.template_manager.get_asset_url(f"assets/tiles/{best_match}")
+                                    extracted_layers[ext_key]["data"][key] = best_match
                             elif not is_coastal_hex_sym and data.source_unknowns is not None:
                                 os.makedirs(os.path.join(self.base_dir, "saves", ".temp_unknowns"), exist_ok=True)
                                 uid = str(uuid.uuid4())
@@ -295,6 +313,8 @@ class HexScanner:
                 if is_match:
                     if isinstance(layer.get("data"), dict):
                         layer["data"].update(ext_info["data"])
+                    if "vectors" in ext_info:
+                        layer["vectors"] = ext_info["vectors"]
                     matched = True
                     break
                     
@@ -312,7 +332,8 @@ class HexScanner:
                     "visible": True,
                     "opacity": 1,
                     "sourceFilename": ext_info["name"],
-                    "data": ext_info["data"]
+                    "data": ext_info["data"],
+                    "vectors": ext_info.get("vectors", [])
                 }
                 
                 if insert_idx != -1:

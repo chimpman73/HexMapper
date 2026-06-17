@@ -22,9 +22,10 @@ def interpret_map(args: Dict[str, Any]) -> Dict[str, Any]:
         map_height = int(args.get("mapHeight", 30))
         orientation = args.get("orientation", "flat")
         image_path = args.get("imagePath", "")
+        style = args.get("style", "Hollow Moon")
 
         # 1. Initialize Objects
-        template_manager = TemplateManager(BASE_DIR)
+        template_manager = TemplateManager(BASE_DIR, style)
         hex_grid = HexGrid()
         image_processor = ImageProcessor(bg_scale_x, bg_scale_y, bg_offset_x, bg_offset_y)
         hex_scanner = HexScanner(BASE_DIR, template_manager, hex_grid, bg_scale_x, bg_scale_y, bg_offset_x, bg_offset_y)

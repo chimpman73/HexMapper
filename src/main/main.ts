@@ -143,9 +143,25 @@ ipcMain.handle('fs:readMapDescription', async (event, targetPath: string) => {
   }
 });
 
-ipcMain.handle('fs:getDefaultTiles', async (event, folder: string = 'Terrain') => {
+ipcMain.handle('fs:getAssetsBasePath', () => {
+  return path.join(app.getAppPath(), 'assets').replace(/\\/g, '/');
+});
+
+ipcMain.handle('fs:getStyles', async () => {
   try {
-    const dirPath = path.join(app.getAppPath(), 'assets', 'tiles', folder);
+    const stylesDir = path.join(app.getAppPath(), 'assets', 'styles');
+    if (!fs.existsSync(stylesDir)) return ['Hollow Moon'];
+    const entries = await fs.promises.readdir(stylesDir, { withFileTypes: true });
+    return entries.filter(e => e.isDirectory()).map(e => e.name);
+  } catch (err) {
+    console.error('Error reading styles:', err);
+    return ['Hollow Moon'];
+  }
+});
+
+ipcMain.handle('fs:getDefaultTiles', async (event, style: string = 'Hollow Moon', folder: string = 'Terrain') => {
+  try {
+    const dirPath = path.join(app.getAppPath(), 'assets', 'styles', style, 'tiles', folder);
     if (!fs.existsSync(dirPath)) return [];
     const files = await fs.promises.readdir(dirPath);
     const images = files.filter(f => f.toLowerCase().endsWith('.png') || f.toLowerCase().endsWith('.jpg'));
