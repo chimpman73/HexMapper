@@ -104,7 +104,34 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
   const hasBgImage = layers.some(l => l.type === 'bg_image');
 
   React.useEffect(() => {
-    const down = (e: KeyboardEvent) => { if (e.key === 'Shift') setIsShiftPressed(true); };
+    const down = (e: KeyboardEvent) => { 
+      if (e.key === 'Shift') setIsShiftPressed(true); 
+      
+      if (e.key === 'PageUp' || e.key === 'PageDown') {
+        const stage = stageRef.current;
+        if (!stage) return;
+        
+        e.preventDefault();
+
+        const scaleBy = 1.2;
+        const oldScale = stage.scaleX();
+        
+        const pointer = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+        const mousePointTo = {
+          x: (pointer.x - stage.x()) / oldScale,
+          y: (pointer.y - stage.y()) / oldScale,
+        };
+        
+        const newScale = e.key === 'PageDown' ? oldScale * scaleBy : oldScale / scaleBy;
+        const clampedScale = Math.max(0.1, Math.min(newScale, 5));
+        
+        setScale(clampedScale);
+        setPosition({
+          x: pointer.x - mousePointTo.x * clampedScale,
+          y: pointer.y - mousePointTo.y * clampedScale,
+        });
+      }
+    };
     const up = (e: KeyboardEvent) => { if (e.key === 'Shift') setIsShiftPressed(false); };
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
