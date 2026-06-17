@@ -242,12 +242,14 @@ def scan_aligned_map(args):
     return scan_hex_grid(
         templates, map_width, map_height, orientation, bg_scale_x, bg_scale_y, bg_offset_x, bg_offset_y,
         width, height, water_mask, global_coastlines, global_borders, global_rivers,
-        source_coastlines, source_terrain, terrain_ink_mask, source_cities, city_ink_mask, source_unknowns
+        source_coastlines, source_terrain, terrain_ink_mask, source_cities, city_ink_mask, source_unknowns,
+        use_ink_filter=True
     )
 
 def scan_hex_grid(templates, map_width, map_height, orientation, bg_scale_x, bg_scale_y, bg_offset_x, bg_offset_y,
                   width, height, water_mask, global_coastlines, global_borders, global_rivers,
-                  source_coastlines, source_terrain, terrain_ink_mask, source_cities, city_ink_mask, source_unknowns):
+                  source_coastlines, source_terrain, terrain_ink_mask, source_cities, city_ink_mask, source_unknowns,
+                  use_ink_filter=True):
     import uuid
     import math
     terrain_data = {}
@@ -344,6 +346,8 @@ def scan_hex_grid(templates, map_width, map_height, orientation, bg_scale_x, bg_
                 has_drawn_ink = False
                 is_custom_paint = False
                 mean_color = None
+                variance = 0
+                ink_density = 0
                 
                 if terrain_ink_mask is not None:
                     t_ink_region = terrain_ink_mask[y_start:y_end, x_start:x_end]
@@ -356,44 +360,81 @@ def scan_hex_grid(templates, map_width, map_height, orientation, bg_scale_x, bg_
                         is_custom_paint = True
                         region_bgr = source_terrain[y_start:y_end, x_start:x_end]
                         mean_color = cv2.mean(region_bgr, mask=t_ink_region)[:3]
+                        gray = cv2.cvtColor(region_bgr, cv2.COLOR_BGR2GRAY)
+                        variance = cv2.Laplacian(gray, cv2.CV_64F).var()
+                        ink_density = painted_count / total_pixels
                 
                 if np.count_nonzero(land_mask) > 10 or has_drawn_ink:
                     region_bgr = source_terrain[y_start:y_end, x_start:x_end]
                     best_score = float('inf')
                     best_match_key = None
                     
-                    for t in templates["terrain"]:
-                        if not has_drawn_ink and t.get("ink_count", 0) > 200:
-                            continue
-                        if has_drawn_ink and t.get("ink_count", 0) < 50:
-                            continue
-
-                        resized = cv2.resize(t["bgr"], (hex_w, hex_h))
-                        t_cx, t_cy = hex_w // 2, hex_h // 2
-                        t_crop = resized[max(0, t_cy - t_margin_y):min(hex_h, t_cy + t_margin_y), 
-                                         max(0, t_cx - t_margin_x):min(hex_w, t_cx + t_margin_x)]
-                        
-                        if region_bgr.shape[0] <= t_crop.shape[0] and region_bgr.shape[1] <= t_crop.shape[1]:
-                            mask_3ch = cv2.merge([land_mask, land_mask, land_mask])
-                            # Use NORMED to get an absolute confidence score
-                            score_map = cv2.matchTemplate(t_crop, region_bgr, cv2.TM_SQDIFF_NORMED, mask=mask_3ch)
-                            score = np.min(score_map)
+                    profile_path = os.path.join(BASE_DIR, "assets", "user_terrain_profile.json")
+                    profile_match = None
+                    
+                    if is_custom_paint and os.path.exists(profile_path):
+                        try:
+                            with open(profile_path, "r") as f:
+                                profile = json.load(f)
                             
-                            if score < best_score:
-                                best_score = score
-                                best_match_key = t["key"]
+                            # Calculate k-NN distance (k=1 for simplicity, we find the absolute closest trained hex)
+                            best_profile_dist = float('inf')
+                            for p in profile:
+                                # Feature weighting: color differences dominate, but texture provides a nudge
+                                db = (mean_color[0] - p["b"]) ** 2
+                                dg = (mean_color[1] - p["g"]) ** 2
+                                dr = (mean_color[2] - p["r"]) ** 2
+                                color_dist = math.sqrt(db + dg + dr)
                                 
-                    # FALLBACK: If the user painted this hex, and template matching failed to find a high-confidence match
-                    if is_custom_paint and mean_color is not None and best_score > 0.05:
-                        best_dist = float('inf')
-                        b, g, r = mean_color
+                                # Variance ranges massively (100 to 30000+). Scale it.
+                                var_dist = abs(variance - p["variance"]) / 1000.0
+                                
+                                total_dist = color_dist + var_dist
+                                if total_dist < best_profile_dist:
+                                    best_profile_dist = total_dist
+                                    profile_match = p["label"]
+                                    
+                            # If we have a very confident profile match (distance < 15), skip template matching!
+                            if best_profile_dist < 15.0 and profile_match:
+                                best_match_key = f"Terrain/{profile_match}"
+                        except Exception as e:
+                            pass
+                            
+                    # Only do OpenCV Template Matching if the AI Profile didn't confidently classify it
+                    if not best_match_key:
                         for t in templates["terrain"]:
-                            if t.get("mean_color") is not None:
-                                tb, tg, tr = t["mean_color"]
-                                dist = math.sqrt((b - tb)**2 + (g - tg)**2 + (r - tr)**2)
-                                if dist < best_dist:
-                                    best_dist = dist
+                            if use_ink_filter:
+                                if not has_drawn_ink and t.get("ink_count", 0) > 200:
+                                    continue
+                                if has_drawn_ink and t.get("ink_count", 0) < 50:
+                                    continue
+
+                            resized = cv2.resize(t["bgr"], (hex_w, hex_h))
+                            t_cx, t_cy = hex_w // 2, hex_h // 2
+                            t_crop = resized[max(0, t_cy - t_margin_y):min(hex_h, t_cy + t_margin_y), 
+                                             max(0, t_cx - t_margin_x):min(hex_w, t_cx + t_margin_x)]
+                            
+                            if region_bgr.shape[0] <= t_crop.shape[0] and region_bgr.shape[1] <= t_crop.shape[1]:
+                                mask_3ch = cv2.merge([land_mask, land_mask, land_mask])
+                                # Use NORMED to get an absolute confidence score
+                                score_map = cv2.matchTemplate(t_crop, region_bgr, cv2.TM_SQDIFF_NORMED, mask=mask_3ch)
+                                score = np.min(score_map)
+                                
+                                if score < best_score:
+                                    best_score = score
                                     best_match_key = t["key"]
+                                    
+                        # FALLBACK: If the user painted this hex, and template matching failed to find a high-confidence match
+                        if is_custom_paint and mean_color is not None and best_score > 0.05:
+                            best_dist = float('inf')
+                            b, g, r = mean_color
+                            for t in templates["terrain"]:
+                                if t.get("mean_color") is not None:
+                                    tb, tg, tr = t["mean_color"]
+                                    dist = math.sqrt((b - tb)**2 + (g - tg)**2 + (r - tr)**2)
+                                    if dist < best_dist:
+                                        best_dist = dist
+                                        best_match_key = t["key"]
                                 
                     if best_match_key:
                         terrain_data[key] = get_asset_url(f"assets/tiles/{best_match_key}")
@@ -619,7 +660,8 @@ def scan_multi_layer(args):
     return scan_hex_grid(
         templates, map_width, map_height, orientation, bg_scale_x, bg_scale_y, bg_offset_x, bg_offset_y,
         width, height, water_mask, global_coastlines, global_borders, global_rivers,
-        source_coastlines, source_terrain, terrain_ink_mask, source_cities, city_ink_mask, source_unknowns
+        source_coastlines, source_terrain, terrain_ink_mask, source_cities, city_ink_mask, source_unknowns,
+        use_ink_filter=False
     )
 
 def interpret_map(args):
