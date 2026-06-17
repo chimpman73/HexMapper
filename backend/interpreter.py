@@ -243,7 +243,7 @@ def scan_aligned_map(args):
         templates, map_width, map_height, orientation, bg_scale_x, bg_scale_y, bg_offset_x, bg_offset_y,
         width, height, water_mask, global_coastlines, global_borders, global_rivers,
         source_coastlines, source_terrain, terrain_ink_mask, source_cities, city_ink_mask, source_unknowns,
-        use_ink_filter=True
+        use_ink_filter=False
     )
 
 def scan_hex_grid(templates, map_width, map_height, orientation, bg_scale_x, bg_scale_y, bg_offset_x, bg_offset_y,
