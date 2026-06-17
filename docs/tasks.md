@@ -4,17 +4,17 @@ This backlog is prioritized based on structural dependencies. Foundational infra
 
 ## 🔴 High Priority (Core Infrastructure & Architecture)
 
-**1. Advanced Layer Management UI**
+**1. ~~Advanced Layer Management UI~~ [COMPLETED]**
 *Why it's important:* This is the foundational prerequisite for almost everything else. Currently, layers are hardcoded. To support dynamic background images or flexible mapping, we must first build the engine to handle adding, removing, grouping, and z-index sorting of arbitrary layers.
-- Create a new UI to manage layers dynamically.
-- Support adding and removing specific types of layers.
-- Support moving layers up and down the rendering ladder (z-index sorting).
-- Implement layer groups, allowing users to move or hide entire groups of layers at once.
+- ~~Create a new UI to manage layers dynamically.~~
+- ~~Support adding and removing specific types of layers.~~
+- ~~Support moving layers up and down the rendering ladder (z-index sorting).~~
+- ~~Implement layer groups, allowing users to move or hide entire groups of layers at once.~~
 
-**2. Source Image Background Layers**
+**2. ~~Source Image Background Layers~~ [COMPLETED]**
 *Why it's important:* Once dynamic layers exist, we can migrate the static background image logic into proper layers at the bottom of the stack.
-- Create a background layer (placed at the absolute bottom) that displays the original image used during an import.
-- Support a variable number of background image layers if multiple image imports occur.
+- ~~Create a background layer (placed at the absolute bottom) that displays the original image used during an import.~~
+- ~~Support a variable number of background image layers if multiple image imports occur.~~
 
 **3. ~~Brush Categories and Map Styles~~ [COMPLETED]**
 *Why it's important:* Structuring the asset libraries (brushes, templates) into logical categories must happen before we build new drawing tools that rely on those assets.
