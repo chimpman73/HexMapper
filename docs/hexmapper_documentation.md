@@ -4,7 +4,10 @@ HexMapper is an advanced, AI-assisted cartography desktop application designed t
 
 ## 1. System Architecture
 HexMapper is built on a hybrid stack to leverage the strengths of modern web technologies and high-performance computer vision:
-- **Frontend**: A React application built with Vite and rendered inside an Electron desktop window. It uses `Zustand` for robust global state management and `react-konva` for a highly performant, interactive HTML5 canvas to render the hex grid and map geometry.
+- **Frontend**: A React application built with Vite and rendered inside an Electron desktop window. The frontend adheres strictly to the Single Responsibility Principle:
+  - **State Management**: Uses `Zustand` with atomic state selectors to ensure robust, fine-grained reactivity and eliminate unnecessary UI re-renders.
+  - **Interaction Logic**: User interactions (panning, zooming, vector drawing, hex painting) are decoupled from the rendering components via custom hooks like `useMapInteraction`.
+  - **Rendering Engine**: Utilizes `react-konva` for a highly performant HTML5 canvas. The map drawing logic is decomposed into dedicated, type-safe semantic layer components (`GridLayerRenderer`, `TerrainLayerRenderer`, `VectorLayerRenderer`).
 - **Backend**: A headless Python computer-vision engine driven by `OpenCV` (cv2) and `numpy`.
 - **Communication Bridge**: The React frontend communicates with the Python backend via Electron IPC channels. Python operates as a stateless CLI process (`backend/main.py`) that accepts JSON arguments via standard input, executes the heavy image processing, and returns a structured JSON payload via standard output. A custom `local://` protocol handler in Electron bypasses browser security restrictions to serve dynamically generated images and assets directly from the local filesystem to the React UI.
 
