@@ -30,7 +30,7 @@ const HexTile: React.FC<HexTileProps> = ({
       x={center.x} 
       y={center.y}
       onMouseEnter={() => onHover(hex)}
-      onMouseLeave={() => onLeave(hex)}
+      onMouseLeave={onLeave}
       onPointerDown={onPointerDown}
       listening={isActiveLayer}
     >

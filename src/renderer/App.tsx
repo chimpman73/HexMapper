@@ -4,7 +4,7 @@ import HexGridEngine, { HexGridEngineRef } from './components/HexGridEngine';
 import TerrainPalette from './components/TerrainPalette';
 import LayerPanel from './components/LayerPanel';
 import UnknownsPanel from './components/UnknownsPanel';
-import { HexOrientation, MapLayer } from './utils/hexMath';
+import { HexOrientation, MapLayer, RoadStyle } from './utils/hexMath';
 
 declare global {
   interface Window {
@@ -51,13 +51,15 @@ const App: React.FC = () => {
   
   const [activeBrush, setActiveBrush] = useState<string | null>(null);
   const [activeColor, setActiveColor] = useState<string | null>('#3b82f6');
-  const [activeLineWidth, setActiveLineWidth] = useState<number>(4);
+  const [activeLineWidth, setActiveLineWidth] = useState<number>(10);
+  const [activeRoadStyle, setActiveRoadStyle] = useState<RoadStyle>('path');
   
   const [layers, setLayers] = useState<MapLayer[]>([
     { id: '1', name: 'Terrain', type: 'terrain', visible: true, opacity: 1, data: {} },
     { id: '4', name: 'Coastline', type: 'coastline', visible: true, opacity: 1, data: {} },
     { id: '2', name: 'Cliffs', type: 'cliff', visible: true, opacity: 1, data: [] },
     { id: '3', name: 'Rivers', type: 'river', visible: true, opacity: 1, data: [] },
+    { id: '9', name: 'Roads', type: 'road', visible: true, opacity: 1, data: [] },
     { id: '5', name: 'Cities', type: 'city', visible: true, opacity: 1, data: {} },
     { id: '8', name: 'Hex Grid', type: 'grid', visible: true, opacity: 1, data: {} },
     { id: '6', name: 'Borders', type: 'border', visible: true, opacity: 1, data: {} },
@@ -69,6 +71,27 @@ const App: React.FC = () => {
   const [stylesList, setStylesList] = useState<string[]>(['Hollow Moon']);
   const [currentStyle, setCurrentStyle] = useState<string>('Hollow Moon');
   const [assetsBasePath, setAssetsBasePath] = useState<string>('');
+  const [roadConfig, setRoadConfig] = useState<any>(null);
+
+  useEffect(() => {
+    if (assetsBasePath && currentStyle) {
+      const fetchRoadConfig = async () => {
+        try {
+          const configPath = `${assetsBasePath}/styles/${currentStyle}/roads.json`;
+          const res = await fetch(`local://file?path=${encodeURIComponent(configPath)}`);
+          if (res.ok) {
+            const data = await res.json();
+            setRoadConfig(data);
+          } else {
+            setRoadConfig(null);
+          }
+        } catch (e) {
+          setRoadConfig(null);
+        }
+      };
+      fetchRoadConfig();
+    }
+  }, [assetsBasePath, currentStyle]);
 
   useEffect(() => {
     if (window.api && window.api.getStyles) {
@@ -93,8 +116,8 @@ const App: React.FC = () => {
         const reqW = (imgW + Math.max(0, bgOffsetX)) / hexW;
         const reqH = (imgH + Math.max(0, bgOffsetY)) / hexH;
         
-        setMapWidth(Math.max(10, Math.ceil(reqW) + 2));
-        setMapHeight(Math.max(10, Math.ceil(reqH) + 2));
+        setMapWidth(prev => Math.max(prev, Math.max(10, Math.ceil(reqW) + 2)));
+        setMapHeight(prev => Math.max(prev, Math.max(10, Math.ceil(reqH) + 2)));
       };
       img.src = `local://file?path=${encodeURIComponent(firstBgImagePath)}`;
     }
@@ -157,10 +180,35 @@ const App: React.FC = () => {
             }
           }
           setLayers(loadedLayers);
+
+          // Calculate the max extent of the loaded hexes
+          let maxQ = 25;
+          let maxR = 20;
+
+          loadedLayers.forEach(l => {
+            if ((l.type === 'terrain' || l.type === 'city' || l.type === 'coastline' || l.type === 'border' || l.type === 'grid') && l.data) {
+              for (const key in l.data) {
+                const [q, r] = key.split(',').map(Number);
+                if (!isNaN(q) && q + 1 > maxQ) maxQ = q + 1;
+                if (!isNaN(r) && r + 1 > maxR) maxR = r + 1;
+              }
+            }
+          });
+
+          if (projectData.mapWidth) {
+             setMapWidth(Math.max(projectData.mapWidth, maxQ));
+          } else {
+             setMapWidth(maxQ);
+          }
+
+          if (projectData.mapHeight) {
+             setMapHeight(Math.max(projectData.mapHeight, maxR));
+          } else {
+             setMapHeight(maxR);
+          }
+          
+          if (projectData.orientation) setOrientation(projectData.orientation);
         }
-        if (projectData.mapWidth) setMapWidth(projectData.mapWidth);
-        if (projectData.mapHeight) setMapHeight(projectData.mapHeight);
-        if (projectData.orientation) setOrientation(projectData.orientation);
       } catch (err) {
         console.error('Invalid project file:', err);
       }
@@ -395,7 +443,7 @@ const App: React.FC = () => {
         type: type as any,
         visible: true,
         opacity: 1,
-        data: type === 'cliff' || type === 'river' || type === 'label' ? [] : {}
+        data: type === 'cliff' || type === 'river' || type === 'label' || type === 'road' ? [] : {}
       };
       return [...prev, newLayer];
     });
@@ -497,7 +545,10 @@ const App: React.FC = () => {
           setActiveColor={setActiveColor}
           activeLineWidth={activeLineWidth}
           setActiveLineWidth={setActiveLineWidth}
+          activeRoadStyle={activeRoadStyle}
+          setActiveRoadStyle={setActiveRoadStyle}
           currentStyle={currentStyle}
+          roadConfig={roadConfig}
         />
         <div className={styles.canvasContainer}>
           <HexGridEngine 
@@ -509,6 +560,8 @@ const App: React.FC = () => {
             activeBrush={activeBrush}
             activeColor={activeColor}
             activeLineWidth={activeLineWidth}
+            activeRoadStyle={activeRoadStyle}
+            roadConfig={roadConfig}
             layers={layers}
             setLayers={setLayers}
             activeLayerId={activeLayerId}

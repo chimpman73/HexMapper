@@ -11,7 +11,7 @@ export interface HexCube {
   s: number;
 }
 
-export type LayerType = 'terrain' | 'river' | 'cliff' | 'coastline' | 'city' | 'border' | 'label' | 'legend' | 'grid' | 'bg_image' | 'group';
+export type LayerType = 'terrain' | 'river' | 'cliff' | 'coastline' | 'city' | 'border' | 'label' | 'legend' | 'grid' | 'bg_image' | 'group' | 'road';
 
 export interface BaseLayer {
   id: string;
@@ -40,8 +40,11 @@ export interface BorderLayer extends BaseLayer {
 
 export interface CoastlineLayer extends BaseLayer {
   type: 'coastline';
-  data: Record<string, string>; // hex coords to color
+  data: Record<string, string>;
+  vectors?: any[];
 }
+
+export type RoadStyle = 'path' | 'road' | 'tunnel' | 'highlight';
 
 export interface VectorLine {
   id: string;
@@ -50,10 +53,11 @@ export interface VectorLine {
   strokeWidth: number;
   tension: number;
   invert?: boolean;
+  roadStyle?: RoadStyle;
 }
 
 export interface VectorLayer extends BaseLayer {
-  type: 'river' | 'cliff' | 'border' | 'label';
+  type: 'river' | 'cliff' | 'label' | 'road';
   data: VectorLine[];
 }
 
@@ -74,7 +78,7 @@ export interface GroupLayer extends BaseLayer {
   data: {};
 }
 
-export type MapLayer = TerrainLayer | CityLayer | CoastlineLayer | VectorLayer | GridLayer | BgImageLayer | GroupLayer;
+export type MapLayer = TerrainLayer | CityLayer | CoastlineLayer | BorderLayer | VectorLayer | GridLayer | BgImageLayer | GroupLayer;
 
 export const HEX_SIZE = 40; // distance from center to corner
 

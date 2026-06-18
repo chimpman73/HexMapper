@@ -61,6 +61,7 @@ const LayerPanel: React.FC<LayerPanelProps> = ({
             <div style={{position: 'absolute', right: 0, top: '100%', background: '#222', border: '1px solid #444', zIndex: 10, display: 'flex', flexDirection: 'column'}}>
               <button onClick={() => { onAddLayer('terrain'); setShowAddMenu(false); }} style={{background: 'none', color: 'white', border: 'none', padding: '5px', cursor: 'pointer', textAlign: 'left'}}>Terrain</button>
               <button onClick={() => { onAddLayer('river'); setShowAddMenu(false); }} style={{background: 'none', color: 'white', border: 'none', padding: '5px', cursor: 'pointer', textAlign: 'left'}}>River</button>
+              <button onClick={() => { onAddLayer('road'); setShowAddMenu(false); }} style={{background: 'none', color: 'white', border: 'none', padding: '5px', cursor: 'pointer', textAlign: 'left'}}>Road</button>
               <button onClick={() => { onAddLayer('city'); setShowAddMenu(false); }} style={{background: 'none', color: 'white', border: 'none', padding: '5px', cursor: 'pointer', textAlign: 'left'}}>City</button>
               <button onClick={() => { onAddLayer('coastline'); setShowAddMenu(false); }} style={{background: 'none', color: 'white', border: 'none', padding: '5px', cursor: 'pointer', textAlign: 'left'}}>Coastline</button>
             </div>
@@ -116,7 +117,7 @@ const LayerPanel: React.FC<LayerPanelProps> = ({
             >
               <div className={styles.layerInfo} onDoubleClick={(e) => handleDoubleClick(e, layer)}>
                 <span className={styles.layerTypeIcon}>
-                  {layer.type === 'terrain' ? '⬡' : layer.type === 'river' ? '〰' : layer.type === 'coastline' ? '🌊' : layer.type === 'bg_image' ? '🖼️' : '📄'}
+                  {layer.type === 'terrain' ? '⬡' : layer.type === 'river' ? '〰' : layer.type === 'road' ? '🛣️' : layer.type === 'coastline' ? '🌊' : layer.type === 'bg_image' ? '🖼️' : '📄'}
                 </span>
                 {editingLayerId === layer.id ? (
                   <input

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import styles from './TerrainPalette.module.css';
 
-import { MapLayer } from '../utils/hexMath';
+import { MapLayer, RoadStyle } from '../utils/hexMath';
 
 interface TerrainPaletteProps {
   activeBrush: string | null;
@@ -11,16 +11,98 @@ interface TerrainPaletteProps {
   setActiveColor: (c: string | null) => void;
   activeLineWidth: number;
   setActiveLineWidth: (w: number) => void;
+  activeRoadStyle?: RoadStyle;
+  setActiveRoadStyle?: (style: RoadStyle) => void;
   currentStyle?: string;
+  roadConfig?: any;
+}
+
+function generateRoadBrush(type: 'path' | 'road' | 'tunnel' | 'highlight', config: any): string {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return '';
+
+  const cx = 32;
+  const cy = 32;
+  const r = 30;
+
+  // Draw hex background
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const angle = (Math.PI / 180) * (60 * i - 30);
+    const x = cx + r * Math.cos(angle);
+    const y = cy + r * Math.sin(angle);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = config?.brushBackground || '#7cb342';
+  ctx.fill();
+  
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Draw road
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  
+  if (type === 'highlight') {
+     ctx.shadowColor = '#ffff00';
+     ctx.shadowBlur = 10;
+     ctx.strokeStyle = '#ffff00';
+     ctx.lineWidth = 6;
+     ctx.beginPath();
+     ctx.moveTo(12, 32);
+     ctx.lineTo(52, 32);
+     ctx.stroke();
+  } else {
+     const style = config?.[type] || {};
+     ctx.shadowBlur = 0;
+     const width = 8;
+     
+     if (type === 'tunnel') {
+       ctx.strokeStyle = style.color || '#555555';
+       ctx.lineWidth = width;
+       ctx.beginPath(); ctx.moveTo(12, 32); ctx.lineTo(52, 32); ctx.stroke();
+       
+       ctx.strokeStyle = style.innerColor || '#ffffff';
+       ctx.lineWidth = Math.max(1, width * (style.innerWidthMultiplier ?? 0.6));
+       ctx.beginPath(); ctx.moveTo(12, 32); ctx.lineTo(52, 32); ctx.stroke();
+     } else {
+       ctx.strokeStyle = style.color || '#404040';
+       ctx.lineWidth = width;
+       if (style.dash && style.dash.length > 0) {
+          ctx.setLineDash(style.dash);
+       }
+       ctx.beginPath(); ctx.moveTo(12, 32); ctx.lineTo(52, 32); ctx.stroke();
+       ctx.setLineDash([]);
+     }
+  }
+
+  return canvas.toDataURL();
 }
 
 const TerrainPalette: React.FC<TerrainPaletteProps> = ({ 
-  activeBrush, setActiveBrush, activeLayer, activeColor, setActiveColor, activeLineWidth, setActiveLineWidth, currentStyle
+  activeBrush, setActiveBrush, activeLayer, activeColor, setActiveColor, activeLineWidth, setActiveLineWidth, activeRoadStyle, setActiveRoadStyle, currentStyle, roadConfig
 }) => {
   const [brushes, setBrushes] = useState<string[]>([]);
+  const [roadBrushes, setRoadBrushes] = useState<{type: RoadStyle, url: string}[]>([]);
 
+  React.useEffect(() => {
+    if (activeLayer.type === 'road') {
+      setRoadBrushes([
+        { type: 'path', url: generateRoadBrush('path', roadConfig) },
+        { type: 'road', url: generateRoadBrush('road', roadConfig) },
+        { type: 'tunnel', url: generateRoadBrush('tunnel', roadConfig) },
+        { type: 'highlight', url: generateRoadBrush('highlight', roadConfig) },
+      ]);
+    }
+  }, [activeLayer.type, roadConfig]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const loadDefault = async () => {
       if ((window as any).api?.getDefaultTiles) {
         let folder = 'Terrain';
@@ -43,7 +125,25 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = ({
         <div className={styles.vectorTools}>
           <h3 style={{color: 'white', marginTop: 0}}>{activeLayer.name} Tools</h3>
           
-          {(activeLayer.type === 'border' || activeLayer.type === 'river' || activeLayer.type === 'cliff') && (
+          {activeLayer.type === 'road' && setActiveRoadStyle && (
+            <div style={{marginBottom: '15px'}}>
+              <label style={{color: '#ccc', fontSize: '14px', display: 'block', marginBottom: '5px'}}>Road Type:</label>
+              <div className={styles.brushGrid}>
+                {roadBrushes.map((brush) => (
+                  <div 
+                    key={brush.type} 
+                    className={`${styles.brushItem} ${activeRoadStyle === brush.type ? styles.active : ''}`}
+                    onClick={() => setActiveRoadStyle(brush.type)}
+                    title={brush.type === 'highlight' ? 'Highlight Roads' : brush.type.charAt(0).toUpperCase() + brush.type.slice(1)}
+                  >
+                    <img src={brush.url} alt={brush.type} className={styles.brushImg} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(activeLayer.type === 'border' || activeLayer.type === 'river' || activeLayer.type === 'cliff' || activeLayer.type === 'road') && (
             <div className={styles.brushGrid} style={{ marginBottom: '15px' }}>
               <div 
                 className={`${styles.brushItem} ${activeColor !== null ? styles.active : ''}`}
@@ -61,17 +161,17 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = ({
           )}
 
           <label style={{display: 'flex', flexDirection: 'column', gap: '5px', color: '#ccc', marginBottom: '15px'}}>
-            {activeLayer.type === 'coastline' ? 'Water Fill Color:' : activeLayer.type === 'border' ? 'Border Color:' : 'Line Color:'}
+            {(activeLayer as any).type === 'coastline' ? 'Water Fill Color:' : activeLayer.type === 'border' ? 'Border Color:' : 'Line Color:'}
             <input 
               type="color" 
-              value={activeColor || '#3b82f6'} 
+              value={activeLayer.type === 'road' ? (roadConfig?.[activeRoadStyle || 'road']?.color || (activeRoadStyle === 'path' ? '#8b4513' : activeRoadStyle === 'tunnel' ? '#555555' : '#a0522d')) : (activeColor || '#3b82f6')} 
               onChange={e => setActiveColor(e.target.value)} 
               style={{width: '100%', height: '40px', opacity: activeColor === null ? 0.5 : 1}}
-              disabled={activeColor === null}
+              disabled={activeColor === null || activeLayer.type === 'road'}
             />
           </label>
 
-          {(activeLayer.type === 'river' || activeLayer.type === 'cliff' || activeLayer.type === 'border' || activeLayer.type === 'label') && (
+          {(activeLayer.type === 'river' || activeLayer.type === 'cliff' || activeLayer.type === 'border' || activeLayer.type === 'label' || activeLayer.type === 'road') && (
             <label style={{display: 'flex', flexDirection: 'column', gap: '5px', color: '#ccc'}}>
               Line Width: {activeLineWidth}px
               <input 

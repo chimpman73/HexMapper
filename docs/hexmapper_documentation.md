@@ -79,3 +79,13 @@ To support dynamic aesthetic themes across the entire mapping platform, HexMappe
 - **Dynamic Asset Resolution:** Hardcoded tile paths are replaced with relative internal templates (e.g. `"Terrain/hex_101.png"`). At render-time, these are intelligently intercepted and encoded by the `HexGridEngine` and UI Palette into absolute `local://` URLs pointing to the active style's directory (e.g. `assets/styles/Hollow Moon/tiles/`).
 - **Real-Time Swapping:** Users can change the active Map Style via a central UI dropdown. Because the extracted map JSON strictly saves the *template keys* rather than absolute file references, swapping the style instantly recalculates all asset sources across the grid, allowing seamless visual overhauls of massive maps with zero re-scanning.
 - **Extensibility:** New styles can be added simply by dropping a new folder containing the appropriately categorized tile subfolders into `assets/styles/`. 
+
+## 6. Advanced Road & Pathing System
+HexMapper includes a robust, vector-based Road System that integrates cleanly into the map styles.
+- **Dynamic Styling Configuration**: Roads, paths, and tunnels are defined and stylized globally via a `roads.json` configuration file located in the active style's directory. This allows different Map Styles to define their own specific colors, dash arrays, and stroke widths (e.g., inner stroke multipliers for tunnels) without modifying application code.
+- **Hex Brush UI**: The road toolset automatically parses `roads.json` and generates dynamic `<canvas>` thumbnails of hex tiles painted with the appropriate path styles over a configurable background color (`brushBackground`), providing an intuitive, visually unified palette.
+- **Highlight Mode**: The road palette includes a specialized Highlight tool. When active, it renders all roads on the canvas with a bright, glowing yellow halo using shadow blur. This allows users to easily locate tiny paths or complex road networks hidden underneath dense terrain.
+- **Spline Anchor Editing**: The vector drawing system has been completely overhauled for precise road manipulation:
+  - **Point-by-Point Drawing**: Users can click to drop anchor vertices, rubber-banding the road segment by segment. Double-clicking commits the road to the canvas. Pressing `ESC` or right-clicking at any time cancels the drawing.
+  - **Node Editing**: Selecting an existing road enters "Edit Mode". White circular anchor nodes appear at every vertex. Users can drag these nodes in real-time to reshape the road.
+  - **Node Insertion**: Double-clicking on the road line dynamically inserts a new anchor node at that specific position for finer control.
