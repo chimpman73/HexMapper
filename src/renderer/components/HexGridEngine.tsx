@@ -40,6 +40,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
   } = useMapInteraction();
 
   const hasBgImage = layers.some(l => l.type === 'bg_image');
+  const activeLayer = layers.find(l => l.id === activeLayerId);
 
   const grid = useMemo(() => generateRectangularGrid(mapWidth, mapHeight, orientation), [mapWidth, mapHeight, orientation]);
 
