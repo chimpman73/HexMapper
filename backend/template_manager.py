@@ -6,9 +6,9 @@ from typing import Dict, List, Any, Optional, Tuple
 
 class TemplateManager:
     def __init__(self, base_dir: str, style: str = "Hollow Moon"):
-        self.base_dir = base_dir
-        self.style = style
-        self.templates: Dict[str, List[Dict[str, Any]]] = {
+        self._base_dir = base_dir
+        self._style = style
+        self._templates: Dict[str, List[Dict[str, Any]]] = {
             "terrain": [],
             "coastline": [],
             "city": [],
@@ -16,9 +16,13 @@ class TemplateManager:
         }
         self.load_templates()
 
+    @property
+    def templates(self) -> Dict[str, List[Dict[str, Any]]]:
+        return self._templates
+
     def get_asset_url(self, rel_path: str) -> str:
         """Convert a relative path into a local:// protocol URL for the Electron frontend."""
-        abs_path = os.path.join(self.base_dir, rel_path.lstrip('/\\'))
+        abs_path = os.path.join(self._base_dir, rel_path.lstrip('/\\'))
         abs_path = abs_path.replace("\\", "/")
         return f"local://file?path={urllib.parse.quote(abs_path, safe='')}"
 
@@ -31,7 +35,7 @@ class TemplateManager:
 
     def _load_dir(self, dir_name: str, category: str, use_alpha: bool = False) -> None:
         """Load a specific directory of template images into memory."""
-        d_path = os.path.join(self.base_dir, "assets", "styles", self.style, "tiles", dir_name)
+        d_path = os.path.join(self._base_dir, "assets", "styles", self._style, "tiles", dir_name)
         if not os.path.exists(d_path):
             return
 
@@ -58,7 +62,7 @@ class TemplateManager:
 
                 if use_alpha and len(img.shape) == 3 and img.shape[2] == 4:
                     _, mask = cv2.threshold(img[:, :, 3], 1, 255, cv2.THRESH_BINARY)
-                    self.templates[category].append({"key": f"{dir_name}/{f}", "mask": mask})
+                    self._templates[category].append({"key": f"{dir_name}/{f}", "mask": mask})
                 else:
                     mean_color: Optional[Tuple[float, float, float]] = None
                     if len(img.shape) == 3 and img.shape[2] == 4:
@@ -78,4 +82,4 @@ class TemplateManager:
                     if category == "terrain":
                         entry["ink_count"] = inherent_ink_count
                         entry["mask"] = ink
-                    self.templates[category].append(entry)
+                    self._templates[category].append(entry)

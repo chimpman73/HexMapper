@@ -18,7 +18,7 @@ class TestRegression(unittest.TestCase):
         # Path to input folder
         input_path = os.path.join(self.saves_dir, "Albheldri_8mph_test")
         # Path to gold standard (current application output)
-        gold_path = os.path.join(self.saves_dir, "Albheldri_MultiLayer_Trained.json")
+        gold_path = os.path.join(self.saves_dir, "Albheldri_MultiLayer.json")
         
         if not os.path.exists(input_path):
             self.skipTest(f"Input path {input_path} not found.")
@@ -52,7 +52,16 @@ class TestRegression(unittest.TestCase):
             else:
                 output_layers[layer["name"]] = layer["data"]
                 
-        gold_layers = {layer["name"]: layer["data"] for layer in gold_data.get("layers", [])}
+        gold_layers = {}
+        for layer in gold_data.get("layers", []):
+            if layer.get("type") == "terrain":
+                gold_layers.setdefault("Terrain", {}).update(layer.get("data", {}))
+            elif layer.get("type") == "coastline":
+                gold_layers.setdefault("Coastline", {}).update(layer.get("data", {}))
+            elif layer.get("type") == "city":
+                gold_layers.setdefault("Cities", {}).update(layer.get("data", {}))
+            else:
+                gold_layers[layer.get("name", "")] = layer.get("data", {})
         
         # We only really care about testing Terrain, Coastline, Cities right now as they have hex data
         for layer_name in ["Terrain", "Coastline", "Cities"]:
@@ -112,7 +121,16 @@ class TestRegression(unittest.TestCase):
             else:
                 output_layers[layer["name"]] = layer["data"]
                 
-        gold_layers = {layer["name"]: layer["data"] for layer in gold_data.get("layers", [])}
+        gold_layers = {}
+        for layer in gold_data.get("layers", []):
+            if layer.get("type") == "terrain":
+                gold_layers.setdefault("Terrain", {}).update(layer.get("data", {}))
+            elif layer.get("type") == "coastline":
+                gold_layers.setdefault("Coastline", {}).update(layer.get("data", {}))
+            elif layer.get("type") == "city":
+                gold_layers.setdefault("Cities", {}).update(layer.get("data", {}))
+            else:
+                gold_layers[layer.get("name", "")] = layer.get("data", {})
         
         for layer_name in ["Terrain", "Coastline", "Cities"]:
             if layer_name in gold_layers and layer_name in output_layers:
