@@ -8,7 +8,7 @@ from typing import List, Dict, Any, Tuple
 
 from hex_grid import HexGrid
 from template_manager import TemplateManager
-from image_processor import MapData
+from map_data import MapData
 
 class HexScanner:
     def __init__(self, base_dir: str, template_manager: TemplateManager, hex_grid: HexGrid, 

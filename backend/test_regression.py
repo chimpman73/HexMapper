@@ -37,7 +37,8 @@ class TestRegression(unittest.TestCase):
             "mapHeight": 25
         }
         
-        result = interpreter.interpret_map(args)
+        map_interpreter = interpreter.MapInterpreter()
+        result = map_interpreter.interpret_map(args)
         self.assertEqual(result.get("status"), "success", f"Interpreter failed: {result.get('message')}")
         
         # Compare layers by merging multiple layers of same type (since multi-layer creates separate layers per file)
@@ -107,7 +108,8 @@ class TestRegression(unittest.TestCase):
             "mapHeight": 25
         }
         
-        result = interpreter.interpret_map(args)
+        map_interpreter = interpreter.MapInterpreter()
+        result = map_interpreter.interpret_map(args)
         self.assertEqual(result.get("status"), "success", f"Interpreter failed: {result.get('message')}")
         
         output_layers = {}

@@ -4,67 +4,8 @@ import os
 import math
 from typing import List, Dict, Any, Tuple, Optional
 
-class LayerData:
-    def __init__(self, name: str, img_bgr: np.ndarray, ink_mask: Optional[np.ndarray] = None, vectors: Optional[List] = None):
-        self._name = name
-        self._img_bgr = img_bgr
-        self._ink_mask = ink_mask
-        self._vectors = vectors or []
-
-    @property
-    def name(self) -> str: return self._name
-    @property
-    def img_bgr(self) -> np.ndarray: return self._img_bgr
-    @property
-    def ink_mask(self) -> Optional[np.ndarray]: return self._ink_mask
-    @property
-    def vectors(self) -> List: return self._vectors
-
-class MapData:
-    """Data class to hold the preprocessed image layers and global vectors."""
-    def __init__(self):
-        self._width: int = 0
-        self._height: int = 0
-        self._water_mask: np.ndarray = np.array([])
-        self._global_coastlines: List[List[Dict[str, float]]] = []
-        self._global_borders: List[List[Dict[str, float]]] = []
-        self._global_rivers: List[List[Dict[str, float]]] = []
-        self._terrain_layers: List[LayerData] = []
-        self._coastline_layers: List[LayerData] = []
-        self._city_layers: List[LayerData] = []
-        self._source_unknowns: Optional[np.ndarray] = None
-
-    @property
-    def width(self) -> int: return self._width
-    @width.setter
-    def width(self, value: int): self._width = value
-
-    @property
-    def height(self) -> int: return self._height
-    @height.setter
-    def height(self, value: int): self._height = value
-
-    @property
-    def water_mask(self) -> np.ndarray: return self._water_mask
-    @water_mask.setter
-    def water_mask(self, value: np.ndarray): self._water_mask = value
-
-    @property
-    def global_coastlines(self) -> List[List[Dict[str, float]]]: return self._global_coastlines
-    @property
-    def global_borders(self) -> List[List[Dict[str, float]]]: return self._global_borders
-    @property
-    def global_rivers(self) -> List[List[Dict[str, float]]]: return self._global_rivers
-    @property
-    def terrain_layers(self) -> List[LayerData]: return self._terrain_layers
-    @property
-    def coastline_layers(self) -> List[LayerData]: return self._coastline_layers
-    @property
-    def city_layers(self) -> List[LayerData]: return self._city_layers
-    @property
-    def source_unknowns(self) -> Optional[np.ndarray]: return self._source_unknowns
-    @source_unknowns.setter
-    def source_unknowns(self, value: Optional[np.ndarray]): self._source_unknowns = value
+from layer_data import LayerData
+from map_data import MapData
 
 class ImageProcessor:
     def __init__(self, bg_scale_x: float, bg_scale_y: float, bg_offset_x: float, bg_offset_y: float):
