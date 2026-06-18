@@ -41,7 +41,7 @@ export interface BorderLayer extends BaseLayer {
 export interface CoastlineLayer extends BaseLayer {
   type: 'coastline';
   data: Record<string, string>;
-  vectors?: any[];
+  vectors?: Point[][];
 }
 
 export type RoadStyle = 'path' | 'road' | 'tunnel' | 'highlight';
@@ -82,10 +82,27 @@ export interface GroupLayer extends BaseLayer {
 
 export type MapLayer = TerrainLayer | CityLayer | CoastlineLayer | BorderLayer | VectorLayer | GridLayer | BgImageLayer | GroupLayer;
 
+export interface PythonScriptArgs {
+  action?: string;
+  command?: string;
+  mode?: string;
+  imagePath?: string | null;
+  id?: string;
+  name?: string;
+  bgScaleX?: number;
+  bgScaleY?: number;
+  bgOffsetX?: number;
+  bgOffsetY?: number;
+  mapWidth?: number;
+  mapHeight?: number;
+  orientation?: string;
+  layers?: MapLayer[];
+}
+
 declare global {
   interface Window {
     api: {
-      runPythonScript: (args: any) => Promise<any>;
+      runPythonScript: (args: PythonScriptArgs) => Promise<any>;
       openDirectory: () => Promise<string | null>;
       openImage: () => Promise<string | null>;
       readDir: (dirPath: string) => Promise<string[]>;
@@ -95,6 +112,7 @@ declare global {
       exportImage: (dataUrl: string) => Promise<{ success: boolean; filePath?: string; canceled?: boolean; error?: string }>;
       getStyles: () => Promise<string[]>;
       getAssetsBasePath: () => Promise<string>;
+      getDefaultTiles: (style: string, folder: string) => Promise<string[]>;
     };
     electron: {
       ipcRenderer: {
@@ -103,3 +121,4 @@ declare global {
     };
   }
 }
+

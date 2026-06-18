@@ -30,37 +30,48 @@ declare global {
 }
 
 const App: React.FC = () => {
-  const {
-    orientation, setOrientation,
-    showCoordinates, setShowCoordinates,
-    mapWidth, setMapWidth,
-    mapHeight, setMapHeight,
-    globalCoastlines, setGlobalCoastlines,
-    globalBorders, setGlobalBorders,
-    unknowns, setUnknowns,
-    showUnknownsPanel, setShowUnknownsPanel,
-    highlightedHexKey, setHighlightedHexKey,
-    bgScaleX, setBgScaleX,
-    bgScaleY, setBgScaleY,
-    bgOffsetX, setBgOffsetX,
-    bgOffsetY, setBgOffsetY,
-    importType, setImportType,
-    importDirPath, setImportDirPath,
-    showImportModal, setShowImportModal,
-    activeBrush, setActiveBrush,
-    activeColor, setActiveColor,
-    activeLineWidth, setActiveLineWidth,
-    activeRoadStyle, setActiveRoadStyle,
-    activeRiverStyle, setActiveRiverStyle,
-    layers, setLayers,
-    activeLayerId, setActiveLayerId,
-    isScanning, setIsScanning,
-    stylesList, setStylesList,
-    currentStyle, setCurrentStyle,
-    assetsBasePath, setAssetsBasePath,
-    roadConfig, setRoadConfig,
-    riverConfig, setRiverConfig
-  } = useMapStore();
+  const orientation = useMapStore(s => s.orientation);
+  const setOrientation = useMapStore(s => s.setOrientation);
+  const showCoordinates = useMapStore(s => s.showCoordinates);
+  const setShowCoordinates = useMapStore(s => s.setShowCoordinates);
+  const mapWidth = useMapStore(s => s.mapWidth);
+  const setMapWidth = useMapStore(s => s.setMapWidth);
+  const mapHeight = useMapStore(s => s.mapHeight);
+  const setMapHeight = useMapStore(s => s.setMapHeight);
+  const setGlobalCoastlines = useMapStore(s => s.setGlobalCoastlines);
+  const setGlobalBorders = useMapStore(s => s.setGlobalBorders);
+  const unknowns = useMapStore(s => s.unknowns);
+  const setUnknowns = useMapStore(s => s.setUnknowns);
+  const showUnknownsPanel = useMapStore(s => s.showUnknownsPanel);
+  const setShowUnknownsPanel = useMapStore(s => s.setShowUnknownsPanel);
+  const setHighlightedHexKey = useMapStore(s => s.setHighlightedHexKey);
+  const bgScaleX = useMapStore(s => s.bgScaleX);
+  const setBgScaleX = useMapStore(s => s.setBgScaleX);
+  const bgScaleY = useMapStore(s => s.bgScaleY);
+  const setBgScaleY = useMapStore(s => s.setBgScaleY);
+  const bgOffsetX = useMapStore(s => s.bgOffsetX);
+  const setBgOffsetX = useMapStore(s => s.setBgOffsetX);
+  const bgOffsetY = useMapStore(s => s.bgOffsetY);
+  const setBgOffsetY = useMapStore(s => s.setBgOffsetY);
+  const importType = useMapStore(s => s.importType);
+  const setImportType = useMapStore(s => s.setImportType);
+  const importDirPath = useMapStore(s => s.importDirPath);
+  const setImportDirPath = useMapStore(s => s.setImportDirPath);
+  const showImportModal = useMapStore(s => s.showImportModal);
+  const setShowImportModal = useMapStore(s => s.setShowImportModal);
+  const layers = useMapStore(s => s.layers);
+  const setLayers = useMapStore(s => s.setLayers);
+  const activeLayerId = useMapStore(s => s.activeLayerId);
+  const isScanning = useMapStore(s => s.isScanning);
+  const setIsScanning = useMapStore(s => s.setIsScanning);
+  const stylesList = useMapStore(s => s.stylesList);
+  const setStylesList = useMapStore(s => s.setStylesList);
+  const currentStyle = useMapStore(s => s.currentStyle);
+  const setCurrentStyle = useMapStore(s => s.setCurrentStyle);
+  const assetsBasePath = useMapStore(s => s.assetsBasePath);
+  const setAssetsBasePath = useMapStore(s => s.setAssetsBasePath);
+  const setRoadConfig = useMapStore(s => s.setRoadConfig);
+  const setRiverConfig = useMapStore(s => s.setRiverConfig);
 
   useEffect(() => {
     if (assetsBasePath && currentStyle) {
