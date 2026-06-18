@@ -161,15 +161,24 @@ export function generateCoastlineBrush(type: 'smooth' | 'fractal'): string {
   if (type === 'smooth') {
      ctx.moveTo(12, 32);
      ctx.bezierCurveTo(25, 15, 39, 49, 52, 32);
-  } else {
+     ctx.stroke();
+  } else if (type === 'fractal') {
      ctx.moveTo(12, 32);
      ctx.lineTo(20, 24);
      ctx.lineTo(28, 36);
      ctx.lineTo(36, 26);
      ctx.lineTo(44, 40);
      ctx.lineTo(52, 32);
+     ctx.stroke();
+  } else if (type === 'highlight') {
+     ctx.shadowColor = '#ffff00';
+     ctx.shadowBlur = 10;
+     ctx.strokeStyle = '#ffff00';
+     ctx.lineWidth = 6;
+     ctx.moveTo(12, 32);
+     ctx.bezierCurveTo(25, 15, 39, 49, 52, 32);
+     ctx.stroke();
   }
-  ctx.stroke();
 
   return canvas.toDataURL();
 }

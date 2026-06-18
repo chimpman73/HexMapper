@@ -29,6 +29,8 @@ interface MapState {
   activeCoastlineStyle: CoastlineStyle;
   
   layers: MapLayer[];
+  pastLayers: MapLayer[][];
+  futureLayers: MapLayer[][];
   activeLayerId: string;
   isScanning: boolean;
 
@@ -69,6 +71,9 @@ interface MapState {
   setAssetsBasePath: (p: string) => void;
   setRoadConfig: (c: any) => void;
   setRiverConfig: (c: any) => void;
+
+  undo: () => void;
+  redo: () => void;
 
   moveLayer: (id: string, direction: 'up' | 'down') => void;
   addLayer: (type: string) => void;
@@ -115,6 +120,8 @@ export const useMapStore = create<MapState>((set) => ({
     { id: '6', name: 'Borders', type: 'border', visible: true, opacity: 1, data: {} },
     { id: '7', name: 'Labels', type: 'label', visible: true, opacity: 1, data: [] }
   ],
+  pastLayers: [],
+  futureLayers: [],
   activeLayerId: '1',
   isScanning: false,
 
@@ -146,7 +153,15 @@ export const useMapStore = create<MapState>((set) => ({
   setActiveRoadStyle: (s) => set({ activeRoadStyle: s }),
   setActiveRiverStyle: (s) => set({ activeRiverStyle: s }),
   setActiveCoastlineStyle: (s) => set({ activeCoastlineStyle: s }),
-  setLayers: (l) => set((state) => ({ layers: typeof l === 'function' ? l(state.layers) : l })),
+  setLayers: (l) => set((state) => {
+    const nextLayers = typeof l === 'function' ? l(state.layers) : l;
+    if (nextLayers === state.layers) return state;
+    return { 
+      layers: nextLayers,
+      pastLayers: [...state.pastLayers.slice(-30), state.layers],
+      futureLayers: []
+    };
+  }),
   setActiveLayerId: (id) => set({ activeLayerId: id }),
   setIsScanning: (s) => set({ isScanning: s }),
   setStylesList: (l) => set({ stylesList: l }),
@@ -154,6 +169,28 @@ export const useMapStore = create<MapState>((set) => ({
   setAssetsBasePath: (p) => set({ assetsBasePath: p }),
   setRoadConfig: (c) => set({ roadConfig: c }),
   setRiverConfig: (c) => set({ riverConfig: c }),
+
+  undo: () => set((state) => {
+    if (state.pastLayers.length === 0) return state;
+    const previous = state.pastLayers[state.pastLayers.length - 1];
+    const newPast = state.pastLayers.slice(0, state.pastLayers.length - 1);
+    return {
+      pastLayers: newPast,
+      futureLayers: [state.layers, ...state.futureLayers],
+      layers: previous
+    };
+  }),
+
+  redo: () => set((state) => {
+    if (state.futureLayers.length === 0) return state;
+    const next = state.futureLayers[0];
+    const newFuture = state.futureLayers.slice(1);
+    return {
+      pastLayers: [...state.pastLayers, state.layers],
+      futureLayers: newFuture,
+      layers: next
+    };
+  }),
 
   moveLayer: (id, direction) => set((state) => {
     const prev = state.layers;

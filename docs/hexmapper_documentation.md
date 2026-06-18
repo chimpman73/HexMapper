@@ -13,11 +13,12 @@ HexMapper is built on a hybrid stack to leverage the strengths of modern web tec
 
 ## 2. Core Features & UI
 - **Interactive Hex Grid**: A fully interactive canvas that supports zooming, panning, and rendering hex tiles natively. It supports both Flat-top and Pointy-top hex orientations.
-- **Map Alignment Engine**: Users can import an image of a physical map and visually align a digital hex overlay to perfectly match the scale and offset of the scanned image. Importing a directory of layers will spawn synchronized `BgImageLayer` items for each source file to allow easy cross-referencing.
+- **Map Alignment Engine**: Users can import an image of a physical map and visually align a digital hex overlay to perfectly match the scale and offset of the scanned image. Importing a directory of layers will spawn synchronized `BgImageLayer` items for each source file to allow easy cross-referencing. The digital hex map bounds will automatically clip or expand dynamically to perfectly match the dimensions of the imported image.
 - **Layer System & Management**: The app separates map data into 8 semantic layers with a strict top-to-bottom visual hierarchy (Z-index): Labels, Borders, Hex Grid, Cities/Structures, Rivers, Cliffs, Coastline, and Terrain. 
   - The dynamic **Layer Panel UI** allows users to visually reorder layers via Up/Down buttons, create new layers, delete unneeded layers, and toggle visibility. 
   - Users can double-click any layer name in the panel to instantly rename it directly on the canvas.
 - **Unknowns Resolution Panel**: When the engine detects a symbol it does not recognize, it prompts the user in the UI. The user can choose to add the symbol to the application's permanent asset library, map it to an existing known asset, or explicitly ignore it.
+- **Undo / Redo System**: A robust layer-state history tracker allows users to safely undo or redo the last 30 map editing actions (drawing, erasing, moving nodes, changing layers) simply by pressing `CTRL+Z` and `CTRL+Y` respectively.
 - **Project Serialization**: Maps can be saved to and loaded from local `.json` files.
 - **Exporting**: The canvas can be exported directly to a high-resolution PNG file.
 
@@ -87,10 +88,10 @@ To support dynamic aesthetic themes across the entire mapping platform, HexMappe
 HexMapper includes a robust, vector-based drawing system for Roads and Rivers that integrates cleanly into the map styles.
 - **Dynamic Styling Configuration**: Roads, paths, tunnels, streams, and rivers are defined and stylized globally via `roads.json` and `rivers.json` configuration files located in the active style's directory. This allows different Map Styles to define their own specific colors, dash arrays, and stroke widths without modifying application code.
 - **Hex Brush UI**: The vector toolset automatically parses the configuration files and generates dynamic `<canvas>` thumbnails of hex tiles painted with the appropriate path styles over a configurable background color, providing an intuitive, visually unified palette.
-- **Highlight Mode**: The road and river palettes include a specialized Highlight tool. When active, it renders all vectors on the canvas with a bright, glowing yellow halo using shadow blur. This allows users to easily locate tiny paths or complex networks hidden underneath dense terrain.
+- **Highlight Mode**: The road, river, and coastline palettes include a specialized Highlight tool. When active, it renders vectors residing on the *currently active layer* with a bright, glowing yellow halo using shadow blur. This allows users to easily locate tiny paths, complex networks, or fragmented island coastlines hidden underneath dense terrain without accidentally highlighting vectors on other layers.
 - **Spline Anchor Editing**: The vector drawing system has been built for precise manipulation:
   - **Point-by-Point Drawing**: Users can click to drop anchor vertices, rubber-banding the line segment by segment. Double-clicking commits the vector to the canvas. Pressing `ESC` or right-clicking at any time cancels the drawing.
-  - **Node Editing**: Selecting an existing road or river enters "Edit Mode". White circular anchor nodes appear at every vertex. Users can drag these nodes in real-time to reshape the path.
+  - **Node Editing**: Selecting an existing road, river, or coastline enters "Edit Mode". White circular anchor nodes appear at every vertex. Users can drag these nodes in real-time to reshape the path. For closed polygons like islands, strict hit detection ensures the interior remains hollow and clickable.
   - **Node Insertion**: Double-clicking on the line dynamically inserts a new anchor node at that specific position for finer control.
 
 ## 7. Extracted Vector Injection

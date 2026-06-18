@@ -70,7 +70,12 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
           strokeColor = '#222222';
         }
         let innerTunnelColor;
-        let isHighlighted = (activeLayer?.type === 'road' && activeRoadStyle === 'highlight') || (activeLayer?.type === 'river' && activeRiverStyle === 'highlight');
+        let isHighlighted = false;
+        if (activeLayerId === layer.id) {
+          isHighlighted = (layer.type === 'road' && activeRoadStyle === 'highlight') || 
+                          (layer.type === 'river' && activeRiverStyle === 'highlight') ||
+                          (layer.type === 'coastline' && activeCoastlineStyle === 'highlight');
+        }
         
         if (layer.type === 'road') {
           const styleConfig = roadConfig?.[line.roadStyle || 'road'];
@@ -110,7 +115,7 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
         <Group 
           key={`line-frag-${layer.id}-${line.id}`}
           onDblClick={(e) => {
-            if (isVectorMode && activeLayerId === layer.id && layer.type === 'road' && selectedLineId === line.id) {
+            if (isVectorMode && activeLayerId === layer.id && selectedLineId === line.id) {
               e.cancelBubble = true;
               const stage = e.target.getStage();
               if (stage) {
@@ -197,6 +202,18 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
             closed={layer.type === 'coastline'}
             dash={roadDash}
             opacity={hoveredLineId === line.id ? 0.5 : layer.opacity}
+            hitFunc={(ctx, shape) => {
+              ctx.beginPath();
+              const pts = shape.points();
+              if (pts.length >= 4) {
+                ctx.moveTo(pts[0], pts[1]);
+                for(let i=2; i<pts.length; i+=2) {
+                  ctx.lineTo(pts[i], pts[i+1]);
+                }
+                if (shape.closed()) ctx.closePath();
+              }
+              ctx.strokeShape(shape);
+            }}
           />
           {layer.type === 'road' && line.roadStyle === 'tunnel' && (
              <Line

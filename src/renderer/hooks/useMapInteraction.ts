@@ -27,6 +27,16 @@ export function useMapInteraction() {
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        useMapStore.getState().undo();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+        e.preventDefault();
+        useMapStore.getState().redo();
+        return;
+      }
       if (e.key === 'Shift') setIsShiftPressed(true);
       if (e.key === 'Escape') {
         setCurrentLine(null);

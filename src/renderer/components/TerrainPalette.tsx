@@ -46,15 +46,7 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = () => {
       setCoastlineBrushes([
         { type: 'smooth', url: generateCoastlineBrush('smooth') },
         { type: 'fractal', url: generateCoastlineBrush('fractal') },
-      ]);
-    }
-  }, [activeLayer.type]);
-
-  React.useEffect(() => {
-    if (activeLayer.type === 'coastline') {
-      setCoastlineBrushes([
-        { type: 'smooth', url: generateCoastlineBrush('smooth') },
-        { type: 'fractal', url: generateCoastlineBrush('fractal') },
+        { type: 'highlight', url: generateCoastlineBrush('highlight') },
       ]);
     }
   }, [activeLayer.type]);
@@ -127,7 +119,7 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = () => {
                     key={brush.type} 
                     className={`${styles.brushItem} ${activeCoastlineStyle === brush.type ? styles.active : ''}`}
                     onClick={() => setActiveCoastlineStyle(brush.type)}
-                    title={brush.type.charAt(0).toUpperCase() + brush.type.slice(1)}
+                    title={brush.type === 'highlight' ? 'Highlight Coastlines' : brush.type.charAt(0).toUpperCase() + brush.type.slice(1)}
                   >
                     <img src={brush.url} alt={brush.type} className={styles.brushImg} />
                   </div>

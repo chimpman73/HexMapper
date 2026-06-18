@@ -38,7 +38,7 @@ export interface BorderLayer extends BaseLayer {
   data: Record<string, string>; 
 }
 
-export type CoastlineStyle = 'smooth' | 'fractal';
+export type CoastlineStyle = 'smooth' | 'fractal' | 'highlight';
 
 export type RoadStyle = 'path' | 'road' | 'tunnel' | 'highlight';
 export type RiverStyle = 'stream' | 'river' | 'highlight';

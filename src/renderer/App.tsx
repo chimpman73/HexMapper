@@ -131,8 +131,8 @@ const App: React.FC = () => {
         const reqW = (imgW + Math.max(0, bgOffsetX)) / hexW;
         const reqH = (imgH + Math.max(0, bgOffsetY)) / hexH;
         
-        setMapWidth(prev => Math.max(prev, Math.max(10, Math.ceil(reqW) + 2)));
-        setMapHeight(prev => Math.max(prev, Math.max(10, Math.ceil(reqH) + 2)));
+        setMapWidth(Math.max(10, Math.ceil(reqW) + 2));
+        setMapHeight(Math.max(10, Math.ceil(reqH) + 2));
       };
       img.src = `local://file?path=${encodeURIComponent(firstBgImagePath)}`;
     }
