@@ -155,6 +155,14 @@ class HexScanner:
                 else:
                     existing_layers.append(new_layer)
 
+        # QoL: Clean up empty terrain and coastline layers if multiple exist and at least one has data
+        for layer_type in ["terrain", "coastline"]:
+            type_layers = [l for l in existing_layers if l.get("type") == layer_type]
+            if len(type_layers) > 1:
+                has_items = any(len(l.get("data", {})) > 0 for l in type_layers)
+                if has_items:
+                    existing_layers = [l for l in existing_layers if not (l.get("type") == layer_type and len(l.get("data", {})) == 0)]
+
         return {
             "status": "success",
             "data": {
@@ -263,7 +271,7 @@ class HexScanner:
                     best_score = float('inf')
                     best_match_key = None
                     
-                    profile_path = os.path.join(self._base_dir, "assets", "user_terrain_profile.json")
+                    profile_path = os.path.join(self._base_dir, "assets", "styles", self._template_manager._style, "user_terrain_profile.json")
                     profile_match = None
                     
                     if is_custom_paint and os.path.exists(profile_path):

@@ -22,20 +22,20 @@ This backlog is prioritized based on structural dependencies. Foundational infra
 - ~~Organize brushes and map utilities into "style categories" (themes).~~
 - ~~Implement the ability for a map to swap between different style categories to dynamically change its aesthetic.~~
 
-**4. Refactor Remaining Python Utility Scripts**
+**4. ~~Refactor Remaining Python Utility Scripts~~ [COMPLETED]**
 *Why it's important:* We need to finish paying off the technical debt in the backend before pushing the engine to extract new features (like complex rivers).
-- Apply Object-Oriented Programming (OOP) principles to `backend/train_profile.py` and `backend/extract_assets.py`.
-- Add strict Python type hinting (`typing` module) to function signatures and complex data structures.
-- Implement specific error handling (e.g., catching `FileNotFoundError` or `cv2.error` instead of broad `Exception` blocks).
+- ~~Apply Object-Oriented Programming (OOP) principles to `backend/train_profile.py` and `backend/extract_assets.py`.~~
+- ~~Add strict Python type hinting (`typing` module) to function signatures and complex data structures.~~
+- ~~Implement specific error handling (e.g., catching `FileNotFoundError` or `cv2.error` instead of broad `Exception` blocks).~~
 
 ---
 
 ## 🟡 Medium Priority (Feature Enhancements & QoL)
 
-**5. Unknown Objects UI Rework** *(Moved to High Priority)*
+**5. ~~Unknown Objects UI Rework~~ [COMPLETED]** *(Moved to High Priority)*
 *Why it's important:* Resolves immediate user friction regarding screen real estate.
-- Allow users to explicitly close the Unknowns panel even if items cannot currently be resolved.
-- Add a menu toggle or button to easily reopen the Unknowns panel later.
+- ~~Allow users to explicitly close the Unknowns panel even if items cannot currently be resolved.~~
+- ~~Add a menu toggle or button to easily reopen the Unknowns panel later.~~
 
 **6. River Enhancements**
 *Why it's important:* Expands the optical mapping capabilities.

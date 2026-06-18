@@ -135,7 +135,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train custom terrain profile")
     parser.add_argument("--dir", required=True, help="Directory containing Terrain.png")
     parser.add_argument("--fix", required=True, help="Path to fixed JSON map")
-    parser.add_argument("--out", default="assets/user_terrain_profile.json", help="Output profile JSON")
+    parser.add_argument("--style", default="Hollow Moon", help="Style for the profile output")
+    parser.add_argument("--out", default=None, help="Output profile JSON path. If omitted, uses assets/styles/<style>/user_terrain_profile.json")
     parser.add_argument("--scale_x", type=float, default=None, help="Background X scale")
     parser.add_argument("--scale_y", type=float, default=None, help="Background Y scale")
     parser.add_argument("--offset_x", type=float, default=None, help="Background X offset")
@@ -143,8 +144,12 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
+    out_path = args.out
+    if out_path is None:
+        out_path = os.path.join("assets", "styles", args.style, "user_terrain_profile.json")
+    
     trainer = TerrainProfileTrainer()
     try:
-        trainer.train(args.dir, args.fix, args.out, args.scale_x, args.scale_y, args.offset_x, args.offset_y)
+        trainer.train(args.dir, args.fix, out_path, args.scale_x, args.scale_y, args.offset_x, args.offset_y)
     except Exception as e:
         print(f"Training failed: {e}")

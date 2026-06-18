@@ -100,7 +100,7 @@ const LayerPanel: React.FC<LayerPanelProps> = ({
                   <button className={styles.iconBtn} onClick={(e) => { e.stopPropagation(); onMoveLayer(layer.id, 'up'); }} title="Move Up">↑</button>
                   <button className={styles.iconBtn} onClick={(e) => { e.stopPropagation(); onMoveLayer(layer.id, 'down'); }} title="Move Down">↓</button>
                   {onDeleteLayer && (
-                    <button className={styles.iconBtn} onClick={(e) => { e.stopPropagation(); onDeleteLayer(layer.id); }} title="Delete" style={{color: '#ef4444'}}>✖</button>
+                    <button className={styles.iconBtn} onClick={(e) => { e.stopPropagation(); if(window.confirm(`Are you sure you want to delete the group "${layer.name}"?`)) onDeleteLayer(layer.id); }} title="Delete" style={{color: '#ef4444'}}>✖</button>
                   )}
                 </div>
               </div>
@@ -147,7 +147,7 @@ const LayerPanel: React.FC<LayerPanelProps> = ({
                 <button className={styles.iconBtn} onClick={(e) => { e.stopPropagation(); onMoveLayer(layer.id, 'up'); }} title="Move Up">↑</button>
                 <button className={styles.iconBtn} onClick={(e) => { e.stopPropagation(); onMoveLayer(layer.id, 'down'); }} title="Move Down">↓</button>
                 {onDeleteLayer && (
-                  <button className={styles.iconBtn} onClick={(e) => { e.stopPropagation(); onDeleteLayer(layer.id); }} title="Delete" style={{color: '#ef4444'}}>✖</button>
+                  <button className={styles.iconBtn} onClick={(e) => { e.stopPropagation(); if(window.confirm(`Are you sure you want to delete the layer "${layer.name}"?`)) onDeleteLayer(layer.id); }} title="Delete" style={{color: '#ef4444'}}>✖</button>
                 )}
               </div>
             </div>

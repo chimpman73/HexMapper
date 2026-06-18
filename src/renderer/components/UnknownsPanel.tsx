@@ -5,9 +5,10 @@ interface UnknownsPanelProps {
   unknowns: any[];
   onResolve: (unknownId: string, action: 'ignore' | 'map' | 'save', payload?: any) => void;
   onHover: (hexKey: string | null) => void;
+  onClose: () => void;
 }
 
-export default function UnknownsPanel({ unknowns, onResolve, onHover }: UnknownsPanelProps) {
+export default function UnknownsPanel({ unknowns, onResolve, onHover, onClose }: UnknownsPanelProps) {
   const [selectedUnknown, setSelectedUnknown] = useState<any>(null);
 
   if (unknowns.length === 0) return null;
@@ -18,11 +19,20 @@ export default function UnknownsPanel({ unknowns, onResolve, onHover }: Unknowns
       backgroundColor: '#1e293b', borderLeft: '1px solid #334155', color: '#f8fafc',
       display: 'flex', flexDirection: 'column', zIndex: 100, overflowY: 'auto'
     }}>
-      <div style={{ padding: '15px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a' }}>
-        <h3 style={{ margin: 0, fontSize: '16px', color: '#fbbf24' }}>⚠️ Unknown Symbols Detected</h3>
-        <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#94a3b8' }}>
-          We found {unknowns.length} structures we couldn't recognize.
-        </p>
+      <div style={{ padding: '15px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: '16px', color: '#fbbf24' }}>⚠️ Unknown Symbols Detected</h3>
+          <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#94a3b8' }}>
+            We found {unknowns.length} structures we couldn't recognize.
+          </p>
+        </div>
+        <button 
+          onClick={onClose}
+          title="Dismiss Panel"
+          style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '16px', padding: '0 5px' }}
+        >
+          ✕
+        </button>
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', padding: '15px' }}>

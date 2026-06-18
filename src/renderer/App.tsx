@@ -38,6 +38,7 @@ const App: React.FC = () => {
   const [globalBorders, setGlobalBorders] = useState<any[]>([]);
   const [globalRivers, setGlobalRivers] = useState<any[]>([]);
   const [unknowns, setUnknowns] = useState<any[]>([]);
+  const [showUnknownsPanel, setShowUnknownsPanel] = useState<boolean>(true);
   const [highlightedHexKey, setHighlightedHexKey] = useState<string | null>(null);
 
   const [bgScaleX, setBgScaleX] = useState<number>(1);
@@ -426,6 +427,11 @@ const App: React.FC = () => {
           <button className={styles.projectButton} onClick={() => setShowImportModal(true)} disabled={isScanning} style={{background: '#f59e0b'}}>
             {isScanning ? 'Scanning...' : 'Extract Map'}
           </button>
+          {unknowns.length > 0 && (
+            <button className={styles.projectButton} onClick={() => setShowUnknownsPanel(!showUnknownsPanel)} style={{background: '#ef4444'}} title="Toggle Unknowns Panel">
+              ⚠️ {unknowns.length} Unknowns
+            </button>
+          )}
         </div>
         <div className={styles.toolbarControls}>
           <label className={styles.controlLabel}>
@@ -529,11 +535,12 @@ const App: React.FC = () => {
             onDeleteLayer={deleteLayer}
             onRenameLayer={renameLayer}
           />
-          {unknowns.length > 0 && (
+          {unknowns.length > 0 && showUnknownsPanel && (
             <UnknownsPanel 
               unknowns={unknowns} 
               onResolve={handleResolveUnknown} 
               onHover={setHighlightedHexKey} 
+              onClose={() => setShowUnknownsPanel(false)}
             />
           )}
         </div>
