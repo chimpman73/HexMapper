@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
 import { KonvaEventObject } from 'konva/lib/Node';
+import Konva from 'konva';
 import { HexCube } from '../types';
 import { useMapStore } from '../store/mapStore';
-import { VectorLayer } from '../types';
+import { VectorLayer, VectorLine } from '../types';
 
 export function useMapInteraction() {
   const { 
@@ -36,7 +37,7 @@ export function useMapInteraction() {
         if (selectedLineId && activeLayerId) {
           setLayers(prev => prev.map(l => {
             if (l.id === activeLayerId && (l.type === 'river' || l.type === 'cliff' || l.type === 'border' || l.type === 'label' || l.type === 'road')) {
-              return { ...l, data: (l.data as any[]).filter(d => d.id !== selectedLineId) } as VectorLayer;
+              return { ...l, data: (l.data as VectorLine[]).filter(d => d.id !== selectedLineId) } as VectorLayer;
             }
             return l;
           }));
@@ -61,7 +62,7 @@ export function useMapInteraction() {
     return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };
   }, [selectedLineId, activeLayerId, setLayers]);
 
-  const getRelativePointerPosition = useCallback((stage: any) => {
+  const getRelativePointerPosition = useCallback((stage: Konva.Stage) => {
     const pointer = stage.getPointerPosition();
     const currentScale = stage.scaleX();
     return {
@@ -199,7 +200,7 @@ export function useMapInteraction() {
             };
             return {
               ...l,
-              data: [...(l.data as any[]), newData]
+              data: [...(l.data as VectorLine[]), newData]
             } as VectorLayer;
           }
           return l;
@@ -228,7 +229,7 @@ export function useMapInteraction() {
           };
           return {
             ...l,
-            data: [...(l.data as any[]), newData]
+            data: [...(l.data as VectorLine[]), newData]
           } as VectorLayer;
         }
         return l;

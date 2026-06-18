@@ -14,14 +14,19 @@ export interface HexGridEngineRef {
   exportToDataURL: () => string | null;
 }
 
-import { generateCliffHashes, distToSegment } from '../utils/vectorMath';
+import { generateCliffHashes } from '../utils/vectorMath';
 import { useMapInteraction } from '../hooks/useMapInteraction';
+import GridLayerRenderer from './layers/GridLayerRenderer';
+import TerrainLayerRenderer from './layers/TerrainLayerRenderer';
+import VectorLayerRenderer from './layers/VectorLayerRenderer';
+
+import Konva from 'konva';
 
 const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, ref) => {
   const {
     orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeColor, activeLineWidth, activeRoadStyle, activeRiverStyle, roadConfig, riverConfig, layers, setLayers, activeLayerId, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines, globalBorders, highlightedHexKey, currentStyle, assetsBasePath
   } = useMapStore();
-  const stageRef = useRef<any>(null);
+  const stageRef = useRef<Konva.Stage>(null);
 
   useImperativeHandle(ref, () => ({
     exportToDataURL: () => {
@@ -145,328 +150,53 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
           }
 
           if (layer.type === 'grid') {
-            return (
-              <Group key={`group-${layer.id}`} opacity={layer.opacity} listening={false}>
-                {grid.map((hex) => {
-                  const key = `${hex.q},${hex.r},${hex.s}`;
-                  return (
-                    <Line
-                      key={`grid-${key}`}
-                      points={getHexCorners(hexToPixel(hex, orientation), orientation)}
-                      stroke="#333333"
-                      strokeWidth={2}
-                      closed
-                      listening={false}
-                    />
-                  );
-                })}
-              </Group>
-            );
+            return <GridLayerRenderer key={`group-${layer.id}`} layer={layer} grid={grid} orientation={orientation} />;
           }
 
           if (layer.type === 'terrain' || layer.type === 'city' || layer.type === 'coastline' || layer.type === 'border') {
-            const hLayer = layer as TerrainLayer | CityLayer | CoastlineLayer | BorderLayer;
-            const tiles = grid.map((hex) => {
-              const key = `${hex.q},${hex.r},${hex.s}`;
-              const isMouseHovered = (!isVectorMode && activeLayerId === layer.id && hoveredHex) ? isHexEqual(hex, hoveredHex) : false;
-              const isHovered = isMouseHovered || highlightedHexKey === key;
-              
-              const isColorLayer = layer.type === 'border';
-              const isImageLayer = layer.type === 'terrain' || layer.type === 'city' || layer.type === 'coastline';
-              
-              let imageSrc = isImageLayer ? hLayer.data[key] : undefined;
-              
-              if (imageSrc && !imageSrc.startsWith('local://') && assetsBasePath && currentStyle) {
-                imageSrc = `local://file?path=${encodeURIComponent(`${assetsBasePath}/styles/${currentStyle}/tiles/${imageSrc}`)}`;
-              }
-              
-              let fillColor = undefined;
-              if (isColorLayer && hLayer.data[key]) {
-                fillColor = layer.type === 'border' ? hLayer.data[key] + '33' : hLayer.data[key];
-              } else if ((layer.type === 'terrain' || layer.type === 'coastline') && hasBgImage && !hLayer.data[key]) {
-                fillColor = 'transparent';
-              }
-
-              return (
-                <HexTile
-                  key={`hex-${layer.id}-${key}`}
-                  hex={hex}
-                  orientation={orientation}
-                  isHovered={isHovered}
-                  imageSrc={imageSrc}
-                  fillColor={fillColor}
-                  isBaseLayer={layer.type === 'terrain'}
-                  isActiveLayer={activeLayerId === layer.id}
-                  onHover={(h) => {
-                    if (!isVectorMode) {
-                      setHoveredHex(h);
-                      if (isPaintingHex) handlePaintHex(h);
-                    }
-                  }}
-                  onLeave={() => {
-                    if (!isVectorMode) setHoveredHex(null);
-                  }}
-                  onPointerDown={(e) => {
-                    if (!isVectorMode && e && e.evt && e.evt.button === 0 && !e.evt.altKey) {
-                      handlePaintHex(hex);
-                    }
-                  }}
-                  showCoordinates={showCoordinates}
-                />
-              );
-            });
-
-            if (layer.type === 'coastline' || layer.type === 'border') {
-              const edgesToDraw = proceduralEdges.filter(e => e.id.startsWith(layer.id + '-'));
-              
-              // Apply clipping mask ONLY to the coastline image tiles, NOT the procedural edges
-              let renderedTiles = <>{tiles}</>;
-              if (layer.type === 'coastline') {
-                const layerVectors = layer.vectors;
-                if (layerVectors && layerVectors.length > 0) {
-                  renderedTiles = (
-                    <Group 
-                      clipFunc={(ctx) => {
-                        ctx.beginPath();
-                        layerVectors.forEach((pathPoints: any[]) => {
-                          const n = pathPoints.length;
-                          if (n > 0) {
-                            ctx.moveTo(pathPoints[0].x, pathPoints[0].y);
-                            for (let j = 1; j < n; j++) {
-                               ctx.lineTo(pathPoints[j].x, pathPoints[j].y);
-                            }
-                            ctx.closePath();
-                          }
-                        });
-                        ctx.clip("evenodd");
-                      }}
-                    >
-                      {tiles}
-                    </Group>
-                  );
-                }
-              }
-              if (layer.type === 'border' && globalBorders && globalBorders.length > 0) {
-                return (
-                  <Group key={layer.id} opacity={layer.opacity}>
-                    {globalBorders.map((pathPoints, i) => {
-                      if (pathPoints.length > 0) {
-                        const flattenedPoints = pathPoints.flatMap((p: any) => [p.x, p.y]);
-                        return (
-                          <Line
-                            key={`global-border-${i}`}
-                            points={flattenedPoints}
-                            fill="#dc2626" 
-                            closed={true}
-                            opacity={layer.opacity}
-                            tension={0}
-                          />
-                        );
-                      }
-                      return null;
-                    })}
-                  </Group>
-                );
-              }
-
-              return (
-                <React.Fragment key={`group-${layer.id}`}>
-                  {renderedTiles}
-                  {edgesToDraw.map(edge => (
-                    <Line
-                      key={edge.id}
-                      points={edge.points}
-                      stroke={edge.color}
-                      strokeWidth={edge.type === 'coastline' ? 3 : 5}
-                      tension={0}
-                      lineCap="round"
-                      lineJoin="round"
-                      opacity={layer.opacity}
-                    />
-                  ))}
-                </React.Fragment>
-              );
-            }
-            return tiles;
-          } else {
-            const vLayer = layer as VectorLayer;
             return (
-              <React.Fragment key={`group-${layer.id}`}>
-                {vLayer.data.map((line) => {
-                  let roadDash;
-                  let strokeColor = hoveredLineId === line.id ? '#ff5252' : line.stroke;
-                  let innerTunnelColor;
-                  let isHighlighted = (activeLayer?.type === 'road' && activeRoadStyle === 'highlight') || (activeLayer?.type === 'river' && activeRiverStyle === 'highlight');
-                  
-                  if (layer.type === 'road') {
-                    const styleConfig = roadConfig?.[line.roadStyle || 'road'];
-                    if (styleConfig) {
-                      strokeColor = hoveredLineId === line.id ? '#ff5252' : styleConfig.color;
-                      roadDash = styleConfig.dash?.length > 0 ? styleConfig.dash : undefined;
-                      innerTunnelColor = styleConfig.innerColor;
-                    } else {
-                      if (line.roadStyle === 'path') {
-                        roadDash = [10, 10];
-                        strokeColor = hoveredLineId === line.id ? '#ff5252' : '#8B4513';
-                      } else if (line.roadStyle === 'tunnel') {
-                        strokeColor = hoveredLineId === line.id ? '#ff5252' : '#555555';
-                        innerTunnelColor = '#ffffff';
-                      } else {
-                        strokeColor = hoveredLineId === line.id ? '#ff5252' : '#A0522D';
-                      }
-                    }
-                  } else if (layer.type === 'river') {
-                    const styleConfig = riverConfig?.[line.riverStyle || 'river'];
-                    if (styleConfig) {
-                      strokeColor = hoveredLineId === line.id ? '#ff5252' : styleConfig.color;
-                      roadDash = styleConfig.dash?.length > 0 ? styleConfig.dash : undefined;
-                    } else {
-                      if (line.riverStyle === 'stream') {
-                        roadDash = [5, 5];
-                        strokeColor = hoveredLineId === line.id ? '#ff5252' : '#60a5fa';
-                      } else {
-                        strokeColor = hoveredLineId === line.id ? '#ff5252' : '#3b82f6';
-                      }
-                    }
-                  }
-
-                  return (
-                  <Group 
-                    key={`line-frag-${layer.id}-${line.id}`}
-                    onDblClick={(e) => {
-                      if (isVectorMode && activeLayerId === layer.id && layer.type === 'road' && selectedLineId === line.id) {
-                        e.cancelBubble = true;
-                        const stage = e.target.getStage();
-                        if (stage) {
-                          const pos = getRelativePointerPosition(stage);
-                          let bestIndex = 0;
-                          let minDist = Infinity;
-                          for (let i = 0; i < line.points.length - 2; i += 2) {
-                             const p1 = { x: line.points[i], y: line.points[i+1] };
-                             const p2 = { x: line.points[i+2], y: line.points[i+3] };
-                             const dist = distToSegment(pos, p1, p2);
-                             if (dist < minDist) {
-                               minDist = dist;
-                               bestIndex = i + 2;
-                             }
-                          }
-                          const newPoints = [...line.points];
-                          newPoints.splice(bestIndex, 0, pos.x, pos.y);
-                          setLayers(prev => prev.map(l => {
-                            if (l.id === layer.id) {
-                              const vl = l as VectorLayer;
-                              return { ...vl, data: vl.data.map(dl => dl.id === line.id ? { ...dl, points: newPoints } : dl) };
-                            }
-                            return l;
-                          }));
-                        }
-                      }
-                    }}
-                    onMouseDown={(e) => {
-                      if (isVectorMode && activeLayerId === layer.id) {
-                        if (activeColor === null) {
-                          e.cancelBubble = true;
-                          setHoveredLineId(null);
-                          setLayers(prev => prev.map(l => {
-                            if (l.id === layer.id) {
-                              const vl = l as VectorLayer;
-                              return { ...vl, data: vl.data.filter(dl => dl.id !== line.id) };
-                            }
-                            return l;
-                          }));
-                        } else if (layer.type === 'road' || layer.type === 'river') {
-                          e.cancelBubble = true;
-                          setSelectedLineId(line.id);
-                        }
-                      }
-                    }}
-                    onMouseEnter={(e) => {
-                      if (isVectorMode && (activeColor === null || layer.type === 'road' || layer.type === 'river') && activeLayerId === layer.id) {
-                        const stage = e.target.getStage();
-                        if (stage) stage.container().style.cursor = 'pointer';
-                        setHoveredLineId(line.id);
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (isVectorMode && (activeColor === null || layer.type === 'road' || layer.type === 'river') && activeLayerId === layer.id) {
-                        const stage = e.target.getStage();
-                        if (stage) stage.container().style.cursor = 'crosshair';
-                        if (hoveredLineId === line.id) setHoveredLineId(null);
-                      }
-                    }}
-                  >
-                    {isHighlighted && (
-                      <Line
-                        points={line.points}
-                        stroke="#ffff00"
-                        strokeWidth={line.strokeWidth + 8}
-                        tension={line.tension}
-                        lineCap="round"
-                        lineJoin="round"
-                        opacity={0.6}
-                        listening={false}
-                        shadowColor="#ffff00"
-                        shadowBlur={15}
-                      />
-                    )}
-                    <Line
-                      points={line.points}
-                      stroke={strokeColor}
-                      strokeWidth={line.strokeWidth}
-                      hitStrokeWidth={Math.max(20, line.strokeWidth)}
-                      tension={line.tension}
-                      lineCap="round"
-                      lineJoin="round"
-                      dash={roadDash}
-                      opacity={hoveredLineId === line.id ? 0.5 : layer.opacity}
-                    />
-                    {layer.type === 'road' && line.roadStyle === 'tunnel' && (
-                       <Line
-                          points={line.points}
-                          stroke={innerTunnelColor}
-                          strokeWidth={Math.max(1, line.strokeWidth * (roadConfig?.tunnel?.innerWidthMultiplier ?? 0.6))}
-                          tension={line.tension}
-                          lineCap="round"
-                          lineJoin="round"
-                          opacity={hoveredLineId === line.id ? 0.5 : layer.opacity}
-                          listening={false}
-                       />
-                    )}
-                    {layer.type === 'cliff' && generateCliffHashes(line.points, line.invert, hoveredLineId === line.id ? '#ff5252' : line.stroke, line.strokeWidth, line.id, hoveredLineId === line.id ? 0.5 : layer.opacity)}
-                    {selectedLineId === line.id && (layer.type === 'road' || layer.type === 'river') && (
-                      <Group>
-                        {Array.from({ length: line.points.length / 2 }).map((_, ptIndex) => (
-                          <import_react_konva.Circle
-                            key={`anchor-${line.id}-${ptIndex}`}
-                            x={line.points[ptIndex * 2]}
-                            y={line.points[ptIndex * 2 + 1]}
-                            radius={5}
-                            fill="#ffffff"
-                            stroke="#ff5252"
-                            strokeWidth={2}
-                            draggable
-                            onDragMove={(e) => {
-                               const newPoints = [...line.points];
-                               newPoints[ptIndex * 2] = e.target.x();
-                               newPoints[ptIndex * 2 + 1] = e.target.y();
-                               setLayers(prev => prev.map(l => {
-                                 if (l.id === layer.id) {
-                                   const vl = l as VectorLayer;
-                                   return { ...vl, data: vl.data.map(dl => dl.id === line.id ? { ...dl, points: newPoints } : dl) };
-                                 }
-                                 return l;
-                               }));
-                            }}
-                          />
-                        ))}
-                      </Group>
-                    )}
-                  </Group>
-                );
-              })}
-              </React.Fragment>
+              <TerrainLayerRenderer
+                key={`group-${layer.id}`}
+                layer={layer as any}
+                grid={grid}
+                orientation={orientation}
+                isVectorMode={isVectorMode || false}
+                activeLayerId={activeLayerId}
+                hoveredHex={hoveredHex}
+                highlightedHexKey={highlightedHexKey}
+                currentStyle={currentStyle}
+                assetsBasePath={assetsBasePath}
+                hasBgImage={hasBgImage}
+                showCoordinates={showCoordinates}
+                isPaintingHex={isPaintingHex}
+                globalBorders={globalBorders}
+                proceduralEdges={proceduralEdges}
+                setHoveredHex={setHoveredHex}
+                handlePaintHex={handlePaintHex}
+              />
             );
           }
+
+          const vLayer = layer as import('../types').VectorLayer;
+          return (
+            <VectorLayerRenderer
+              key={`group-${layer.id}`}
+              layer={vLayer}
+              activeLayer={activeLayer}
+              activeLayerId={activeLayerId}
+              hoveredLineId={hoveredLineId}
+              selectedLineId={selectedLineId}
+              isVectorMode={isVectorMode || false}
+              activeRoadStyle={activeRoadStyle || 'road'}
+              activeRiverStyle={activeRiverStyle || 'river'}
+              roadConfig={roadConfig}
+              riverConfig={riverConfig}
+              activeColor={activeColor}
+              setLayers={setLayers}
+              setSelectedLineId={setSelectedLineId}
+              setHoveredLineId={setHoveredLineId}
+            />
+          );
         })}
 
         {/* Draw the current freehand line in progress */}

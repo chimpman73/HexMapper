@@ -1,5 +1,15 @@
 import React from 'react';
 import { Line } from 'react-konva';
+import Konva from 'konva';
+
+export const getRelativePointerPosition = (stage: Konva.Stage) => {
+  const pointer = stage.getPointerPosition();
+  const currentScale = stage.scaleX();
+  return {
+    x: (pointer!.x - stage.x()) / currentScale,
+    y: (pointer!.y - stage.y()) / currentScale,
+  };
+};
 
 export const generateCliffHashes = (points: number[], invert: boolean | undefined, color: string, width: number, id: string, opacity: number = 1) => {
   const hashes = [];
