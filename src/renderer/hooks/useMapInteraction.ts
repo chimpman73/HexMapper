@@ -11,7 +11,7 @@ export function useMapInteraction() {
   } = useMapStore();
 
   const activeLayer = layers.find(l => l.id === activeLayerId);
-  const isVectorMode = activeLayer && (activeLayer.type === 'river' || activeLayer.type === 'cliff' || activeLayer.type === 'label' || activeLayer.type === 'road');
+  const isVectorMode = activeLayer && (activeLayer.type === 'river' || activeLayer.type === 'cliff' || activeLayer.type === 'label' || activeLayer.type === 'road' || activeLayer.type === 'coastline');
 
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -36,7 +36,7 @@ export function useMapInteraction() {
       if (e.key === 'Delete') {
         if (selectedLineId && activeLayerId) {
           setLayers(prev => prev.map(l => {
-            if (l.id === activeLayerId && (l.type === 'river' || l.type === 'cliff' || l.type === 'border' || l.type === 'label' || l.type === 'road')) {
+            if (l.id === activeLayerId && (l.type === 'river' || l.type === 'cliff' || l.type === 'border' || l.type === 'label' || l.type === 'road' || l.type === 'coastline')) {
               return { ...l, data: (l.data as VectorLine[]).filter(d => d.id !== selectedLineId) } as VectorLayer;
             }
             return l;
@@ -130,7 +130,7 @@ export function useMapInteraction() {
     
     if (e.evt.button === 0 && !e.evt.altKey) {
       if (isVectorMode) {
-        if (activeColor !== null || activeLayer?.type === 'road' || activeLayer?.type === 'river') {
+        if (activeColor !== null || activeLayer?.type === 'road' || activeLayer?.type === 'river' || activeLayer?.type === 'coastline') {
           const stage = e.target.getStage();
           if (stage && e.target === stage) setSelectedLineId(null);
           if (stage) {
@@ -187,16 +187,17 @@ export function useMapInteraction() {
     if (isVectorMode && currentLine) {
       if (!isDrawingPath) {
         setLayers(prev => prev.map(l => {
-          if (l.id === activeLayerId && (l.type === 'river' || l.type === 'cliff' || l.type === 'border' || l.type === 'label' || l.type === 'road')) {
+          if (l.id === activeLayerId && (l.type === 'river' || l.type === 'cliff' || l.type === 'border' || l.type === 'label' || l.type === 'road' || l.type === 'coastline')) {
             const newData = {
               id: Date.now().toString(),
               points: currentLine,
-              stroke: activeColor || '#000000',
+              stroke: activeColor || (l.type === 'coastline' ? '#222222' : '#000000'),
               strokeWidth: activeLineWidth,
-              tension: 0.5,
+              tension: l.type === 'coastline' && useMapStore.getState().activeCoastlineStyle === 'fractal' ? 0 : 0.5,
               invert: isShiftPressed,
               roadStyle: l.type === 'road' ? activeRoadStyle : undefined,
-              riverStyle: l.type === 'river' ? activeRiverStyle : undefined
+              riverStyle: l.type === 'river' ? activeRiverStyle : undefined,
+              coastlineStyle: l.type === 'coastline' ? useMapStore.getState().activeCoastlineStyle : undefined
             };
             return {
               ...l,
@@ -216,16 +217,17 @@ export function useMapInteraction() {
     if (isVectorMode && isDrawingPath && currentLine && currentLine.length >= 4) {
       const finalPoints = currentLine.slice(0, -2);
       setLayers(prev => prev.map(l => {
-        if (l.id === activeLayerId && (l.type === 'road' || l.type === 'river')) {
+        if (l.id === activeLayerId && (l.type === 'road' || l.type === 'river' || l.type === 'coastline')) {
           const newData = {
             id: Date.now().toString(),
             points: finalPoints,
-            stroke: activeColor || '#000000',
+            stroke: activeColor || (l.type === 'coastline' ? '#222222' : '#000000'),
             strokeWidth: activeLineWidth,
-            tension: 0.5,
+            tension: l.type === 'coastline' && useMapStore.getState().activeCoastlineStyle === 'fractal' ? 0 : 0.5,
             invert: isShiftPressed,
-            roadStyle: activeRoadStyle,
-            riverStyle: activeRiverStyle
+            roadStyle: l.type === 'road' ? activeRoadStyle : undefined,
+            riverStyle: l.type === 'river' ? activeRiverStyle : undefined,
+            coastlineStyle: l.type === 'coastline' ? useMapStore.getState().activeCoastlineStyle : undefined
           };
           return {
             ...l,

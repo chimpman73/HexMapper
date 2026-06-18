@@ -95,4 +95,11 @@ HexMapper includes a robust, vector-based drawing system for Roads and Rivers th
 
 ## 7. Extracted Vector Injection
 When the Optical Map Reconstruction Engine scans an image (such as the Global Shoreline or Rivers pass), the resulting raw coordinate data is seamlessly converted into standard, editable `VectorLine` objects.
-- **River Extraction**: During the final compilation stage of the scanner, the raw array of river paths is intercepted and formatted into vector lines. These lines are injected directly into the active `river` layer. This allows the user to immediately utilize the **Spline Anchor Editing** tools to refine or correct the automatically extracted rivers as if they had drawn them by hand.
+- **Coastline Extraction & Processing**: 
+  - Multiple imported coastline files are injected into separate, reorderable Vector Layers in the stack (e.g. `Coastline_Base`, `Coastline_Islands`).
+  - The engine mathematically averages the color of the water regions from the imported images and dynamically maps them to a HexMapper style brush. This custom extracted color is injected directly into the VectorLine.
+  - Coastline vectors are natively rendered as `closed` polygons with a solid background fill. HexMapper utilizes an `evenodd` SVG path fill rule across the entire layer, enabling mathematically perfect "cut-outs" for islands resting within larger bodies of water.
+- **River Extraction & Coastal Snapping**: 
+  - During the final compilation stage of the scanner, the raw array of river paths is intercepted and formatted into vector lines.
+  - The backend engine performs a geometric distance check against all generated coastlines. If a river's start or end node is within `0.8 * hex_size` of a shoreline, that specific node is snapped dynamically to the closest point on the coastline segment.
+  - These lines are injected directly into the active `river` layer, allowing the user to immediately utilize the **Spline Anchor Editing** tools to refine or correct the automatically extracted rivers. Moving a river anchor in the UI will mathematically project and snap the node to any nearby coastline.

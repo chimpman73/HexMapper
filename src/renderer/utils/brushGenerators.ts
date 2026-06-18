@@ -122,3 +122,54 @@ export function generateRiverBrush(type: 'stream' | 'river' | 'highlight', confi
 
   return canvas.toDataURL();
 }
+
+export function generateCoastlineBrush(type: 'smooth' | 'fractal'): string {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return '';
+
+  const cx = 32;
+  const cy = 32;
+  const r = 30;
+
+  // Draw hex background
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const angle = (Math.PI / 180) * (60 * i - 30);
+    const x = cx + r * Math.cos(angle);
+    const y = cy + r * Math.sin(angle);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = '#7cb342';
+  ctx.fill();
+  
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Draw coastline
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#222222';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  
+  if (type === 'smooth') {
+     ctx.moveTo(12, 32);
+     ctx.bezierCurveTo(25, 15, 39, 49, 52, 32);
+  } else {
+     ctx.moveTo(12, 32);
+     ctx.lineTo(20, 24);
+     ctx.lineTo(28, 36);
+     ctx.lineTo(36, 26);
+     ctx.lineTo(44, 40);
+     ctx.lineTo(52, 32);
+  }
+  ctx.stroke();
+
+  return canvas.toDataURL();
+}

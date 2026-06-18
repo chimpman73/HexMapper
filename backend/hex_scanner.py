@@ -99,7 +99,6 @@ class HexScanner:
                     "unknown_hexes": unknown_hexes, "use_ink_filter": use_ink_filter
                 }
 
-                self._process_coastlines(ctx)
                 self._process_terrain(ctx)
                 self._process_cities(ctx)
 
@@ -155,13 +154,7 @@ class HexScanner:
                 else:
                     existing_layers.append(new_layer)
 
-        # QoL: Clean up empty terrain and coastline layers if multiple exist and at least one has data
-        for layer_type in ["terrain", "coastline"]:
-            type_layers = [l for l in existing_layers if l.get("type") == layer_type]
-            if len(type_layers) > 1:
-                has_items = any(len(l.get("data", {})) > 0 for l in type_layers)
-                if has_items:
-                    existing_layers = [l for l in existing_layers if not (l.get("type") == layer_type and len(l.get("data", {})) == 0)]
+
 
         # Convert global rivers to vector lines
         if data.global_rivers:
@@ -170,9 +163,59 @@ class HexScanner:
                 if not isinstance(river_layer.get("data"), list):
                     river_layer["data"] = []
                 for path_points in data.global_rivers:
+                    if len(path_points) < 2: continue
+                    
                     flat_points = []
                     for p in path_points:
                         flat_points.extend([p["x"], p["y"]])
+                        
+                    # Snap one endpoint to the nearest coastline if within threshold
+                    if data.global_coastlines:
+                        start_pt = {"x": flat_points[0], "y": flat_points[1]}
+                        end_pt = {"x": flat_points[-2], "y": flat_points[-1]}
+                        
+                        best_dist = float('inf')
+                        best_snap_pt = None
+                        is_start = True
+                        
+                        threshold = self._hex_grid.hex_size * 0.8
+                        
+                        for c_path in data.global_coastlines:
+                            for i in range(len(c_path) - 1):
+                                p1 = c_path[i]
+                                p2 = c_path[i+1]
+                                
+                                # Distance to start_pt
+                                l2 = (p2["x"] - p1["x"])**2 + (p2["y"] - p1["y"])**2
+                                if l2 > 0:
+                                    t = max(0, min(1, ((start_pt["x"] - p1["x"]) * (p2["x"] - p1["x"]) + (start_pt["y"] - p1["y"]) * (p2["y"] - p1["y"])) / l2))
+                                    proj_x = p1["x"] + t * (p2["x"] - p1["x"])
+                                    proj_y = p1["y"] + t * (p2["y"] - p1["y"])
+                                    dist = math.hypot(start_pt["x"] - proj_x, start_pt["y"] - proj_y)
+                                    if dist < best_dist:
+                                        best_dist = dist
+                                        best_snap_pt = {"x": proj_x, "y": proj_y}
+                                        is_start = True
+                                        
+                                # Distance to end_pt
+                                if l2 > 0:
+                                    t = max(0, min(1, ((end_pt["x"] - p1["x"]) * (p2["x"] - p1["x"]) + (end_pt["y"] - p1["y"]) * (p2["y"] - p1["y"])) / l2))
+                                    proj_x = p1["x"] + t * (p2["x"] - p1["x"])
+                                    proj_y = p1["y"] + t * (p2["y"] - p1["y"])
+                                    dist = math.hypot(end_pt["x"] - proj_x, end_pt["y"] - proj_y)
+                                    if dist < best_dist:
+                                        best_dist = dist
+                                        best_snap_pt = {"x": proj_x, "y": proj_y}
+                                        is_start = False
+                                        
+                        if best_snap_pt and best_dist < threshold:
+                            if is_start:
+                                flat_points[0] = best_snap_pt["x"]
+                                flat_points[1] = best_snap_pt["y"]
+                            else:
+                                flat_points[-2] = best_snap_pt["x"]
+                                flat_points[-1] = best_snap_pt["y"]
+
                     river_layer["data"].append({
                         "id": f"river_{str(uuid.uuid4())[:8]}",
                         "points": flat_points,
@@ -181,6 +224,79 @@ class HexScanner:
                         "tension": 0.5,
                         "riverStyle": "river"
                     })
+
+        # Convert coastline layers to vector layers with matched colors
+        if data.coastline_layers:
+            for c_layer in data.coastline_layers:
+                if not c_layer.vectors:
+                    continue
+                    
+                mean_color = None
+                if c_layer.img_bgr is not None and c_layer.ink_mask is not None:
+                    mean_color = cv2.mean(c_layer.img_bgr, mask=c_layer.ink_mask)[:3]
+                    
+                best_match_key = "Coastline/hex_104.png"
+                best_fill_hex = "#3b82f6"
+                
+                if mean_color is not None:
+                    best_dist = float('inf')
+                    b, g, r = mean_color
+                    for t in self._template_manager.templates["coastline"]:
+                        if t.get("mean_color") is not None:
+                            tb, tg, tr = t["mean_color"]
+                            dist = math.sqrt((b - tb)**2 + (g - tg)**2 + (r - tr)**2)
+                            if dist < best_dist:
+                                best_dist = dist
+                                best_match_key = t["key"]
+                                best_fill_hex = f"#{int(tr):02x}{int(tg):02x}{int(tb):02x}"
+                
+                # Check if layer already exists
+                layer_obj = next((l for l in existing_layers if l.get("name") == c_layer.name and l.get("type") == "coastline"), None)
+                if not layer_obj:
+                    layer_obj = {
+                        "id": f"layer_{str(uuid.uuid4())[:8]}",
+                        "name": c_layer.name,
+                        "type": "coastline",
+                        "visible": True,
+                        "opacity": 1,
+                        "sourceFilename": c_layer.name,
+                        "data": []
+                    }
+                    insert_idx = -1
+                    for i, l in enumerate(existing_layers):
+                        if l.get("type") == "coastline":
+                            insert_idx = i
+                            break
+                    if insert_idx != -1:
+                        existing_layers.insert(insert_idx, layer_obj)
+                    else:
+                        existing_layers.append(layer_obj)
+                    
+                if not isinstance(layer_obj.get("data"), list):
+                    layer_obj["data"] = []
+                    
+                for path_points in c_layer.vectors:
+                    flat_points = []
+                    for p in path_points:
+                        flat_points.extend([p["x"], p["y"]])
+                    layer_obj["data"].append({
+                        "id": f"coastline_{str(uuid.uuid4())[:8]}",
+                        "points": flat_points,
+                        "stroke": "#222222",
+                        "strokeWidth": 3,
+                        "tension": 0.5,
+                        "coastlineStyle": "smooth",
+                        "brushKey": best_match_key,
+                        "fill": best_fill_hex
+                    })
+
+        # QoL: Clean up empty terrain and coastline layers if multiple exist and at least one has data
+        for layer_type in ["terrain", "coastline"]:
+            type_layers = [l for l in existing_layers if l.get("type") == layer_type]
+            if len(type_layers) > 1:
+                has_items = any(len(l.get("data", {})) > 0 for l in type_layers)
+                if has_items:
+                    existing_layers = [l for l in existing_layers if not (l.get("type") == layer_type and len(l.get("data", {})) == 0)]
 
         return {
             "status": "success",

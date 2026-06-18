@@ -24,7 +24,7 @@ import Konva from 'konva';
 
 const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, ref) => {
   const {
-    orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeColor, activeLineWidth, activeRoadStyle, activeRiverStyle, roadConfig, riverConfig, layers, setLayers, activeLayerId, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines, globalBorders, highlightedHexKey, currentStyle, assetsBasePath
+    orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeColor, activeLineWidth, activeRoadStyle, activeRiverStyle, activeCoastlineStyle, roadConfig, riverConfig, layers, setLayers, activeLayerId, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines, globalBorders, highlightedHexKey, currentStyle, assetsBasePath
   } = useMapStore();
   const stageRef = useRef<Konva.Stage>(null);
 
@@ -53,12 +53,12 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
     const edges: Array<{ id: string; points: number[]; color: string; type: LayerType }> = [];
     
     layers.forEach(layer => {
-      if ((layer.type === 'coastline' || layer.type === 'border') && layer.visible) {
+      if (layer.type === 'border' && layer.visible) {
         for (const key in layer.data) {
           const rawVal = layer.data[key] as string;
           if (!rawVal) continue;
           
-          const color = layer.type === 'coastline' ? '#3b82f6' : rawVal;
+          const color = layer.type === 'border' ? (layer.data[key] as string) : '#222222';
 
           const [q, r, s] = key.split(',').map(Number);
           const center = hexToPixel({ q, r, s }, orientation);
@@ -88,14 +88,12 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
                 const hash = Math.sin(c1.x * 12.9898 + c1.y * 78.233) * 43758.5453;
                 const rand = hash - Math.floor(hash);
                 
-                const nx = -dy / len;
-                const ny = dx / len;
-                const offsetAmount = layer.type === 'coastline' ? (rand - 0.5) * 5 : 0; 
+                const offsetAmount = 0;
                 
                 edges.push({
                   id: `${layer.id}-${key}-${idx}`,
                   points: [c1.x, c1.y, midX + nx * offsetAmount, midY + ny * offsetAmount, c2.x, c2.y],
-                  color: layer.type === 'coastline' ? '#222222' : color,
+                  color: color,
                   type: layer.type
                 });
               }
@@ -153,7 +151,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
             return <GridLayerRenderer key={`group-${layer.id}`} layer={layer} grid={grid} orientation={orientation} />;
           }
 
-          if (layer.type === 'terrain' || layer.type === 'city' || layer.type === 'coastline' || layer.type === 'border') {
+          if (layer.type === 'terrain' || layer.type === 'city' || layer.type === 'border') {
             return (
               <TerrainLayerRenderer
                 key={`group-${layer.id}`}
@@ -189,6 +187,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
               isVectorMode={isVectorMode || false}
               activeRoadStyle={activeRoadStyle || 'road'}
               activeRiverStyle={activeRiverStyle || 'river'}
+              activeCoastlineStyle={activeCoastlineStyle || 'smooth'}
               roadConfig={roadConfig}
               riverConfig={riverConfig}
               activeColor={activeColor}
@@ -229,6 +228,8 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
                     ? (roadConfig?.[activeRoadStyle || 'road']?.color || (activeRoadStyle === 'path' ? '#8B4513' : '#A0522D')) 
                     : activeLayer?.type === 'river'
                     ? (riverConfig?.[activeRiverStyle || 'river']?.color || (activeRiverStyle === 'stream' ? '#60a5fa' : '#3b82f6'))
+                    : activeLayer?.type === 'coastline'
+                    ? '#222222'
                     : (activeColor || '#000000')
                 }
                 strokeWidth={activeLineWidth}

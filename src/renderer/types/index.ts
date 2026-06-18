@@ -38,11 +38,7 @@ export interface BorderLayer extends BaseLayer {
   data: Record<string, string>; 
 }
 
-export interface CoastlineLayer extends BaseLayer {
-  type: 'coastline';
-  data: Record<string, string>;
-  vectors?: Point[][];
-}
+export type CoastlineStyle = 'smooth' | 'fractal';
 
 export type RoadStyle = 'path' | 'road' | 'tunnel' | 'highlight';
 export type RiverStyle = 'stream' | 'river' | 'highlight';
@@ -56,10 +52,13 @@ export interface VectorLine {
   invert?: boolean;
   roadStyle?: RoadStyle;
   riverStyle?: RiverStyle;
+  coastlineStyle?: CoastlineStyle;
+  brushKey?: string;
+  fill?: string;
 }
 
 export interface VectorLayer extends BaseLayer {
-  type: 'river' | 'cliff' | 'label' | 'road';
+  type: 'river' | 'cliff' | 'label' | 'road' | 'coastline';
   data: VectorLine[];
 }
 
@@ -80,7 +79,7 @@ export interface GroupLayer extends BaseLayer {
   data: {};
 }
 
-export type MapLayer = TerrainLayer | CityLayer | CoastlineLayer | BorderLayer | VectorLayer | GridLayer | BgImageLayer | GroupLayer;
+export type MapLayer = TerrainLayer | CityLayer | BorderLayer | VectorLayer | GridLayer | BgImageLayer | GroupLayer;
 
 export interface PythonScriptArgs {
   action?: string;

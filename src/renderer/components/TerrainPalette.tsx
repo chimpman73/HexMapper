@@ -1,21 +1,24 @@
 import React, { useState } from 'react';
 import styles from './TerrainPalette.module.css';
 
-import { RoadStyle, RiverStyle } from '../types';
+import { RoadStyle, RiverStyle, CoastlineStyle } from '../types';
 import { useMapStore } from '../store/mapStore';
 
 interface TerrainPaletteProps {}
 
-import { generateRoadBrush, generateRiverBrush } from '../utils/brushGenerators';
+import { generateRoadBrush, generateRiverBrush, generateCoastlineBrush } from '../utils/brushGenerators';
 
 const TerrainPalette: React.FC<TerrainPaletteProps> = () => {
-  const { 
-    activeBrush, setActiveBrush, layers, activeLayerId, activeColor, setActiveColor, activeLineWidth, setActiveLineWidth, activeRoadStyle, setActiveRoadStyle, activeRiverStyle, setActiveRiverStyle, currentStyle, roadConfig, riverConfig
-  } = useMapStore();
-  const activeLayer = layers.find(l => l.id === activeLayerId) || layers[0];
-  const [brushes, setBrushes] = useState<string[]>([]);
   const [roadBrushes, setRoadBrushes] = useState<{type: RoadStyle, url: string}[]>([]);
   const [riverBrushes, setRiverBrushes] = useState<{type: RiverStyle, url: string}[]>([]);
+  const [coastlineBrushes, setCoastlineBrushes] = useState<{type: CoastlineStyle, url: string}[]>([]);
+  
+  const { 
+    activeBrush, setActiveBrush, layers, activeLayerId, activeColor, setActiveColor, activeLineWidth, setActiveLineWidth, activeRoadStyle, setActiveRoadStyle, activeRiverStyle, setActiveRiverStyle, activeCoastlineStyle, setActiveCoastlineStyle, currentStyle, roadConfig, riverConfig
+  } = useMapStore();
+
+  const activeLayer = layers.find(l => l.id === activeLayerId) || layers[0];
+  const [brushes, setBrushes] = useState<string[]>([]);
 
   React.useEffect(() => {
     if (activeLayer.type === 'road') {
@@ -39,6 +42,24 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = () => {
   }, [activeLayer.type, riverConfig]);
 
   React.useEffect(() => {
+    if (activeLayer.type === 'coastline') {
+      setCoastlineBrushes([
+        { type: 'smooth', url: generateCoastlineBrush('smooth') },
+        { type: 'fractal', url: generateCoastlineBrush('fractal') },
+      ]);
+    }
+  }, [activeLayer.type]);
+
+  React.useEffect(() => {
+    if (activeLayer.type === 'coastline') {
+      setCoastlineBrushes([
+        { type: 'smooth', url: generateCoastlineBrush('smooth') },
+        { type: 'fractal', url: generateCoastlineBrush('fractal') },
+      ]);
+    }
+  }, [activeLayer.type]);
+
+  React.useEffect(() => {
     const loadDefault = async () => {
       if (window.api?.getDefaultTiles) {
         let folder = 'Terrain';
@@ -50,12 +71,12 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = () => {
         setBrushes(urls);
       }
     };
-    if (activeLayer.type === 'terrain' || activeLayer.type === 'city' || activeLayer.type === 'coastline') {
+    if (activeLayer.type === 'terrain' || activeLayer.type === 'city') {
       loadDefault();
     }
   }, [activeLayer.type, currentStyle]);
 
-  if (activeLayer.type !== 'terrain' && activeLayer.type !== 'city' && activeLayer.type !== 'coastline') {
+  if (activeLayer.type !== 'terrain' && activeLayer.type !== 'city') {
     return (
       <div className={styles.paletteContainer}>
         <div className={styles.vectorTools}>
@@ -97,13 +118,31 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = () => {
             </div>
           )}
 
-          {(activeLayer.type === 'border' || activeLayer.type === 'river' || activeLayer.type === 'cliff' || activeLayer.type === 'road') && (
+          {activeLayer.type === 'coastline' && setActiveCoastlineStyle && (
+            <div style={{marginBottom: '15px'}}>
+              <label style={{color: '#ccc', fontSize: '14px', display: 'block', marginBottom: '5px'}}>Coastline Style:</label>
+              <div className={styles.brushGrid}>
+                {coastlineBrushes.map((brush) => (
+                  <div 
+                    key={brush.type} 
+                    className={`${styles.brushItem} ${activeCoastlineStyle === brush.type ? styles.active : ''}`}
+                    onClick={() => setActiveCoastlineStyle(brush.type)}
+                    title={brush.type.charAt(0).toUpperCase() + brush.type.slice(1)}
+                  >
+                    <img src={brush.url} alt={brush.type} className={styles.brushImg} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(activeLayer.type === 'border' || activeLayer.type === 'river' || activeLayer.type === 'cliff' || activeLayer.type === 'road' || activeLayer.type === 'coastline') && (
             <div className={styles.brushGrid} style={{ marginBottom: '15px' }}>
               <div 
                 className={`${styles.brushItem} ${activeColor !== null ? styles.active : ''}`}
-                onClick={() => setActiveColor(activeColor || '#3b82f6')}
+                onClick={() => setActiveColor(activeColor || (activeLayer.type === 'coastline' ? '#222222' : '#3b82f6'))}
               >
-                <div className={styles.eraser} style={{ background: activeColor || '#3b82f6' }}>Paint</div>
+                <div className={styles.eraser} style={{ background: activeColor || (activeLayer.type === 'coastline' ? '#222222' : '#3b82f6') }}>Paint</div>
               </div>
               <div 
                 className={`${styles.brushItem} ${activeColor === null ? styles.active : ''}`}
@@ -115,7 +154,7 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = () => {
           )}
 
           <label style={{display: 'flex', flexDirection: 'column', gap: '5px', color: '#ccc', marginBottom: '15px'}}>
-            {(activeLayer as any).type === 'coastline' ? 'Water Fill Color:' : activeLayer.type === 'border' ? 'Border Color:' : 'Line Color:'}
+            {(activeLayer as any).type === 'coastline' ? 'Line Color:' : activeLayer.type === 'border' ? 'Border Color:' : 'Line Color:'}
             <input 
               type="color" 
               value={
@@ -123,7 +162,7 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = () => {
                   ? (roadConfig?.[activeRoadStyle || 'road']?.color || (activeRoadStyle === 'path' ? '#8b4513' : activeRoadStyle === 'tunnel' ? '#555555' : '#a0522d')) 
                   : activeLayer.type === 'river'
                   ? (riverConfig?.[activeRiverStyle || 'river']?.color || (activeRiverStyle === 'stream' ? '#60a5fa' : '#3b82f6'))
-                  : (activeColor || '#3b82f6')
+                  : (activeColor || (activeLayer.type === 'coastline' ? '#222222' : '#3b82f6'))
               } 
               onChange={e => setActiveColor(e.target.value)} 
               style={{width: '100%', height: '40px', opacity: activeColor === null ? 0.5 : 1}}
@@ -131,7 +170,7 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = () => {
             />
           </label>
 
-          {(activeLayer.type === 'river' || activeLayer.type === 'cliff' || activeLayer.type === 'border' || activeLayer.type === 'label' || activeLayer.type === 'road') && (
+          {(activeLayer.type === 'river' || activeLayer.type === 'cliff' || activeLayer.type === 'border' || activeLayer.type === 'label' || activeLayer.type === 'road' || activeLayer.type === 'coastline') && (
             <label style={{display: 'flex', flexDirection: 'column', gap: '5px', color: '#ccc'}}>
               Line Width: {activeLineWidth}px
               <input 

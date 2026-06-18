@@ -34,7 +34,7 @@ const TerrainLayerRenderer: React.FC<TerrainLayerRendererProps> = ({
     const isHovered = isMouseHovered || highlightedHexKey === key;
     
     const isColorLayer = layer.type === 'border';
-    const isImageLayer = layer.type === 'terrain' || layer.type === 'city' || layer.type === 'coastline';
+    const isImageLayer = layer.type === 'terrain' || layer.type === 'city';
     
     let imageSrc = isImageLayer ? layer.data[key] : undefined;
     
@@ -45,7 +45,7 @@ const TerrainLayerRenderer: React.FC<TerrainLayerRendererProps> = ({
     let fillColor = undefined;
     if (isColorLayer && layer.data[key]) {
       fillColor = layer.type === 'border' ? layer.data[key] + '33' : layer.data[key];
-    } else if ((layer.type === 'terrain' || layer.type === 'coastline') && hasBgImage && !layer.data[key]) {
+    } else if (layer.type === 'terrain' && hasBgImage && !layer.data[key]) {
       fillColor = 'transparent';
     }
 
@@ -78,36 +78,12 @@ const TerrainLayerRenderer: React.FC<TerrainLayerRendererProps> = ({
     );
   });
 
-  if (layer.type === 'coastline' || layer.type === 'border') {
+  if (layer.type === 'border') {
     const edgesToDraw = proceduralEdges.filter(e => e.id.startsWith(layer.id + '-'));
     
     let renderedTiles = <>{tiles}</>;
-    if (layer.type === 'coastline') {
-      const layerVectors = layer.vectors;
-      if (layerVectors && layerVectors.length > 0) {
-        renderedTiles = (
-          <Group 
-            clipFunc={(ctx) => {
-              ctx.beginPath();
-              layerVectors.forEach((pathPoints: {x: number, y: number}[]) => {
-                const n = pathPoints.length;
-                if (n > 0) {
-                  ctx.moveTo(pathPoints[0].x, pathPoints[0].y);
-                  for (let j = 1; j < n; j++) {
-                     ctx.lineTo(pathPoints[j].x, pathPoints[j].y);
-                  }
-                  ctx.closePath();
-                }
-              });
-              ctx.clip("evenodd");
-            }}
-          >
-            {tiles}
-          </Group>
-        );
-      }
-    }
-    if (layer.type === 'border' && globalBorders && globalBorders.length > 0) {
+    
+    if (globalBorders && globalBorders.length > 0) {
       return (
         <Group key={layer.id} opacity={layer.opacity}>
           {globalBorders.map((pathPoints, i) => {
@@ -138,7 +114,7 @@ const TerrainLayerRenderer: React.FC<TerrainLayerRendererProps> = ({
             key={edge.id}
             points={edge.points}
             stroke={edge.color}
-            strokeWidth={edge.type === 'coastline' ? 3 : 5}
+            strokeWidth={5}
             tension={0}
             lineCap="round"
             lineJoin="round"
