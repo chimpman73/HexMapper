@@ -80,12 +80,16 @@ To support dynamic aesthetic themes across the entire mapping platform, HexMappe
 - **Real-Time Swapping:** Users can change the active Map Style via a central UI dropdown. Because the extracted map JSON strictly saves the *template keys* rather than absolute file references, swapping the style instantly recalculates all asset sources across the grid, allowing seamless visual overhauls of massive maps with zero re-scanning.
 - **Extensibility:** New styles can be added simply by dropping a new folder containing the appropriately categorized tile subfolders into `assets/styles/`. 
 
-## 6. Advanced Road & Pathing System
-HexMapper includes a robust, vector-based Road System that integrates cleanly into the map styles.
-- **Dynamic Styling Configuration**: Roads, paths, and tunnels are defined and stylized globally via a `roads.json` configuration file located in the active style's directory. This allows different Map Styles to define their own specific colors, dash arrays, and stroke widths (e.g., inner stroke multipliers for tunnels) without modifying application code.
-- **Hex Brush UI**: The road toolset automatically parses `roads.json` and generates dynamic `<canvas>` thumbnails of hex tiles painted with the appropriate path styles over a configurable background color (`brushBackground`), providing an intuitive, visually unified palette.
-- **Highlight Mode**: The road palette includes a specialized Highlight tool. When active, it renders all roads on the canvas with a bright, glowing yellow halo using shadow blur. This allows users to easily locate tiny paths or complex road networks hidden underneath dense terrain.
-- **Spline Anchor Editing**: The vector drawing system has been completely overhauled for precise road manipulation:
-  - **Point-by-Point Drawing**: Users can click to drop anchor vertices, rubber-banding the road segment by segment. Double-clicking commits the road to the canvas. Pressing `ESC` or right-clicking at any time cancels the drawing.
-  - **Node Editing**: Selecting an existing road enters "Edit Mode". White circular anchor nodes appear at every vertex. Users can drag these nodes in real-time to reshape the road.
-  - **Node Insertion**: Double-clicking on the road line dynamically inserts a new anchor node at that specific position for finer control.
+## 6. Advanced Vector Drawing (Roads & Rivers)
+HexMapper includes a robust, vector-based drawing system for Roads and Rivers that integrates cleanly into the map styles.
+- **Dynamic Styling Configuration**: Roads, paths, tunnels, streams, and rivers are defined and stylized globally via `roads.json` and `rivers.json` configuration files located in the active style's directory. This allows different Map Styles to define their own specific colors, dash arrays, and stroke widths without modifying application code.
+- **Hex Brush UI**: The vector toolset automatically parses the configuration files and generates dynamic `<canvas>` thumbnails of hex tiles painted with the appropriate path styles over a configurable background color, providing an intuitive, visually unified palette.
+- **Highlight Mode**: The road and river palettes include a specialized Highlight tool. When active, it renders all vectors on the canvas with a bright, glowing yellow halo using shadow blur. This allows users to easily locate tiny paths or complex networks hidden underneath dense terrain.
+- **Spline Anchor Editing**: The vector drawing system has been built for precise manipulation:
+  - **Point-by-Point Drawing**: Users can click to drop anchor vertices, rubber-banding the line segment by segment. Double-clicking commits the vector to the canvas. Pressing `ESC` or right-clicking at any time cancels the drawing.
+  - **Node Editing**: Selecting an existing road or river enters "Edit Mode". White circular anchor nodes appear at every vertex. Users can drag these nodes in real-time to reshape the path.
+  - **Node Insertion**: Double-clicking on the line dynamically inserts a new anchor node at that specific position for finer control.
+
+## 7. Extracted Vector Injection
+When the Optical Map Reconstruction Engine scans an image (such as the Global Shoreline or Rivers pass), the resulting raw coordinate data is seamlessly converted into standard, editable `VectorLine` objects.
+- **River Extraction**: During the final compilation stage of the scanner, the raw array of river paths is intercepted and formatted into vector lines. These lines are injected directly into the active `river` layer. This allows the user to immediately utilize the **Spline Anchor Editing** tools to refine or correct the automatically extracted rivers as if they had drawn them by hand.

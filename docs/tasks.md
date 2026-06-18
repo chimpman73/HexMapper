@@ -37,10 +37,10 @@ This backlog is prioritized based on structural dependencies. Foundational infra
 - ~~Allow users to explicitly close the Unknowns panel even if items cannot currently be resolved.~~
 - ~~Add a menu toggle or button to easily reopen the Unknowns panel later.~~
 
-**6. River Enhancements**
+**6. ~~River Enhancements~~ [COMPLETED]**
 *Why it's important:* Expands the optical mapping capabilities.
-- Expand river extraction capabilities to support scanning multiple river types and colors.
-- Add tools for explicitly selecting and editing river vectors.
+- ~~Expand river extraction capabilities to support scanning multiple river types and colors.~~
+- ~~Add tools for explicitly selecting and editing river vectors.~~
 
 **7. City and Road Tools**
 *Why it's important:* Expands the digital drawing capabilities.

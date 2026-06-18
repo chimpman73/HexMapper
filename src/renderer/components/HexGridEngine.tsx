@@ -3,7 +3,7 @@ import { Stage, Layer, Line, Group } from 'react-konva';
 import * as import_react_konva from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import HexTile from './HexTile';
-import { generateRectangularGrid, HexCube, HexOrientation, isHexEqual, MapLayer, TerrainLayer, VectorLayer, CityLayer, CoastlineLayer, BorderLayer, LayerType, RoadStyle, hexToPixel, getHexCorners, HEX_NEIGHBORS } from '../utils/hexMath';
+import { generateRectangularGrid, HexCube, HexOrientation, isHexEqual, MapLayer, TerrainLayer, VectorLayer, CityLayer, CoastlineLayer, BorderLayer, LayerType, RoadStyle, RiverStyle, hexToPixel, getHexCorners, HEX_NEIGHBORS } from '../utils/hexMath';
 
 interface HexGridEngineProps {
   orientation: HexOrientation;
@@ -14,7 +14,9 @@ interface HexGridEngineProps {
   activeColor: string | null;
   activeLineWidth: number;
   activeRoadStyle?: RoadStyle;
+  activeRiverStyle?: RiverStyle;
   roadConfig?: any;
+  riverConfig?: any;
   layers: MapLayer[];
   setLayers: React.Dispatch<React.SetStateAction<MapLayer[]>>;
   activeLayerId: string;
@@ -24,7 +26,6 @@ interface HexGridEngineProps {
   bgOffsetY: number;
   globalCoastlines?: any[];
   globalBorders?: any[];
-  globalRivers?: any[];
   highlightedHexKey?: string | null;
   currentStyle?: string;
   assetsBasePath?: string;
@@ -85,8 +86,8 @@ function distToSegment(p: {x: number, y: number}, v: {x: number, y: number}, w: 
 }
 
 const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({ 
-  orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeColor, activeLineWidth, activeRoadStyle, roadConfig, layers, setLayers, activeLayerId,
-  bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines = [], globalBorders = [], globalRivers = [], highlightedHexKey, currentStyle, assetsBasePath
+  orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeColor, activeLineWidth, activeRoadStyle, activeRiverStyle, roadConfig, riverConfig, layers, setLayers, activeLayerId,
+  bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines = [], globalBorders = [], highlightedHexKey, currentStyle, assetsBasePath
 }, ref) => {
   const stageRef = useRef<any>(null);
 
@@ -108,7 +109,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
   const [currentLine, setCurrentLine] = useState<number[] | null>(null);
   const [isShiftPressed, setIsShiftPressed] = useState(false);
   const [hoveredLineId, setHoveredLineId] = useState<string | null>(null);
-  const [isDrawingRoad, setIsDrawingRoad] = useState(false);
+  const [isDrawingPath, setIsDrawingPath] = useState(false);
   const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
   
   // Right-click panning state
@@ -122,7 +123,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
       if (e.key === 'Shift') setIsShiftPressed(true); 
       if (e.key === 'Escape') {
         setCurrentLine(null);
-        setIsDrawingRoad(false);
+        setIsDrawingPath(false);
         setSelectedLineId(null);
       }
       
@@ -282,8 +283,8 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
       setIsRightClickPan(true);
       setLastPanPos({ x: e.evt.clientX, y: e.evt.clientY });
       
-      if (isDrawingRoad) {
-        setIsDrawingRoad(false);
+      if (isDrawingPath) {
+        setIsDrawingPath(false);
         setCurrentLine(null);
       }
       if (selectedLineId !== null) {
@@ -294,14 +295,14 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
     
     if (e.evt.button === 0 && !e.evt.altKey) {
       if (isVectorMode) {
-        if (activeColor !== null || activeLayer?.type === 'road') {
+        if (activeColor !== null || activeLayer?.type === 'road' || activeLayer?.type === 'river') {
           const stage = e.target.getStage();
           if (stage && e.target === stage) setSelectedLineId(null);
           if (stage) {
             const pos = getRelativePointerPosition(stage);
-            if (activeLayer?.type === 'road' && activeRoadStyle !== 'highlight') {
-              if (!isDrawingRoad) {
-                setIsDrawingRoad(true);
+            if ((activeLayer?.type === 'road' && activeRoadStyle !== 'highlight') || (activeLayer?.type === 'river' && activeRiverStyle !== 'highlight')) {
+              if (!isDrawingPath) {
+                setIsDrawingPath(true);
                 setCurrentLine([pos.x, pos.y, pos.x, pos.y]);
               } else if (currentLine) {
                 setCurrentLine([...currentLine, pos.x, pos.y]);
@@ -330,7 +331,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
       const stage = e.target.getStage();
       if (stage) {
         const pos = getRelativePointerPosition(stage);
-        if (isDrawingRoad) {
+        if (isDrawingPath) {
            const newPts = [...currentLine];
            newPts[newPts.length - 2] = pos.x;
            newPts[newPts.length - 1] = pos.y;
@@ -349,7 +350,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
     }
 
     if (isVectorMode && currentLine) {
-      if (!isDrawingRoad) {
+      if (!isDrawingPath) {
         setLayers(prev => prev.map(l => {
           if (l.id === activeLayerId && (l.type === 'river' || l.type === 'cliff' || l.type === 'border' || l.type === 'label' || l.type === 'road')) {
           const newData = {
@@ -359,7 +360,8 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
             strokeWidth: activeLineWidth,
             tension: 0.5,
             invert: isShiftPressed,
-            roadStyle: l.type === 'road' ? activeRoadStyle : undefined
+            roadStyle: l.type === 'road' ? activeRoadStyle : undefined,
+            riverStyle: l.type === 'river' ? activeRiverStyle : undefined
           };
           return {
             ...l,
@@ -376,10 +378,10 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
   };
 
   const handleDblClick = () => {
-    if (isVectorMode && isDrawingRoad && currentLine && currentLine.length >= 4) {
+    if (isVectorMode && isDrawingPath && currentLine && currentLine.length >= 4) {
       const finalPoints = currentLine.slice(0, -2);
       setLayers(prev => prev.map(l => {
-        if (l.id === activeLayerId && l.type === 'road') {
+        if (l.id === activeLayerId && (l.type === 'road' || l.type === 'river')) {
           const newData = {
             id: Date.now().toString(),
             points: finalPoints,
@@ -387,7 +389,8 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
             strokeWidth: activeLineWidth,
             tension: 0.5,
             invert: isShiftPressed,
-            roadStyle: activeRoadStyle
+            roadStyle: activeRoadStyle,
+            riverStyle: activeRiverStyle
           };
           return {
             ...l,
@@ -397,7 +400,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
         return l;
       }));
       setCurrentLine(null);
-      setIsDrawingRoad(false);
+      setIsDrawingPath(false);
     }
   };
 
@@ -592,7 +595,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
                   let roadDash;
                   let strokeColor = hoveredLineId === line.id ? '#ff5252' : line.stroke;
                   let innerTunnelColor;
-                  let isHighlighted = activeLayer?.type === 'road' && activeRoadStyle === 'highlight';
+                  let isHighlighted = (activeLayer?.type === 'road' && activeRoadStyle === 'highlight') || (activeLayer?.type === 'river' && activeRiverStyle === 'highlight');
                   
                   if (layer.type === 'road') {
                     const styleConfig = roadConfig?.[line.roadStyle || 'road'];
@@ -609,6 +612,19 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
                         innerTunnelColor = '#ffffff';
                       } else {
                         strokeColor = hoveredLineId === line.id ? '#ff5252' : '#A0522D';
+                      }
+                    }
+                  } else if (layer.type === 'river') {
+                    const styleConfig = riverConfig?.[line.riverStyle || 'river'];
+                    if (styleConfig) {
+                      strokeColor = hoveredLineId === line.id ? '#ff5252' : styleConfig.color;
+                      roadDash = styleConfig.dash?.length > 0 ? styleConfig.dash : undefined;
+                    } else {
+                      if (line.riverStyle === 'stream') {
+                        roadDash = [5, 5];
+                        strokeColor = hoveredLineId === line.id ? '#ff5252' : '#60a5fa';
+                      } else {
+                        strokeColor = hoveredLineId === line.id ? '#ff5252' : '#3b82f6';
                       }
                     }
                   }
@@ -657,21 +673,21 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
                             }
                             return l;
                           }));
-                        } else if (layer.type === 'road') {
+                        } else if (layer.type === 'road' || layer.type === 'river') {
                           e.cancelBubble = true;
                           setSelectedLineId(line.id);
                         }
                       }
                     }}
                     onMouseEnter={(e) => {
-                      if (isVectorMode && (activeColor === null || layer.type === 'road') && activeLayerId === layer.id) {
+                      if (isVectorMode && (activeColor === null || layer.type === 'road' || layer.type === 'river') && activeLayerId === layer.id) {
                         const stage = e.target.getStage();
                         if (stage) stage.container().style.cursor = 'pointer';
                         setHoveredLineId(line.id);
                       }
                     }}
                     onMouseLeave={(e) => {
-                      if (isVectorMode && (activeColor === null || layer.type === 'road') && activeLayerId === layer.id) {
+                      if (isVectorMode && (activeColor === null || layer.type === 'road' || layer.type === 'river') && activeLayerId === layer.id) {
                         const stage = e.target.getStage();
                         if (stage) stage.container().style.cursor = 'crosshair';
                         if (hoveredLineId === line.id) setHoveredLineId(null);
@@ -716,7 +732,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
                        />
                     )}
                     {layer.type === 'cliff' && generateCliffHashes(line.points, line.invert, hoveredLineId === line.id ? '#ff5252' : line.stroke, line.strokeWidth, line.id, hoveredLineId === line.id ? 0.5 : layer.opacity)}
-                    {selectedLineId === line.id && layer.type === 'road' && (
+                    {selectedLineId === line.id && (layer.type === 'road' || layer.type === 'river') && (
                       <Group>
                         {Array.from({ length: line.points.length / 2 }).map((_, ptIndex) => (
                           <import_react_konva.Circle
@@ -747,25 +763,6 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
                   </Group>
                 );
               })}
-                
-                {layer.type === 'river' && globalRivers && globalRivers.length > 0 && (
-                  <Group key={`${layer.id}-global`} opacity={layer.opacity}>
-                    {globalRivers.map((pathPoints, i) => {
-                      const flatPoints = pathPoints.flatMap((p: any) => [p.x, p.y]);
-                      return (
-                        <Line
-                          key={`gr-${i}`}
-                          points={flatPoints}
-                          stroke="#3b82f6" // blue-500
-                          strokeWidth={4}
-                          tension={0.3}
-                          lineJoin="round"
-                          lineCap="round"
-                        />
-                      );
-                    })}
-                  </Group>
-                )}
               </React.Fragment>
             );
           }
@@ -796,12 +793,24 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
             ) : (
               <Line
                 points={currentLine}
-                stroke={activeLayer?.type === 'road' ? (roadConfig?.[activeRoadStyle || 'road']?.color || (activeRoadStyle === 'path' ? '#8B4513' : '#A0522D')) : (activeColor || '#000000')}
+                stroke={
+                  activeLayer?.type === 'road' 
+                    ? (roadConfig?.[activeRoadStyle || 'road']?.color || (activeRoadStyle === 'path' ? '#8B4513' : '#A0522D')) 
+                    : activeLayer?.type === 'river'
+                    ? (riverConfig?.[activeRiverStyle || 'river']?.color || (activeRiverStyle === 'stream' ? '#60a5fa' : '#3b82f6'))
+                    : (activeColor || '#000000')
+                }
                 strokeWidth={activeLineWidth}
                 tension={0.5}
                 lineCap="round"
                 lineJoin="round"
-                dash={activeLayer?.type === 'road' ? (roadConfig?.[activeRoadStyle || 'road']?.dash?.length > 0 ? roadConfig[activeRoadStyle || 'road'].dash : (activeRoadStyle === 'path' ? [10, 10] : undefined)) : undefined}
+                dash={
+                  activeLayer?.type === 'road' 
+                    ? (roadConfig?.[activeRoadStyle || 'road']?.dash?.length > 0 ? roadConfig[activeRoadStyle || 'road'].dash : (activeRoadStyle === 'path' ? [10, 10] : undefined)) 
+                    : activeLayer?.type === 'river'
+                    ? (riverConfig?.[activeRiverStyle || 'river']?.dash?.length > 0 ? riverConfig[activeRiverStyle || 'river'].dash : (activeRiverStyle === 'stream' ? [5, 5] : undefined))
+                    : undefined
+                }
               />
             )}
             {activeLayer?.type === 'cliff' && generateCliffHashes(currentLine, isShiftPressed, activeColor || '#000000', activeLineWidth, 'current')}

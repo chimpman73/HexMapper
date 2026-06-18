@@ -45,6 +45,7 @@ export interface CoastlineLayer extends BaseLayer {
 }
 
 export type RoadStyle = 'path' | 'road' | 'tunnel' | 'highlight';
+export type RiverStyle = 'stream' | 'river' | 'highlight';
 
 export interface VectorLine {
   id: string;
@@ -54,6 +55,7 @@ export interface VectorLine {
   tension: number;
   invert?: boolean;
   roadStyle?: RoadStyle;
+  riverStyle?: RiverStyle;
 }
 
 export interface VectorLayer extends BaseLayer {

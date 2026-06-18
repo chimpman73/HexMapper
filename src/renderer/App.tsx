@@ -4,7 +4,7 @@ import HexGridEngine, { HexGridEngineRef } from './components/HexGridEngine';
 import TerrainPalette from './components/TerrainPalette';
 import LayerPanel from './components/LayerPanel';
 import UnknownsPanel from './components/UnknownsPanel';
-import { HexOrientation, MapLayer, RoadStyle } from './utils/hexMath';
+import { HexOrientation, MapLayer, RoadStyle, RiverStyle } from './utils/hexMath';
 
 declare global {
   interface Window {
@@ -36,7 +36,6 @@ const App: React.FC = () => {
   
   const [globalCoastlines, setGlobalCoastlines] = useState<any[]>([]);
   const [globalBorders, setGlobalBorders] = useState<any[]>([]);
-  const [globalRivers, setGlobalRivers] = useState<any[]>([]);
   const [unknowns, setUnknowns] = useState<any[]>([]);
   const [showUnknownsPanel, setShowUnknownsPanel] = useState<boolean>(true);
   const [highlightedHexKey, setHighlightedHexKey] = useState<string | null>(null);
@@ -53,6 +52,7 @@ const App: React.FC = () => {
   const [activeColor, setActiveColor] = useState<string | null>('#3b82f6');
   const [activeLineWidth, setActiveLineWidth] = useState<number>(10);
   const [activeRoadStyle, setActiveRoadStyle] = useState<RoadStyle>('path');
+  const [activeRiverStyle, setActiveRiverStyle] = useState<RiverStyle>('river');
   
   const [layers, setLayers] = useState<MapLayer[]>([
     { id: '1', name: 'Terrain', type: 'terrain', visible: true, opacity: 1, data: {} },
@@ -72,6 +72,7 @@ const App: React.FC = () => {
   const [currentStyle, setCurrentStyle] = useState<string>('Hollow Moon');
   const [assetsBasePath, setAssetsBasePath] = useState<string>('');
   const [roadConfig, setRoadConfig] = useState<any>(null);
+  const [riverConfig, setRiverConfig] = useState<any>(null);
 
   useEffect(() => {
     if (assetsBasePath && currentStyle) {
@@ -89,7 +90,22 @@ const App: React.FC = () => {
           setRoadConfig(null);
         }
       };
+      const fetchRiverConfig = async () => {
+        try {
+          const configPath = `${assetsBasePath}/styles/${currentStyle}/rivers.json`;
+          const res = await fetch(`local://file?path=${encodeURIComponent(configPath)}`);
+          if (res.ok) {
+            const data = await res.json();
+            setRiverConfig(data);
+          } else {
+            setRiverConfig(null);
+          }
+        } catch (e) {
+          setRiverConfig(null);
+        }
+      };
       fetchRoadConfig();
+      fetchRiverConfig();
     }
   }, [assetsBasePath, currentStyle]);
 
@@ -355,9 +371,6 @@ const App: React.FC = () => {
         if (result.data.globalBorders) {
           setGlobalBorders(result.data.globalBorders);
         }
-        if (result.data.globalRivers) {
-          setGlobalRivers(result.data.globalRivers);
-        }
         if (result.data.unknowns) {
           setUnknowns(result.data.unknowns);
         }
@@ -547,8 +560,11 @@ const App: React.FC = () => {
           setActiveLineWidth={setActiveLineWidth}
           activeRoadStyle={activeRoadStyle}
           setActiveRoadStyle={setActiveRoadStyle}
+          activeRiverStyle={activeRiverStyle}
+          setActiveRiverStyle={setActiveRiverStyle}
           currentStyle={currentStyle}
           roadConfig={roadConfig}
+          riverConfig={riverConfig}
         />
         <div className={styles.canvasContainer}>
           <HexGridEngine 
@@ -561,7 +577,9 @@ const App: React.FC = () => {
             activeColor={activeColor}
             activeLineWidth={activeLineWidth}
             activeRoadStyle={activeRoadStyle}
+            activeRiverStyle={activeRiverStyle}
             roadConfig={roadConfig}
+            riverConfig={riverConfig}
             layers={layers}
             setLayers={setLayers}
             activeLayerId={activeLayerId}
@@ -571,7 +589,6 @@ const App: React.FC = () => {
             bgOffsetY={bgOffsetY}
             globalCoastlines={globalCoastlines}
             globalBorders={globalBorders}
-            globalRivers={globalRivers}
             highlightedHexKey={highlightedHexKey}
             currentStyle={currentStyle}
             assetsBasePath={assetsBasePath}

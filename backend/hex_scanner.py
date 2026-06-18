@@ -163,6 +163,25 @@ class HexScanner:
                 if has_items:
                     existing_layers = [l for l in existing_layers if not (l.get("type") == layer_type and len(l.get("data", {})) == 0)]
 
+        # Convert global rivers to vector lines
+        if data.global_rivers:
+            river_layer = next((l for l in existing_layers if l.get("type") == "river"), None)
+            if river_layer:
+                if not isinstance(river_layer.get("data"), list):
+                    river_layer["data"] = []
+                for path_points in data.global_rivers:
+                    flat_points = []
+                    for p in path_points:
+                        flat_points.extend([p["x"], p["y"]])
+                    river_layer["data"].append({
+                        "id": f"river_{str(uuid.uuid4())[:8]}",
+                        "points": flat_points,
+                        "stroke": "#3b82f6",
+                        "strokeWidth": 4,
+                        "tension": 0.5,
+                        "riverStyle": "river"
+                    })
+
         return {
             "status": "success",
             "data": {
