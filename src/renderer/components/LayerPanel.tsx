@@ -2,27 +2,21 @@ import React from 'react';
 import { MapLayer } from '../utils/hexMath';
 import styles from './LayerPanel.module.css';
 
-interface LayerPanelProps {
-  layers: MapLayer[];
-  activeLayerId: string;
-  onSelectLayer: (id: string) => void;
-  onToggleVisibility: (id: string) => void;
-  onMoveLayer: (id: string, direction: 'up' | 'down') => void;
-  onDeleteLayer?: (id: string) => void;
-  onAddLayer?: (type: string) => void;
-  onRenameLayer?: (id: string, newName: string) => void;
-}
+import { useMapStore } from '../store/mapStore';
 
-const LayerPanel: React.FC<LayerPanelProps> = ({
-  layers,
-  activeLayerId,
-  onSelectLayer,
-  onToggleVisibility,
-  onMoveLayer,
-  onDeleteLayer,
-  onAddLayer,
-  onRenameLayer
-}) => {
+interface LayerPanelProps {}
+
+const LayerPanel: React.FC<LayerPanelProps> = () => {
+  const {
+    layers,
+    activeLayerId,
+    setActiveLayerId: onSelectLayer,
+    toggleLayerVisibility: onToggleVisibility,
+    moveLayer: onMoveLayer,
+    deleteLayer: onDeleteLayer,
+    addLayer: onAddLayer,
+    renameLayer: onRenameLayer
+  } = useMapStore();
   const [showAddMenu, setShowAddMenu] = React.useState(false);
   const [editingLayerId, setEditingLayerId] = React.useState<string | null>(null);
   const [editingName, setEditingName] = React.useState<string>('');

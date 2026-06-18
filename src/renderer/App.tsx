@@ -4,7 +4,8 @@ import HexGridEngine, { HexGridEngineRef } from './components/HexGridEngine';
 import TerrainPalette from './components/TerrainPalette';
 import LayerPanel from './components/LayerPanel';
 import UnknownsPanel from './components/UnknownsPanel';
-import { HexOrientation, MapLayer, RoadStyle, RiverStyle } from './utils/hexMath';
+import { HexOrientation, MapLayer } from './types';
+import { useMapStore } from './store/mapStore';
 
 declare global {
   interface Window {
@@ -29,50 +30,37 @@ declare global {
 }
 
 const App: React.FC = () => {
-  const [orientation, setOrientation] = useState<HexOrientation>('flat');
-  const [showCoordinates, setShowCoordinates] = useState<boolean>(true);
-  const [mapWidth, setMapWidth] = useState<number>(50);
-  const [mapHeight, setMapHeight] = useState<number>(25);
-  
-  const [globalCoastlines, setGlobalCoastlines] = useState<any[]>([]);
-  const [globalBorders, setGlobalBorders] = useState<any[]>([]);
-  const [unknowns, setUnknowns] = useState<any[]>([]);
-  const [showUnknownsPanel, setShowUnknownsPanel] = useState<boolean>(true);
-  const [highlightedHexKey, setHighlightedHexKey] = useState<string | null>(null);
-
-  const [bgScaleX, setBgScaleX] = useState<number>(1);
-  const [bgScaleY, setBgScaleY] = useState<number>(1);
-  const [bgOffsetX, setBgOffsetX] = useState<number>(0);
-  const [bgOffsetY, setBgOffsetY] = useState<number>(0);
-  const [importType, setImportType] = useState<'image' | 'directory' | null>(null);
-  const [importDirPath, setImportDirPath] = useState<string | null>(null);
-  const [showImportModal, setShowImportModal] = useState<boolean>(false);
-  
-  const [activeBrush, setActiveBrush] = useState<string | null>(null);
-  const [activeColor, setActiveColor] = useState<string | null>('#3b82f6');
-  const [activeLineWidth, setActiveLineWidth] = useState<number>(10);
-  const [activeRoadStyle, setActiveRoadStyle] = useState<RoadStyle>('path');
-  const [activeRiverStyle, setActiveRiverStyle] = useState<RiverStyle>('river');
-  
-  const [layers, setLayers] = useState<MapLayer[]>([
-    { id: '1', name: 'Terrain', type: 'terrain', visible: true, opacity: 1, data: {} },
-    { id: '4', name: 'Coastline', type: 'coastline', visible: true, opacity: 1, data: {} },
-    { id: '2', name: 'Cliffs', type: 'cliff', visible: true, opacity: 1, data: [] },
-    { id: '3', name: 'Rivers', type: 'river', visible: true, opacity: 1, data: [] },
-    { id: '9', name: 'Roads', type: 'road', visible: true, opacity: 1, data: [] },
-    { id: '5', name: 'Cities', type: 'city', visible: true, opacity: 1, data: {} },
-    { id: '8', name: 'Hex Grid', type: 'grid', visible: true, opacity: 1, data: {} },
-    { id: '6', name: 'Borders', type: 'border', visible: true, opacity: 1, data: {} },
-    { id: '7', name: 'Labels', type: 'label', visible: true, opacity: 1, data: [] }
-  ]);
-  const [activeLayerId, setActiveLayerId] = useState<string>('1');
-  const [isScanning, setIsScanning] = useState<boolean>(false);
-
-  const [stylesList, setStylesList] = useState<string[]>(['Hollow Moon']);
-  const [currentStyle, setCurrentStyle] = useState<string>('Hollow Moon');
-  const [assetsBasePath, setAssetsBasePath] = useState<string>('');
-  const [roadConfig, setRoadConfig] = useState<any>(null);
-  const [riverConfig, setRiverConfig] = useState<any>(null);
+  const {
+    orientation, setOrientation,
+    showCoordinates, setShowCoordinates,
+    mapWidth, setMapWidth,
+    mapHeight, setMapHeight,
+    globalCoastlines, setGlobalCoastlines,
+    globalBorders, setGlobalBorders,
+    unknowns, setUnknowns,
+    showUnknownsPanel, setShowUnknownsPanel,
+    highlightedHexKey, setHighlightedHexKey,
+    bgScaleX, setBgScaleX,
+    bgScaleY, setBgScaleY,
+    bgOffsetX, setBgOffsetX,
+    bgOffsetY, setBgOffsetY,
+    importType, setImportType,
+    importDirPath, setImportDirPath,
+    showImportModal, setShowImportModal,
+    activeBrush, setActiveBrush,
+    activeColor, setActiveColor,
+    activeLineWidth, setActiveLineWidth,
+    activeRoadStyle, setActiveRoadStyle,
+    activeRiverStyle, setActiveRiverStyle,
+    layers, setLayers,
+    activeLayerId, setActiveLayerId,
+    isScanning, setIsScanning,
+    stylesList, setStylesList,
+    currentStyle, setCurrentStyle,
+    assetsBasePath, setAssetsBasePath,
+    roadConfig, setRoadConfig,
+    riverConfig, setRiverConfig
+  } = useMapStore();
 
   useEffect(() => {
     if (assetsBasePath && currentStyle) {
@@ -141,28 +129,7 @@ const App: React.FC = () => {
   
   const engineRef = useRef<HexGridEngineRef>(null);
 
-  const moveLayer = (id: string, direction: 'up' | 'down') => {
-    setLayers(prev => {
-      const idx = prev.findIndex(l => l.id === id);
-      if (idx === -1) return prev;
-      
-      // Index 0 is the bottom, Index length-1 is the top.
-      if (direction === 'up' && idx < prev.length - 1) {
-        const next = [...prev];
-        const temp = next[idx];
-        next[idx] = next[idx + 1];
-        next[idx + 1] = temp;
-        return next;
-      } else if (direction === 'down' && idx > 0) {
-        const next = [...prev];
-        const temp = next[idx];
-        next[idx] = next[idx - 1];
-        next[idx - 1] = temp;
-        return next;
-      }
-      return prev;
-    });
-  };
+
 
   const handleSaveProject = async () => {
     const projectData = {
@@ -388,19 +355,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleToggleVisibility = (id: string) => {
-    setLayers(prev => {
-      const targetLayer = prev.find(l => l.id === id);
-      if (!targetLayer) return prev;
-      const newVisible = !targetLayer.visible;
-      
-      return prev.map(l => {
-        if (l.id === id) return { ...l, visible: newVisible };
-        if (l.parentId === id) return { ...l, visible: newVisible };
-        return l;
-      });
-    });
-  };
+
 
   const handleResolveUnknown = async (unknownId: string, action: 'ignore' | 'map' | 'save', payload?: any) => {
     const unk = unknowns.find(u => u.id === unknownId);
@@ -418,7 +373,7 @@ const App: React.FC = () => {
     } else if (action === 'map') {
       setLayers(prev => prev.map(l => {
         if (l.type === 'city') {
-          return { ...l, data: { ...l.data, [unk.key]: `local://file?path=${encodeURIComponent('C:/John/Code/HexMapper/assets/tiles/' + payload.tile)}` } };
+          return { ...l, data: { ...l.data, [unk.key]: `local://file?path=${encodeURIComponent(assetsBasePath + '/tiles/' + payload.tile)}` } };
         }
         return l;
       }));
@@ -433,7 +388,7 @@ const App: React.FC = () => {
           alert('Brush saved and signatures rebuilt!');
           setLayers(prev => prev.map(l => {
             if (l.type === 'city') {
-              return { ...l, data: { ...l.data, [unk.key]: `local://file?path=${encodeURIComponent('C:/John/Code/HexMapper/assets/tiles/Cities/' + payload.name)}` } };
+              return { ...l, data: { ...l.data, [unk.key]: `local://file?path=${encodeURIComponent(assetsBasePath + '/tiles/Cities/' + payload.name)}` } };
             }
             return l;
           }));
@@ -448,32 +403,7 @@ const App: React.FC = () => {
     setUnknowns(prev => prev.filter(u => u.id !== unknownId));
   };
 
-  const addLayer = (type: string) => {
-    setLayers(prev => {
-      const newLayer = {
-        id: `layer_${Date.now()}`,
-        name: `New ${type.charAt(0).toUpperCase() + type.slice(1)}`,
-        type: type as any,
-        visible: true,
-        opacity: 1,
-        data: type === 'cliff' || type === 'river' || type === 'label' || type === 'road' ? [] : {}
-      };
-      return [...prev, newLayer];
-    });
-  };
 
-  const deleteLayer = (id: string) => {
-    if (layers.length <= 1) return; // Prevent deleting last layer
-    setLayers(prev => prev.filter(l => l.id !== id));
-    if (activeLayerId === id) {
-      const nextLayer = layers.find(l => l.id !== id);
-      if (nextLayer) setActiveLayerId(nextLayer.id);
-    }
-  };
-
-  const renameLayer = (id: string, newName: string) => {
-    setLayers(prev => prev.map(l => l.id === id ? { ...l, name: newName } : l));
-  };
 
   const activeLayer = layers.find(l => l.id === activeLayerId) || layers[0];
 
@@ -550,61 +480,12 @@ const App: React.FC = () => {
       </div>
       
       <div className={styles.workspace}>
-        <TerrainPalette 
-          activeBrush={activeBrush} 
-          setActiveBrush={setActiveBrush} 
-          activeLayer={activeLayer}
-          activeColor={activeColor}
-          setActiveColor={setActiveColor}
-          activeLineWidth={activeLineWidth}
-          setActiveLineWidth={setActiveLineWidth}
-          activeRoadStyle={activeRoadStyle}
-          setActiveRoadStyle={setActiveRoadStyle}
-          activeRiverStyle={activeRiverStyle}
-          setActiveRiverStyle={setActiveRiverStyle}
-          currentStyle={currentStyle}
-          roadConfig={roadConfig}
-          riverConfig={riverConfig}
-        />
+        <TerrainPalette />
         <div className={styles.canvasContainer}>
-          <HexGridEngine 
-            ref={engineRef}
-            orientation={orientation} 
-            showCoordinates={showCoordinates} 
-            mapWidth={mapWidth} 
-            mapHeight={mapHeight}
-            activeBrush={activeBrush}
-            activeColor={activeColor}
-            activeLineWidth={activeLineWidth}
-            activeRoadStyle={activeRoadStyle}
-            activeRiverStyle={activeRiverStyle}
-            roadConfig={roadConfig}
-            riverConfig={riverConfig}
-            layers={layers}
-            setLayers={setLayers}
-            activeLayerId={activeLayerId}
-            bgScaleX={bgScaleX}
-            bgScaleY={bgScaleY}
-            bgOffsetX={bgOffsetX}
-            bgOffsetY={bgOffsetY}
-            globalCoastlines={globalCoastlines}
-            globalBorders={globalBorders}
-            highlightedHexKey={highlightedHexKey}
-            currentStyle={currentStyle}
-            assetsBasePath={assetsBasePath}
-          />
+          <HexGridEngine ref={engineRef} />
         </div>
         <div className={styles.rightPanel}>
-          <LayerPanel
-            layers={layers}
-            activeLayerId={activeLayerId}
-            onSelectLayer={setActiveLayerId}
-            onToggleVisibility={handleToggleVisibility}
-            onMoveLayer={moveLayer}
-            onAddLayer={addLayer}
-            onDeleteLayer={deleteLayer}
-            onRenameLayer={renameLayer}
-          />
+          <LayerPanel />
           {unknowns.length > 0 && showUnknownsPanel && (
             <UnknownsPanel 
               unknowns={unknowns} 

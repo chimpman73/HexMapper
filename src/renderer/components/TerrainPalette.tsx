@@ -1,24 +1,10 @@
 import React, { useState } from 'react';
 import styles from './TerrainPalette.module.css';
 
-import { MapLayer, RoadStyle, RiverStyle } from '../utils/hexMath';
+import { RoadStyle, RiverStyle } from '../types';
+import { useMapStore } from '../store/mapStore';
 
-interface TerrainPaletteProps {
-  activeBrush: string | null;
-  setActiveBrush: (url: string | null) => void;
-  activeLayer: MapLayer;
-  activeColor: string | null;
-  setActiveColor: (c: string | null) => void;
-  activeLineWidth: number;
-  setActiveLineWidth: (w: number) => void;
-  activeRoadStyle?: RoadStyle;
-  setActiveRoadStyle?: (style: RoadStyle) => void;
-  activeRiverStyle?: RiverStyle;
-  setActiveRiverStyle?: (style: RiverStyle) => void;
-  currentStyle?: string;
-  roadConfig?: any;
-  riverConfig?: any;
-}
+interface TerrainPaletteProps {}
 
 function generateRoadBrush(type: 'path' | 'road' | 'tunnel' | 'highlight', config: any): string {
   const canvas = document.createElement('canvas');
@@ -145,9 +131,11 @@ function generateRiverBrush(type: 'stream' | 'river' | 'highlight', config: any)
   return canvas.toDataURL();
 }
 
-const TerrainPalette: React.FC<TerrainPaletteProps> = ({ 
-  activeBrush, setActiveBrush, activeLayer, activeColor, setActiveColor, activeLineWidth, setActiveLineWidth, activeRoadStyle, setActiveRoadStyle, activeRiverStyle, setActiveRiverStyle, currentStyle, roadConfig, riverConfig
-}) => {
+const TerrainPalette: React.FC<TerrainPaletteProps> = () => {
+  const { 
+    activeBrush, setActiveBrush, layers, activeLayerId, activeColor, setActiveColor, activeLineWidth, setActiveLineWidth, activeRoadStyle, setActiveRoadStyle, activeRiverStyle, setActiveRiverStyle, currentStyle, roadConfig, riverConfig
+  } = useMapStore();
+  const activeLayer = layers.find(l => l.id === activeLayerId) || layers[0];
   const [brushes, setBrushes] = useState<string[]>([]);
   const [roadBrushes, setRoadBrushes] = useState<{type: RoadStyle, url: string}[]>([]);
   const [riverBrushes, setRiverBrushes] = useState<{type: RiverStyle, url: string}[]>([]);

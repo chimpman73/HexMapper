@@ -1,0 +1,105 @@
+export type HexOrientation = 'flat' | 'pointy';
+
+export interface Point {
+  x: number;
+  y: number;
+}
+
+export interface HexCube {
+  q: number;
+  r: number;
+  s: number;
+}
+
+export type LayerType = 'terrain' | 'river' | 'cliff' | 'coastline' | 'city' | 'border' | 'label' | 'legend' | 'grid' | 'bg_image' | 'group' | 'road';
+
+export interface BaseLayer {
+  id: string;
+  name: string;
+  type: LayerType;
+  visible: boolean;
+  opacity: number;
+  parentId?: string;
+  sourceFilename?: string;
+}
+
+export interface TerrainLayer extends BaseLayer {
+  type: 'terrain';
+  data: Record<string, string>; // hex coords to image url
+}
+
+export interface CityLayer extends BaseLayer {
+  type: 'city';
+  data: Record<string, string>; 
+}
+
+export interface BorderLayer extends BaseLayer {
+  type: 'border';
+  data: Record<string, string>; 
+}
+
+export interface CoastlineLayer extends BaseLayer {
+  type: 'coastline';
+  data: Record<string, string>;
+  vectors?: any[];
+}
+
+export type RoadStyle = 'path' | 'road' | 'tunnel' | 'highlight';
+export type RiverStyle = 'stream' | 'river' | 'highlight';
+
+export interface VectorLine {
+  id: string;
+  points: number[];
+  stroke: string;
+  strokeWidth: number;
+  tension: number;
+  invert?: boolean;
+  roadStyle?: RoadStyle;
+  riverStyle?: RiverStyle;
+}
+
+export interface VectorLayer extends BaseLayer {
+  type: 'river' | 'cliff' | 'label' | 'road';
+  data: VectorLine[];
+}
+
+export interface GridLayer extends BaseLayer {
+  type: 'grid';
+  data: Record<string, string>;
+}
+
+export interface BgImageLayer extends BaseLayer {
+  type: 'bg_image';
+  data: {
+    imagePath: string;
+  };
+}
+
+export interface GroupLayer extends BaseLayer {
+  type: 'group';
+  data: {};
+}
+
+export type MapLayer = TerrainLayer | CityLayer | CoastlineLayer | BorderLayer | VectorLayer | GridLayer | BgImageLayer | GroupLayer;
+
+declare global {
+  interface Window {
+    api: {
+      runPythonScript: (args: any) => Promise<any>;
+      openDirectory: () => Promise<string | null>;
+      openImage: () => Promise<string | null>;
+      readDir: (dirPath: string) => Promise<string[]>;
+      readMapDescription: (targetPath: string) => Promise<any | null>;
+      saveMap: (dataString: string) => Promise<{ success: boolean; filePath?: string; canceled?: boolean; error?: string }>;
+      loadMap: () => Promise<{ success: boolean; data?: string; filePath?: string; canceled?: boolean; error?: string }>;
+      exportImage: (dataUrl: string) => Promise<{ success: boolean; filePath?: string; canceled?: boolean; error?: string }>;
+      getStyles: () => Promise<string[]>;
+      getAssetsBasePath: () => Promise<string>;
+    };
+    electron: {
+      ipcRenderer: {
+        invoke: (channel: string, data: any) => Promise<any>;
+      }
+    };
+  }
+}

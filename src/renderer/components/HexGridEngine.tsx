@@ -3,33 +3,12 @@ import { Stage, Layer, Line, Group } from 'react-konva';
 import * as import_react_konva from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import HexTile from './HexTile';
-import { generateRectangularGrid, HexCube, HexOrientation, isHexEqual, MapLayer, TerrainLayer, VectorLayer, CityLayer, CoastlineLayer, BorderLayer, LayerType, RoadStyle, RiverStyle, hexToPixel, getHexCorners, HEX_NEIGHBORS } from '../utils/hexMath';
+import { generateRectangularGrid, hexToPixel, getHexCorners, isHexEqual, HEX_NEIGHBORS } from '../utils/hexMath';
+import { HexCube, HexOrientation, MapLayer, TerrainLayer, VectorLayer, CityLayer, CoastlineLayer, BorderLayer, LayerType, RoadStyle, RiverStyle } from '../types';
+import { useMapStore } from '../store/mapStore';
+import BgImageRenderer from './BgImageRenderer';
 
-interface HexGridEngineProps {
-  orientation: HexOrientation;
-  showCoordinates: boolean;
-  mapWidth: number;
-  mapHeight: number;
-  activeBrush: string | null;
-  activeColor: string | null;
-  activeLineWidth: number;
-  activeRoadStyle?: RoadStyle;
-  activeRiverStyle?: RiverStyle;
-  roadConfig?: any;
-  riverConfig?: any;
-  layers: MapLayer[];
-  setLayers: React.Dispatch<React.SetStateAction<MapLayer[]>>;
-  activeLayerId: string;
-  bgScaleX: number;
-  bgScaleY: number;
-  bgOffsetX: number;
-  bgOffsetY: number;
-  globalCoastlines?: any[];
-  globalBorders?: any[];
-  highlightedHexKey?: string | null;
-  currentStyle?: string;
-  assetsBasePath?: string;
-}
+interface HexGridEngineProps {}
 
 export interface HexGridEngineRef {
   exportToDataURL: () => string | null;
@@ -85,10 +64,10 @@ function distToSegment(p: {x: number, y: number}, v: {x: number, y: number}, w: 
   return Math.sqrt((p.x - (v.x + t * (w.x - v.x))) ** 2 + (p.y - (v.y + t * (w.y - v.y))) ** 2);
 }
 
-const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({ 
-  orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeColor, activeLineWidth, activeRoadStyle, activeRiverStyle, roadConfig, riverConfig, layers, setLayers, activeLayerId,
-  bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines = [], globalBorders = [], highlightedHexKey, currentStyle, assetsBasePath
-}, ref) => {
+const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, ref) => {
+  const {
+    orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeColor, activeLineWidth, activeRoadStyle, activeRiverStyle, roadConfig, riverConfig, layers, setLayers, activeLayerId, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines, globalBorders, highlightedHexKey, currentStyle, assetsBasePath
+  } = useMapStore();
   const stageRef = useRef<any>(null);
 
   useImperativeHandle(ref, () => ({
@@ -522,22 +501,23 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
               // Apply clipping mask ONLY to the coastline image tiles, NOT the procedural edges
               let renderedTiles = <>{tiles}</>;
               if (layer.type === 'coastline') {
-                const layerVectors = layer.vectors || globalCoastlines;
+                const layerVectors = layer.vectors;
                 if (layerVectors && layerVectors.length > 0) {
                   renderedTiles = (
                     <Group 
                       clipFunc={(ctx) => {
                         ctx.beginPath();
                         layerVectors.forEach((pathPoints: any[]) => {
-                          if (pathPoints.length > 0) {
+                          const n = pathPoints.length;
+                          if (n > 0) {
                             ctx.moveTo(pathPoints[0].x, pathPoints[0].y);
-                            for (let i = 1; i < pathPoints.length; i++) {
-                              ctx.lineTo(pathPoints[i].x, pathPoints[i].y);
+                            for (let j = 1; j < n; j++) {
+                               ctx.lineTo(pathPoints[j].x, pathPoints[j].y);
                             }
                             ctx.closePath();
                           }
                         });
-                        ctx.clip('evenodd');
+                        ctx.clip("evenodd");
                       }}
                     >
                       {tiles}
@@ -821,24 +801,5 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>(({
   );
 });
 
-const BgImageRenderer = ({ layer, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY }: any) => {
-  const [imageObj, setImageObj] = useState<HTMLImageElement | null>(null);
-  
-  React.useEffect(() => {
-    if (layer.data?.imagePath) {
-      const img = new window.Image();
-      img.onload = () => setImageObj(img);
-      img.src = `local://file?path=${encodeURIComponent(layer.data.imagePath)}`;
-    }
-  }, [layer.data?.imagePath]);
-
-  if (!imageObj) return null;
-
-  return (
-    <Group x={bgOffsetX} y={bgOffsetY} scaleX={bgScaleX} scaleY={bgScaleY} opacity={layer.opacity}>
-      <import_react_konva.Image image={imageObj} />
-    </Group>
-  );
-};
 
 export default HexGridEngine;

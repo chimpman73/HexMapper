@@ -4,7 +4,7 @@ HexMapper is an advanced, AI-assisted cartography desktop application designed t
 
 ## 1. System Architecture
 HexMapper is built on a hybrid stack to leverage the strengths of modern web technologies and high-performance computer vision:
-- **Frontend**: A React application built with Vite and rendered inside an Electron desktop window. It uses `react-konva` for a highly performant, interactive HTML5 canvas to render the hex grid and map geometry.
+- **Frontend**: A React application built with Vite and rendered inside an Electron desktop window. It uses `Zustand` for robust global state management and `react-konva` for a highly performant, interactive HTML5 canvas to render the hex grid and map geometry.
 - **Backend**: A headless Python computer-vision engine driven by `OpenCV` (cv2) and `numpy`.
 - **Communication Bridge**: The React frontend communicates with the Python backend via Electron IPC channels. Python operates as a stateless CLI process (`backend/main.py`) that accepts JSON arguments via standard input, executes the heavy image processing, and returns a structured JSON payload via standard output. A custom `local://` protocol handler in Electron bypasses browser security restrictions to serve dynamically generated images and assets directly from the local filesystem to the React UI.
 
@@ -59,7 +59,7 @@ The extraction engine dynamically processes an unlimited number of isolated file
 - The engine optically extracts data from each file sequentially.
 - It seamlessly merges the result back into the frontend UI, preserving them as distinct layers with names mapped directly to the original file names (e.g. `Terrain_Forest`).
 - An intelligent `sourceFilename` anchor guarantees that even if a user manually renames a layer in the UI (e.g. to "Whispering Woods"), subsequent rescan operations will successfully locate and `.update()` that exact layer instead of improperly overriding data.
-- **Precision Masking & Clipping**: When multiple layers of the same type (like Coastlines) overlap, they are processed with rigorous mathematical boundaries. The optical scanner utilizes exact geometric polygon tracing rather than rectangular bounding boxes to completely eliminate neighboring-hex "ghost" artifacts. Furthermore, the React renderer clips the vector paths of overlapping layers (e.g. coastlines drawn on top of each other) individually via layer-isolated `evenodd` clipping functions to ensure transparent holes are not accidentally punched into the digital map.
+- **Precision Masking & Clipping**: When multiple layers of the same type (like Coastlines) overlap, they are processed with rigorous mathematical boundaries. The optical scanner utilizes exact geometric polygon tracing rather than rectangular bounding boxes to completely eliminate neighboring-hex "ghost" artifacts. Furthermore, the React renderer processes overlapping coastline vectors by calculating their signed area via the Shoelace Formula to enforce a uniform clockwise winding direction. This guarantees that when clipped with the default `nonzero` Canvas winding rule, intersecting landmasses correctly merge into solid, unified shapes instead of slicing holes through each other, avoiding severe performance degradation and visual artifacts.
 
 ### Alpha-Aware Compositing & Ink Detection
 For the `Terrain.png` layer, the engine leverages the alpha transparency channel (via `cv2.IMREAD_UNCHANGED`):

@@ -42,13 +42,15 @@ This backlog is prioritized based on structural dependencies. Foundational infra
 - ~~Expand river extraction capabilities to support scanning multiple river types and colors.~~
 - ~~Add tools for explicitly selecting and editing river vectors.~~
 
-**7. City and Road Tools**
+**7. ~~City and Road Tools~~ [COMPLETED]**
 *Why it's important:* Expands the digital drawing capabilities.
-- Add new drawing tools within the Cities layer to support creating interconnected roads (e.g., dotted lines, solid lines, and other paths).
+- ~~Add new drawing tools within the Cities layer to support creating interconnected roads (e.g., dotted lines, solid lines, and other paths).~~
 
 **8. Coastline and Border Editing Tools**
 *Why it's important:* Gives users finer control over the auto-generated geometric boundaries.
 - Create better UI tools to manually manage, create, and edit vector paths for both coastlines and borders.
+- To draw coastline we may want multiple brush types. These are lines again, but we might want smooth lines versus fractal lines. We need to make sure these get created upon map import.
+- For Borders we may want multiple line types. Smooth lines (like rivers or roads), fractal lines, lines that "snap" to the hex grid. This also needs to get imported when we create a map.
 
 **9. Label Layer Rework**
 *Why it's important:* Links semantic data between layers. This is complex and should only be tackled once the advanced layer management is absolutely stable.
@@ -57,6 +59,12 @@ This backlog is prioritized based on structural dependencies. Foundational infra
 **10. PSD File Export**
 *Why it's important:* Gives users professional interoperability by letting them pull generated maps back into Photoshop with intact layer structures.
 - Implement an export feature to save the resulting digital map as a fully layered `.psd` file.
+
+**11. Advanced River Enhancements**
+*Why it's important:* Adds dynamic scaling and attachments to vector lines.
+- **River Details:** Add new River tools (adding fords, waterfalls, etc.). These brushes can only be painted along a river, perpendicular to a river. We might want some way to attach them to a river (in case the river is moved) and to slide them up or down the river if edited.
+- **Coastal Snapping:** Create a river to coastal snapping tool that snaps the end of a river to coastline.
+- **Dynamic Widths:** Revisit rivers. Have rivers grow and shrink based on how many tributaries either come in or go out. For example, a river by itself is the standard width, but for each tributary added it grows by a pixel wide. Branch points (something that attaches to the coastline) would make the river width shrink.
 
 ---
 

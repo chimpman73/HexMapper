@@ -35,9 +35,21 @@ app.whenReady().then(() => {
         return new Response('Missing path', { status: 400 });
       }
       
+      try {
+        await fs.promises.access(filePath, fs.constants.F_OK);
+      } catch {
+        return new Response('File not found', { status: 404 });
+      }
+      
       const fileData = await fs.promises.readFile(filePath);
+      
+      let contentType = 'application/octet-stream';
+      if (filePath.toLowerCase().endsWith('.png')) contentType = 'image/png';
+      else if (filePath.toLowerCase().endsWith('.jpg') || filePath.toLowerCase().endsWith('.jpeg')) contentType = 'image/jpeg';
+      else if (filePath.toLowerCase().endsWith('.json')) contentType = 'application/json';
+      
       return new Response(fileData, {
-        headers: { 'Content-Type': 'image/png' }
+        headers: { 'Content-Type': contentType }
       });
     } catch (e) {
       console.error(e);
