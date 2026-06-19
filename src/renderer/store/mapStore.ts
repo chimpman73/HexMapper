@@ -28,6 +28,8 @@ interface MapState {
   activeRiverStyle?: RiverStyle;
   activeCoastlineStyle?: CoastlineStyle;
   activeBorderStyle?: BorderStyle;
+  activeBorderColor: string;
+  activeBorderWidth: number;
   
   layers: MapLayer[];
   pastLayers: MapLayer[][];
@@ -82,6 +84,8 @@ interface MapState {
   deleteLayer: (id: string) => void;
   renameLayer: (id: string, newName: string) => void;
   toggleLayerVisibility: (id: string) => void;
+  setActiveBorderColor: (c: string) => void;
+  setActiveBorderWidth: (w: number) => void;
 }
 
 export const useMapStore = create<MapState>((set) => ({
@@ -111,6 +115,8 @@ export const useMapStore = create<MapState>((set) => ({
   activeRiverStyle: 'river',
   activeCoastlineStyle: 'smooth',
   activeBorderStyle: 'smooth',
+  activeBorderColor: '#dc2626',
+  activeBorderWidth: 5,
   
   layers: [
     { id: '1', name: 'Terrain', type: 'terrain', visible: true, opacity: 1, data: {} },

@@ -24,7 +24,7 @@ import Konva from 'konva';
 
 const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, ref) => {
   const {
-    orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeColor, activeLineWidth, activeRoadStyle, activeRiverStyle, activeCoastlineStyle, roadConfig, riverConfig, layers, setLayers, activeLayerId, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines, globalBorders, highlightedHexKey, currentStyle, assetsBasePath
+    orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeColor, activeBorderColor, activeLineWidth, activeBorderWidth, activeRoadStyle, activeRiverStyle, activeCoastlineStyle, roadConfig, riverConfig, layers, setLayers, activeLayerId, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines, globalBorders, highlightedHexKey, currentStyle, assetsBasePath
   } = useMapStore();
   const stageRef = useRef<Konva.Stage>(null);
 
@@ -174,9 +174,11 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
                     ? (riverConfig?.[activeRiverStyle || 'river']?.color || (activeRiverStyle === 'stream' ? '#60a5fa' : '#3b82f6'))
                     : activeLayer?.type === 'coastline'
                     ? '#222222'
+                    : activeLayer?.type === 'border'
+                    ? activeBorderColor
                     : (activeColor || '#000000')
                 }
-                strokeWidth={activeLineWidth}
+                strokeWidth={activeLayer?.type === 'border' ? activeBorderWidth : activeLineWidth}
                 tension={activeLayer?.type === 'coastline' && useMapStore.getState().activeCoastlineStyle === 'fractal' ? 0 : activeLayer?.type === 'border' && useMapStore.getState().activeBorderStyle === 'snapped' ? 0 : 0.5}
                 lineCap="round"
                 lineJoin="round"

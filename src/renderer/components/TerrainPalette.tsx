@@ -16,7 +16,7 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = () => {
   const [selectedBorderLine, setSelectedBorderLine] = useState<any>(null);
   
   const { 
-    activeBrush, setActiveBrush, layers, activeLayerId, activeColor, setActiveColor, activeLineWidth, setActiveLineWidth, activeRoadStyle, setActiveRoadStyle, activeRiverStyle, setActiveRiverStyle, activeCoastlineStyle, setActiveCoastlineStyle, activeBorderStyle, setActiveBorderStyle, currentStyle, roadConfig, riverConfig, setLayers, mapWidth, mapHeight, orientation
+    activeBrush, setActiveBrush, layers, activeLayerId, activeColor, setActiveColor, activeLineWidth, setActiveLineWidth, activeRoadStyle, setActiveRoadStyle, activeRiverStyle, setActiveRiverStyle, activeCoastlineStyle, setActiveCoastlineStyle, activeBorderStyle, setActiveBorderStyle, activeBorderColor, setActiveBorderColor, activeBorderWidth, setActiveBorderWidth, currentStyle, roadConfig, riverConfig, setLayers, mapWidth, mapHeight, orientation
   } = useMapStore();
 
   const activeLayer = layers.find(l => l.id === activeLayerId) || layers[0];
@@ -174,14 +174,14 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = () => {
           {(activeLayer.type === 'border' || activeLayer.type === 'river' || activeLayer.type === 'cliff' || activeLayer.type === 'road' || activeLayer.type === 'coastline') && (
             <div className={styles.brushGrid} style={{ marginBottom: '15px' }}>
               <div 
-                className={`${styles.brushItem} ${activeColor !== null ? styles.active : ''}`}
-                onClick={() => setActiveColor(activeColor || (activeLayer.type === 'coastline' ? '#222222' : '#3b82f6'))}
+                className={`${styles.brushItem} ${activeLayer.type === 'border' ? (activeBorderColor !== null ? styles.active : '') : (activeColor !== null ? styles.active : '')}`}
+                onClick={() => activeLayer.type === 'border' ? setActiveBorderColor(activeBorderColor || '#dc2626') : setActiveColor(activeColor || (activeLayer.type === 'coastline' ? '#222222' : '#3b82f6'))}
               >
-                <div className={styles.eraser} style={{ background: activeColor || (activeLayer.type === 'coastline' ? '#222222' : '#3b82f6') }}>Paint</div>
+                <div className={styles.eraser} style={{ background: activeLayer.type === 'border' ? (activeBorderColor || '#dc2626') : (activeColor || (activeLayer.type === 'coastline' ? '#222222' : '#3b82f6')) }}>Paint</div>
               </div>
               <div 
-                className={`${styles.brushItem} ${activeColor === null ? styles.active : ''}`}
-                onClick={() => setActiveColor(null)}
+                className={`${styles.brushItem} ${activeLayer.type === 'border' ? (activeBorderColor === null ? styles.active : '') : (activeColor === null ? styles.active : '')}`}
+                onClick={() => activeLayer.type === 'border' ? setActiveBorderColor(null as any) : setActiveColor(null)}
               >
                 <div className={styles.eraser}>Eraser</div>
               </div>
@@ -192,31 +192,24 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = () => {
             {(activeLayer as any).type === 'coastline' ? 'Line Color:' : activeLayer.type === 'border' ? 'Border Color:' : 'Line Color:'}
             <input 
               type="color" 
-              value={
-                activeLayer.type === 'road' 
-                  ? (roadConfig?.[activeRoadStyle || 'road']?.color || (activeRoadStyle === 'path' ? '#8b4513' : activeRoadStyle === 'tunnel' ? '#555555' : '#a0522d')) 
-                  : activeLayer.type === 'river'
-                  ? (riverConfig?.[activeRiverStyle || 'river']?.color || (activeRiverStyle === 'stream' ? '#60a5fa' : '#3b82f6'))
-                  : (activeColor || (activeLayer.type === 'coastline' ? '#222222' : activeLayer.type === 'border' ? '#dc2626' : '#3b82f6'))
-              } 
-              onChange={e => setActiveColor(e.target.value)} 
-              style={{width: '100%', height: '40px', opacity: activeColor === null ? 0.5 : 1}}
-              disabled={activeColor === null || activeLayer.type === 'road' || activeLayer.type === 'river'}
+              value={activeLayer.type === 'border' ? (activeBorderColor || '#dc2626') : (activeColor || (activeLayer.type === 'coastline' ? '#222222' : '#3b82f6'))}
+              onChange={(e) => activeLayer.type === 'border' ? setActiveBorderColor(e.target.value) : setActiveColor(e.target.value)}
+              style={{width: '100%', height: '40px', opacity: (activeLayer.type === 'border' ? activeBorderColor : activeColor) === null ? 0.5 : 1}}
+              disabled={(activeLayer.type === 'border' ? activeBorderColor : activeColor) === null || activeLayer.type === 'road' || activeLayer.type === 'river'}
             />
           </label>
 
           {(activeLayer.type === 'river' || activeLayer.type === 'cliff' || activeLayer.type === 'border' || activeLayer.type === 'label' || activeLayer.type === 'road' || activeLayer.type === 'coastline') && (
-            <label style={{display: 'flex', flexDirection: 'column', gap: '5px', color: '#ccc'}}>
-              Line Width: {activeLineWidth}px
+            <div style={{marginBottom: '15px'}}>
+              <label style={{color: '#ccc', fontSize: '14px', display: 'block', marginBottom: '5px'}}>Line Width: {activeLayer.type === 'border' ? activeBorderWidth : activeLineWidth}px</label>
               <input 
                 type="range" 
-                min="1" 
-                max="15" 
-                value={activeLineWidth} 
-                onChange={e => setActiveLineWidth(Number(e.target.value))} 
+                min="1" max="50" 
+                value={activeLayer.type === 'border' ? activeBorderWidth : activeLineWidth} 
+                onChange={(e) => activeLayer.type === 'border' ? setActiveBorderWidth(parseInt(e.target.value)) : setActiveLineWidth(parseInt(e.target.value))}
                 style={{width: '100%'}}
               />
-            </label>
+            </div>
           )}
         </div>
       </div>

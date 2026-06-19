@@ -14,10 +14,7 @@ class ImageProcessor:
         self._bg_offset_x = bg_offset_x
         self._bg_offset_y = bg_offset_y
 
-    def _extract_borders(self, mask_clean: np.ndarray) -> List[List[Dict[str, float]]]:
-        borders = []
-        skeleton = cv2.ximgproc.thinning(mask_clean, thinningType=cv2.ximgproc.THINNING_ZHANGSUEN)
-        
+    def _walk_skeleton_to_paths(self, skeleton: np.ndarray, min_length: int = 10, epsilon_factor: float = 0.005) -> List[List[Dict[str, float]]]:
         h, w = skeleton.shape
         visited = np.zeros((h, w), dtype=bool)
         
@@ -65,12 +62,13 @@ class ImageProcessor:
                     if len(path) > 1:
                         paths.append(path)
 
+        result = []
         for path in paths:
-            if len(path) < 10:
+            if len(path) < min_length:
                 continue
             pts = np.array(path, dtype=np.int32).reshape((-1, 1, 2))
             perimeter = cv2.arcLength(pts, False)
-            epsilon = 0.005 * perimeter
+            epsilon = epsilon_factor * perimeter
             approx = cv2.approxPolyDP(pts, epsilon, False)
             path_points = []
             for p in approx:
@@ -78,28 +76,16 @@ class ImageProcessor:
                 cy = p[0][1] * self._bg_scale_y + self._bg_offset_y
                 path_points.append({"x": cx, "y": cy})
             if len(path_points) > 1:
-                borders.append(path_points)
-        return borders
+                result.append(path_points)
+        return result
+
+    def _extract_borders(self, mask_clean: np.ndarray) -> List[List[Dict[str, float]]]:
+        skeleton = cv2.ximgproc.thinning(mask_clean, thinningType=cv2.ximgproc.THINNING_ZHANGSUEN)
+        return self._walk_skeleton_to_paths(skeleton)
 
     def _extract_rivers(self, river_mask: np.ndarray) -> List[List[Dict[str, float]]]:
-        rivers = []
         skeleton_rivers = cv2.ximgproc.thinning(river_mask, thinningType=cv2.ximgproc.THINNING_ZHANGSUEN)
-        river_contours, _ = cv2.findContours(skeleton_rivers, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        
-        for cnt in river_contours:
-            perimeter = cv2.arcLength(cnt, True)
-            if perimeter < 30:
-                continue
-            epsilon = 0.005 * perimeter
-            approx = cv2.approxPolyDP(cnt, epsilon, False)
-            path_points = []
-            for pt in approx:
-                cx = pt[0][0] * self._bg_scale_x + self._bg_offset_x
-                cy = pt[0][1] * self._bg_scale_y + self._bg_offset_y
-                path_points.append({"x": cx, "y": cy})
-            if len(path_points) > 1:
-                rivers.append(path_points)
-        return rivers
+        return self._walk_skeleton_to_paths(skeleton_rivers)
 
     def _extract_coastlines(self, water_mask: np.ndarray) -> List[List[Dict[str, float]]]:
         coastlines = []

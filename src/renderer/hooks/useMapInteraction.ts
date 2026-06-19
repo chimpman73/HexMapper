@@ -8,7 +8,7 @@ import { pixelToHex, hexToPixel, getHexCorners, generateRectangularGrid, buildHe
 
 export function useMapInteraction() {
   const { 
-    layers, setLayers, activeLayerId, activeColor, activeLineWidth, activeBrush, activeRoadStyle, activeRiverStyle 
+    layers, setLayers, activeLayerId, activeColor, activeLineWidth, activeBrush, activeRoadStyle, activeRiverStyle, activeCoastlineStyle, activeBorderStyle, activeBorderColor, activeBorderWidth
   } = useMapStore();
 
   const activeLayer = layers.find(l => l.id === activeLayerId);
@@ -272,8 +272,8 @@ export function useMapInteraction() {
             const newData = {
               id: Date.now().toString(),
               points: currentLine,
-              stroke: activeColor || (l.type === 'coastline' ? '#222222' : l.type === 'border' ? '#dc2626' : '#000000'),
-              strokeWidth: activeLineWidth,
+              stroke: l.type === 'border' ? activeBorderColor : (activeColor || (l.type === 'coastline' ? '#222222' : '#000000')),
+              strokeWidth: l.type === 'border' ? activeBorderWidth : activeLineWidth,
               tension: l.type === 'coastline' && state.activeCoastlineStyle === 'fractal' ? 0 : l.type === 'border' && state.activeBorderStyle === 'snapped' ? 0 : 0.5,
               invert: isShiftPressed,
               roadStyle: l.type === 'road' ? activeRoadStyle : undefined,
@@ -308,8 +308,8 @@ export function useMapInteraction() {
           const newData = {
             id: Date.now().toString(),
             points: finalPoints,
-            stroke: activeColor || (l.type === 'coastline' ? '#222222' : l.type === 'border' ? '#dc2626' : '#000000'),
-            strokeWidth: activeLineWidth,
+            stroke: l.type === 'border' ? activeBorderColor : (activeColor || (l.type === 'coastline' ? '#222222' : '#000000')),
+            strokeWidth: l.type === 'border' ? activeBorderWidth : activeLineWidth,
             tension: l.type === 'coastline' && state.activeCoastlineStyle === 'fractal' ? 0 : l.type === 'border' && state.activeBorderStyle === 'snapped' ? 0 : 0.5,
             invert: isShiftPressed,
             roadStyle: l.type === 'road' ? activeRoadStyle : undefined,
