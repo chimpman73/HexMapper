@@ -17,16 +17,14 @@ interface TerrainLayerRendererProps {
   hasBgImage: boolean;
   showCoordinates: boolean;
   isPaintingHex: boolean;
-  globalBorders: { x: number, y: number }[][] | null;
-  proceduralEdges: Array<{ id: string, points: number[], color: string, type: string }>;
   setHoveredHex: (h: HexCube | null) => void;
   handlePaintHex: (h: HexCube) => void;
 }
 
 const TerrainLayerRenderer: React.FC<TerrainLayerRendererProps> = ({
   layer, grid, orientation, isVectorMode, activeLayerId, hoveredHex, highlightedHexKey,
-  currentStyle, assetsBasePath, hasBgImage, showCoordinates, isPaintingHex, globalBorders,
-  proceduralEdges, setHoveredHex, handlePaintHex
+  currentStyle, assetsBasePath, hasBgImage, showCoordinates, isPaintingHex,
+  setHoveredHex, handlePaintHex
 }) => {
   const tiles = grid.map((hex) => {
     const key = `${hex.q},${hex.r},${hex.s}`;
@@ -78,52 +76,7 @@ const TerrainLayerRenderer: React.FC<TerrainLayerRendererProps> = ({
     );
   });
 
-  if (layer.type === 'border') {
-    const edgesToDraw = proceduralEdges.filter(e => e.id.startsWith(layer.id + '-'));
-    
-    let renderedTiles = <>{tiles}</>;
-    
-    if (globalBorders && globalBorders.length > 0) {
-      return (
-        <Group key={layer.id} opacity={layer.opacity}>
-          {globalBorders.map((pathPoints, i) => {
-            if (pathPoints.length > 0) {
-              const flattenedPoints = pathPoints.flatMap((p: {x: number, y: number}) => [p.x, p.y]);
-              return (
-                <Line
-                  key={`global-border-${i}`}
-                  points={flattenedPoints}
-                  fill="#dc2626" 
-                  closed={true}
-                  opacity={layer.opacity}
-                  tension={0}
-                />
-              );
-            }
-            return null;
-          })}
-        </Group>
-      );
-    }
 
-    return (
-      <React.Fragment key={`group-${layer.id}`}>
-        {renderedTiles}
-        {edgesToDraw.map(edge => (
-          <Line
-            key={edge.id}
-            points={edge.points}
-            stroke={edge.color}
-            strokeWidth={5}
-            tension={0}
-            lineCap="round"
-            lineJoin="round"
-            opacity={layer.opacity}
-          />
-        ))}
-      </React.Fragment>
-    );
-  }
 
   return <>{tiles}</>;
 };

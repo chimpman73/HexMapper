@@ -225,6 +225,57 @@ class HexScanner:
                         "riverStyle": "river"
                     })
 
+        # Convert global borders to vector lines
+        if data.global_borders:
+            border_layer = next((l for l in existing_layers if l.get("type") == "border"), None)
+            if border_layer:
+                if not isinstance(border_layer.get("data"), list):
+                    border_layer["data"] = []
+                for path_points in data.global_borders:
+                    if len(path_points) < 2: continue
+                    
+                    flat_points = []
+                    for p in path_points:
+                        flat_points.extend([p["x"], p["y"]])
+
+                    # Heuristic to detect if it's a snapped line:
+                    # If most points are close to a hex corner, it's snapped.
+                    snapped = False
+                    if len(path_points) > 2:
+                        close_points = 0
+                        for p in path_points:
+                            px, py = p["x"], p["y"]
+                            q_f = (2.0 / 3.0 * px) / self._hex_grid.hex_size if orientation == "flat" else (math.sqrt(3) / 3.0 * px - 1.0 / 3.0 * py) / self._hex_grid.hex_size
+                            r_f = (-1.0 / 3.0 * px + math.sqrt(3) / 3.0 * py) / self._hex_grid.hex_size if orientation == "flat" else (2.0 / 3.0 * py) / self._hex_grid.hex_size
+                            q, r, s = round(q_f), round(r_f), round(-q_f-r_f)
+                            q_diff, r_diff, s_diff = abs(q - q_f), abs(r - r_f), abs(s - (-q_f-r_f))
+                            if q_diff > r_diff and q_diff > s_diff: q = -r-s
+                            elif r_diff > s_diff: r = -q-s
+                            else: s = -q-r
+                            
+                            cx, cy = self._hex_grid.hex_to_pixel(q, r, orientation)
+                            corners = []
+                            for i in range(6):
+                                angle_deg = 60 * i - 30 if orientation == "flat" else 60 * i
+                                angle_rad = math.pi / 180 * angle_deg
+                                corners.append((cx + self._hex_grid.hex_size * math.cos(angle_rad), cy + self._hex_grid.hex_size * math.sin(angle_rad)))
+                            
+                            min_d = min(math.hypot(px - c[0], py - c[1]) for c in corners)
+                            if min_d < self._hex_grid.hex_size * 0.25:
+                                close_points += 1
+                                
+                        if close_points / len(path_points) > 0.6:
+                            snapped = True
+
+                    border_layer["data"].append({
+                        "id": f"border_{str(uuid.uuid4())[:8]}",
+                        "points": flat_points,
+                        "stroke": "#dc2626",
+                        "strokeWidth": 5,
+                        "tension": 0 if snapped else 0.5,
+                        "borderStyle": "snapped" if snapped else "smooth"
+                    })
+
         # Convert coastline layers to vector layers with matched colors
         if data.coastline_layers:
             for c_layer in data.coastline_layers:

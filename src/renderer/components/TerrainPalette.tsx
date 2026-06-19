@@ -6,15 +6,17 @@ import { useMapStore } from '../store/mapStore';
 
 interface TerrainPaletteProps {}
 
-import { generateRoadBrush, generateRiverBrush, generateCoastlineBrush } from '../utils/brushGenerators';
+import { generateRoadBrush, generateRiverBrush, generateCoastlineBrush, generateBorderBrush } from '../utils/brushGenerators';
 
 const TerrainPalette: React.FC<TerrainPaletteProps> = () => {
   const [roadBrushes, setRoadBrushes] = useState<{type: RoadStyle, url: string}[]>([]);
   const [riverBrushes, setRiverBrushes] = useState<{type: RiverStyle, url: string}[]>([]);
   const [coastlineBrushes, setCoastlineBrushes] = useState<{type: CoastlineStyle, url: string}[]>([]);
+  const [borderBrushes, setBorderBrushes] = useState<{type: BorderStyle, url: string}[]>([]);
+  const [selectedBorderLine, setSelectedBorderLine] = useState<any>(null);
   
   const { 
-    activeBrush, setActiveBrush, layers, activeLayerId, activeColor, setActiveColor, activeLineWidth, setActiveLineWidth, activeRoadStyle, setActiveRoadStyle, activeRiverStyle, setActiveRiverStyle, activeCoastlineStyle, setActiveCoastlineStyle, currentStyle, roadConfig, riverConfig
+    activeBrush, setActiveBrush, layers, activeLayerId, activeColor, setActiveColor, activeLineWidth, setActiveLineWidth, activeRoadStyle, setActiveRoadStyle, activeRiverStyle, setActiveRiverStyle, activeCoastlineStyle, setActiveCoastlineStyle, activeBorderStyle, setActiveBorderStyle, currentStyle, roadConfig, riverConfig, setLayers, mapWidth, mapHeight, orientation
   } = useMapStore();
 
   const activeLayer = layers.find(l => l.id === activeLayerId) || layers[0];
@@ -50,6 +52,22 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = () => {
       ]);
     }
   }, [activeLayer.type]);
+
+  React.useEffect(() => {
+    if (activeLayer.type === 'border') {
+      setBorderBrushes([
+        { type: 'smooth', url: generateBorderBrush('smooth') },
+        { type: 'snapped', url: generateBorderBrush('snapped') },
+        { type: 'highlight', url: generateBorderBrush('highlight') },
+      ]);
+    }
+  }, [activeLayer.type]);
+
+  React.useEffect(() => {
+    // We don't have selectedLineId in store, but we can access it through window.api if needed or we can just pass it?
+    // Wait, selectedLineId is not in store. TerrainPalette doesn't know which line is selected!
+    // To snap the selected line, we can just snap ALL borders on the layer, OR we must move selectedLineId to store.
+  }, []);
 
   React.useEffect(() => {
     const loadDefault = async () => {
@@ -128,6 +146,31 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = () => {
             </div>
           )}
 
+          {activeLayer.type === 'border' && setActiveBorderStyle && (
+            <div style={{marginBottom: '15px'}}>
+              <label style={{color: '#ccc', fontSize: '14px', display: 'block', marginBottom: '5px'}}>Border Style:</label>
+              <div className={styles.brushGrid}>
+                {borderBrushes.map((brush) => (
+                  <div 
+                    key={brush.type} 
+                    className={`${styles.brushItem} ${activeBorderStyle === brush.type ? styles.active : ''}`}
+                    onClick={() => setActiveBorderStyle(brush.type)}
+                    title={brush.type === 'highlight' ? 'Highlight Borders' : brush.type.charAt(0).toUpperCase() + brush.type.slice(1)}
+                  >
+                    <img src={brush.url} alt={brush.type} className={styles.brushImg} />
+                  </div>
+                ))}
+              </div>
+              <button 
+                onClick={() => window.dispatchEvent(new CustomEvent('snapSelectedBorder'))}
+                style={{marginTop: '10px', padding: '5px 10px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', width: '100%', fontSize: '12px'}}
+                title="Select a smooth border, then click this to automatically snap it to the hex edges."
+              >
+                Snap Selected Border
+              </button>
+            </div>
+          )}
+
           {(activeLayer.type === 'border' || activeLayer.type === 'river' || activeLayer.type === 'cliff' || activeLayer.type === 'road' || activeLayer.type === 'coastline') && (
             <div className={styles.brushGrid} style={{ marginBottom: '15px' }}>
               <div 
@@ -154,7 +197,7 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = () => {
                   ? (roadConfig?.[activeRoadStyle || 'road']?.color || (activeRoadStyle === 'path' ? '#8b4513' : activeRoadStyle === 'tunnel' ? '#555555' : '#a0522d')) 
                   : activeLayer.type === 'river'
                   ? (riverConfig?.[activeRiverStyle || 'river']?.color || (activeRiverStyle === 'stream' ? '#60a5fa' : '#3b82f6'))
-                  : (activeColor || (activeLayer.type === 'coastline' ? '#222222' : '#3b82f6'))
+                  : (activeColor || (activeLayer.type === 'coastline' ? '#222222' : activeLayer.type === 'border' ? '#dc2626' : '#3b82f6'))
               } 
               onChange={e => setActiveColor(e.target.value)} 
               style={{width: '100%', height: '40px', opacity: activeColor === null ? 0.5 : 1}}

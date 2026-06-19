@@ -124,3 +124,100 @@ export function generateRectangularGrid(width: number, height: number, orientati
   
   return hexes;
 }
+
+export interface HexEdgeGraph {
+  adj: Map<string, {x: number, y: number}[]>;
+  size: number;
+}
+
+export function buildHexEdgeGraph(orientation: HexOrientation, grid: HexCube[], size: number = HEX_SIZE): HexEdgeGraph {
+  const nodeKey = (x: number, y: number) => `${Math.round(x)},${Math.round(y)}`;
+  const adj = new Map<string, {x: number, y: number}[]>();
+  
+  grid.forEach(hex => {
+    const center = hexToPixel(hex, orientation, size);
+    const corners = getHexCorners(center, orientation, size);
+    for (let i = 0; i < 6; i++) {
+      const p1 = { x: corners[i * 2], y: corners[i * 2 + 1] };
+      const p2 = { x: corners[((i + 1) % 6) * 2], y: corners[((i + 1) % 6) * 2 + 1] };
+      
+      const k1 = nodeKey(p1.x, p1.y);
+      const k2 = nodeKey(p2.x, p2.y);
+      
+      if (!adj.has(k1)) adj.set(k1, []);
+      if (!adj.has(k2)) adj.set(k2, []);
+      
+      if (!adj.get(k1)!.some(n => nodeKey(n.x, n.y) === k2)) adj.get(k1)!.push(p2);
+      if (!adj.get(k2)!.some(n => nodeKey(n.x, n.y) === k1)) adj.get(k2)!.push(p1);
+    }
+  });
+  
+  return { adj, size };
+}
+
+export function findHexEdgePath(startPixel: Point, endPixel: Point, graph: HexEdgeGraph): number[] {
+  const { adj, size } = graph;
+  const nodeKey = (x: number, y: number) => `${Math.round(x)},${Math.round(y)}`;
+
+  // Find the closest graph nodes to start and end
+  let startNode: {x: number, y: number, key: string} | null = null;
+  let endNode: {x: number, y: number, key: string} | null = null;
+  let minDistStart = Infinity;
+  let minDistEnd = Infinity;
+
+  for (const [key, neighbors] of adj.entries()) {
+    // just pick the first neighbor's source coordinates to represent this node
+    const [sx, sy] = key.split(',').map(Number);
+    
+    const dStart = (sx - startPixel.x) ** 2 + (sy - startPixel.y) ** 2;
+    if (dStart < minDistStart) {
+      minDistStart = dStart;
+      startNode = { x: sx, y: sy, key };
+    }
+    
+    const dEnd = (sx - endPixel.x) ** 2 + (sy - endPixel.y) ** 2;
+    if (dEnd < minDistEnd) {
+      minDistEnd = dEnd;
+      endNode = { x: sx, y: sy, key };
+    }
+  }
+
+  if (!startNode || !endNode) return [startPixel.x, startPixel.y, endPixel.x, endPixel.y];
+  if (startNode.key === endNode.key) return [startNode.x, startNode.y];
+
+  // A* pathfinding
+  const queue = [{ node: startNode, path: [startNode.x, startNode.y], cost: 0 }];
+  const visited = new Set<string>();
+  
+  while (queue.length > 0) {
+    // sort by cost + heuristic (euclidean distance to end)
+    queue.sort((a, b) => {
+      const fA = a.cost + Math.sqrt((a.node.x - endNode!.x) ** 2 + (a.node.y - endNode!.y) ** 2);
+      const fB = b.cost + Math.sqrt((b.node.x - endNode!.x) ** 2 + (b.node.y - endNode!.y) ** 2);
+      return fA - fB;
+    });
+    
+    const current = queue.shift()!;
+    if (current.node.key === endNode.key) {
+      return current.path;
+    }
+    
+    if (visited.has(current.node.key)) continue;
+    visited.add(current.node.key);
+    
+    const neighbors = adj.get(current.node.key) || [];
+    for (const n of neighbors) {
+      const nKey = nodeKey(n.x, n.y);
+      if (!visited.has(nKey)) {
+        queue.push({
+          node: { x: n.x, y: n.y, key: nKey },
+          path: [...current.path, n.x, n.y],
+          cost: current.cost + size
+        });
+      }
+    }
+  }
+  
+  // Fallback if no path found
+  return [startPixel.x, startPixel.y, endPixel.x, endPixel.y];
+}

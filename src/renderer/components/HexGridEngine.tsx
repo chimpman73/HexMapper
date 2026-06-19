@@ -49,61 +49,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
 
   const grid = useMemo(() => generateRectangularGrid(mapWidth, mapHeight, orientation), [mapWidth, mapHeight, orientation]);
 
-  const proceduralEdges = useMemo(() => {
-    const edges: Array<{ id: string; points: number[]; color: string; type: LayerType }> = [];
-    
-    layers.forEach(layer => {
-      if (layer.type === 'border' && layer.visible) {
-        for (const key in layer.data) {
-          const rawVal = layer.data[key] as string;
-          if (!rawVal) continue;
-          
-          const color = layer.type === 'border' ? (layer.data[key] as string) : '#222222';
-
-          const [q, r, s] = key.split(',').map(Number);
-          const center = hexToPixel({ q, r, s }, orientation);
-          const cornersRaw = getHexCorners(center, orientation);
-          const cPts: {x: number, y: number}[] = [];
-          for (let i = 0; i < 12; i += 2) cPts.push({ x: cornersRaw[i], y: cornersRaw[i + 1] });
-
-          HEX_NEIGHBORS.forEach((offset, idx) => {
-            const nKey = `${q + offset.q},${r + offset.r},${s + offset.s}`;
-            if (!layer.data[nKey]) {
-              const nCenter = hexToPixel({ q: q + offset.q, r: r + offset.r, s: s + offset.s }, orientation);
-              const nCornersRaw = getHexCorners(nCenter, orientation);
-              const nPts: {x: number, y: number}[] = [];
-              for (let i = 0; i < 12; i += 2) nPts.push({ x: nCornersRaw[i], y: nCornersRaw[i + 1] });
-
-              const shared = cPts.filter(c => nPts.some(nc => Math.abs(c.x - nc.x) < 1 && Math.abs(c.y - nc.y) < 1));
-
-              if (shared.length === 2) {
-                const c1 = shared[0];
-                const c2 = shared[1];
-                const midX = (c1.x + c2.x) / 2;
-                const midY = (c1.y + c2.y) / 2;
-                const dx = c2.x - c1.x;
-                const dy = c2.y - c1.y;
-                const len = Math.sqrt(dx * dx + dy * dy);
-                
-                const hash = Math.sin(c1.x * 12.9898 + c1.y * 78.233) * 43758.5453;
-                const rand = hash - Math.floor(hash);
-                
-                const offsetAmount = 0;
-                
-                edges.push({
-                  id: `${layer.id}-${key}-${idx}`,
-                  points: [c1.x, c1.y, midX + nx * offsetAmount, midY + ny * offsetAmount, c2.x, c2.y],
-                  color: color,
-                  type: layer.type
-                });
-              }
-            }
-          });
-        }
-      }
-    });
-    return edges;
-  }, [layers, orientation]);
+  const proceduralEdges: Array<{ id: string; points: number[]; color: string; type: LayerType }> = [];
 
 
 
@@ -151,7 +97,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
             return <GridLayerRenderer key={`group-${layer.id}`} layer={layer} grid={grid} orientation={orientation} />;
           }
 
-          if (layer.type === 'terrain' || layer.type === 'city' || layer.type === 'border') {
+          if (layer.type === 'terrain' || layer.type === 'city') {
             return (
               <TerrainLayerRenderer
                 key={`group-${layer.id}`}
@@ -167,8 +113,6 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
                 hasBgImage={hasBgImage}
                 showCoordinates={showCoordinates}
                 isPaintingHex={isPaintingHex}
-                globalBorders={globalBorders}
-                proceduralEdges={proceduralEdges}
                 setHoveredHex={setHoveredHex}
                 handlePaintHex={handlePaintHex}
               />
@@ -233,7 +177,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
                     : (activeColor || '#000000')
                 }
                 strokeWidth={activeLineWidth}
-                tension={0.5}
+                tension={activeLayer?.type === 'coastline' && useMapStore.getState().activeCoastlineStyle === 'fractal' ? 0 : activeLayer?.type === 'border' && useMapStore.getState().activeBorderStyle === 'snapped' ? 0 : 0.5}
                 lineCap="round"
                 lineJoin="round"
                 dash={

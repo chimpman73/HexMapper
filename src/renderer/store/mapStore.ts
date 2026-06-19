@@ -24,9 +24,10 @@ interface MapState {
   activeBrush: string | null;
   activeColor: string | null;
   activeLineWidth: number;
-  activeRoadStyle: RoadStyle;
-  activeRiverStyle: RiverStyle;
-  activeCoastlineStyle: CoastlineStyle;
+  activeRoadStyle?: RoadStyle;
+  activeRiverStyle?: RiverStyle;
+  activeCoastlineStyle?: CoastlineStyle;
+  activeBorderStyle?: BorderStyle;
   
   layers: MapLayer[];
   pastLayers: MapLayer[][];
@@ -63,6 +64,7 @@ interface MapState {
   setActiveRoadStyle: (s: RoadStyle) => void;
   setActiveRiverStyle: (s: RiverStyle) => void;
   setActiveCoastlineStyle: (s: CoastlineStyle) => void;
+  setActiveBorderStyle: (s: BorderStyle) => void;
   setLayers: (l: MapLayer[] | ((prev: MapLayer[]) => MapLayer[])) => void;
   setActiveLayerId: (id: string) => void;
   setIsScanning: (s: boolean) => void;
@@ -108,6 +110,7 @@ export const useMapStore = create<MapState>((set) => ({
   activeRoadStyle: 'path',
   activeRiverStyle: 'river',
   activeCoastlineStyle: 'smooth',
+  activeBorderStyle: 'smooth',
   
   layers: [
     { id: '1', name: 'Terrain', type: 'terrain', visible: true, opacity: 1, data: {} },
@@ -117,7 +120,7 @@ export const useMapStore = create<MapState>((set) => ({
     { id: '9', name: 'Roads', type: 'road', visible: true, opacity: 1, data: [] },
     { id: '5', name: 'Cities', type: 'city', visible: true, opacity: 1, data: {} },
     { id: '8', name: 'Hex Grid', type: 'grid', visible: true, opacity: 1, data: {} },
-    { id: '6', name: 'Borders', type: 'border', visible: true, opacity: 1, data: {} },
+    { id: '6', name: 'Borders', type: 'border', visible: true, opacity: 1, data: [] },
     { id: '7', name: 'Labels', type: 'label', visible: true, opacity: 1, data: [] }
   ],
   pastLayers: [],
@@ -153,6 +156,7 @@ export const useMapStore = create<MapState>((set) => ({
   setActiveRoadStyle: (s) => set({ activeRoadStyle: s }),
   setActiveRiverStyle: (s) => set({ activeRiverStyle: s }),
   setActiveCoastlineStyle: (s) => set({ activeCoastlineStyle: s }),
+  setActiveBorderStyle: (s) => set({ activeBorderStyle: s }),
   setLayers: (l) => set((state) => {
     const nextLayers = typeof l === 'function' ? l(state.layers) : l;
     if (nextLayers === state.layers) return state;
@@ -220,7 +224,7 @@ export const useMapStore = create<MapState>((set) => ({
       type: type as any,
       visible: true,
       opacity: 1,
-      data: type === 'cliff' || type === 'river' || type === 'label' || type === 'road' || type === 'coastline' ? [] : {}
+      data: type === 'cliff' || type === 'river' || type === 'label' || type === 'road' || type === 'coastline' || type === 'border' ? [] : {}
     };
     return { layers: [...state.layers, newLayer] };
   }),

@@ -3,7 +3,9 @@ import { Group, Line, Shape } from 'react-konva';
 import { Circle } from 'react-konva';
 import { VectorLayer, Layer, VectorLine } from '../../types';
 import { generateCliffHashes, distToSegment, getRelativePointerPosition } from '../../utils/vectorMath';
+import { pixelToHex, hexToPixel, getHexCorners } from '../../utils/hexMath';
 import { generateFractalLine } from '../../utils/fractalMath';
+import { useMapStore } from '../../store/mapStore';
 import Konva from 'konva';
 
 interface VectorLayerRendererProps {
@@ -30,6 +32,7 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
   setLayers, setSelectedLineId, setHoveredLineId
 }) => {
   const processedLines = React.useMemo(() => {
+    if (!Array.isArray(layer.data)) return [];
     return layer.data.map((line) => {
       let displayPoints = line.points;
       if (layer.type === 'coastline' && line.coastlineStyle === 'fractal') {
@@ -74,7 +77,8 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
         if (activeLayerId === layer.id) {
           isHighlighted = (layer.type === 'road' && activeRoadStyle === 'highlight') || 
                           (layer.type === 'river' && activeRiverStyle === 'highlight') ||
-                          (layer.type === 'coastline' && activeCoastlineStyle === 'highlight');
+                          (layer.type === 'coastline' && activeCoastlineStyle === 'highlight') ||
+                          (layer.type === 'border' && useMapStore.getState().activeBorderStyle === 'highlight');
         }
         
         if (layer.type === 'road') {
@@ -155,21 +159,21 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
                   }
                   return l;
                 }));
-              } else if (layer.type === 'road' || layer.type === 'river' || layer.type === 'coastline') {
+              } else if (layer.type === 'road' || layer.type === 'river' || layer.type === 'coastline' || layer.type === 'border') {
                 e.cancelBubble = true;
                 setSelectedLineId(line.id);
               }
             }
           }}
           onMouseEnter={(e) => {
-            if (isVectorMode && (activeColor === null || layer.type === 'road' || layer.type === 'river' || layer.type === 'coastline') && activeLayerId === layer.id) {
+            if (isVectorMode && (activeColor === null || layer.type === 'road' || layer.type === 'river' || layer.type === 'coastline' || layer.type === 'border') && activeLayerId === layer.id) {
               const stage = e.target.getStage();
               if (stage) stage.container().style.cursor = 'pointer';
               setHoveredLineId(line.id);
             }
           }}
           onMouseLeave={(e) => {
-            if (isVectorMode && (activeColor === null || layer.type === 'road' || layer.type === 'river' || layer.type === 'coastline') && activeLayerId === layer.id) {
+            if (isVectorMode && (activeColor === null || layer.type === 'road' || layer.type === 'river' || layer.type === 'coastline' || layer.type === 'border') && activeLayerId === layer.id) {
               const stage = e.target.getStage();
               if (stage) stage.container().style.cursor = 'crosshair';
               if (hoveredLineId === line.id) setHoveredLineId(null);
@@ -228,7 +232,7 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
              />
           )}
           {layer.type === 'cliff' && generateCliffHashes(displayPoints, line.invert, hoveredLineId === line.id ? '#ff5252' : line.stroke, line.strokeWidth, line.id, hoveredLineId === line.id ? 0.5 : layer.opacity)}
-          {selectedLineId === line.id && (layer.type === 'road' || layer.type === 'river' || layer.type === 'coastline') && (
+          {selectedLineId === line.id && (layer.type === 'road' || layer.type === 'river' || layer.type === 'coastline' || layer.type === 'border') && (
             <Group>
               {Array.from({ length: line.points.length / 2 }).map((_, ptIndex) => (
                 <Circle
@@ -276,6 +280,31 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
                          return prev;
                        });
                        
+                       if (snappedPoint) {
+                         px = snappedPoint.x;
+                         py = snappedPoint.y;
+                         e.target.x(px);
+                         e.target.y(py);
+                       }
+                     }
+                     
+                     // Snapping logic for borders
+                     if (layer.type === 'border' && useMapStore.getState().activeBorderStyle === 'snapped') {
+                       const state = useMapStore.getState();
+                       const hex = pixelToHex({x: px, y: py}, state.orientation);
+                       const center = hexToPixel(hex, state.orientation);
+                       const cornersRaw = getHexCorners(center, state.orientation);
+                       let minDist = Infinity;
+                       let snappedPoint = null;
+                       for (let i = 0; i < 6; i++) {
+                         const cx = cornersRaw[i*2];
+                         const cy = cornersRaw[i*2+1];
+                         const dist = Math.sqrt((cx - px)**2 + (cy - py)**2);
+                         if (dist < minDist) {
+                           minDist = dist;
+                           snappedPoint = { x: cx, y: cy };
+                         }
+                       }
                        if (snappedPoint) {
                          px = snappedPoint.x;
                          py = snappedPoint.y;

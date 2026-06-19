@@ -33,15 +33,11 @@ export interface CityLayer extends BaseLayer {
   data: Record<string, string>; 
 }
 
-export interface BorderLayer extends BaseLayer {
-  type: 'border';
-  data: Record<string, string>; 
-}
-
 export type CoastlineStyle = 'smooth' | 'fractal' | 'highlight';
 
 export type RoadStyle = 'path' | 'road' | 'tunnel' | 'highlight';
 export type RiverStyle = 'stream' | 'river' | 'highlight';
+export type BorderStyle = 'smooth' | 'snapped' | 'highlight';
 
 export interface VectorLine {
   id: string;
@@ -49,22 +45,24 @@ export interface VectorLine {
   stroke: string;
   strokeWidth: number;
   tension: number;
-  invert?: boolean;
+  closed?: boolean;
+  fill?: string;
   roadStyle?: RoadStyle;
   riverStyle?: RiverStyle;
   coastlineStyle?: CoastlineStyle;
+  borderStyle?: BorderStyle;
+  invert?: boolean; 
   brushKey?: string;
-  fill?: string;
 }
 
 export interface VectorLayer extends BaseLayer {
-  type: 'river' | 'cliff' | 'label' | 'road' | 'coastline';
+  type: 'river' | 'cliff' | 'label' | 'road' | 'coastline' | 'border';
   data: VectorLine[];
 }
 
 export interface GridLayer extends BaseLayer {
   type: 'grid';
-  data: Record<string, string>;
+  data: {};
 }
 
 export interface BgImageLayer extends BaseLayer {
@@ -79,7 +77,7 @@ export interface GroupLayer extends BaseLayer {
   data: {};
 }
 
-export type MapLayer = TerrainLayer | CityLayer | BorderLayer | VectorLayer | GridLayer | BgImageLayer | GroupLayer;
+export type MapLayer = TerrainLayer | CityLayer | VectorLayer | GridLayer | BgImageLayer | GroupLayer;
 
 export interface PythonScriptArgs {
   action?: string;
