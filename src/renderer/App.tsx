@@ -6,6 +6,7 @@ import LayerPanel from './components/LayerPanel';
 import UnknownsPanel from './components/UnknownsPanel';
 import { HexOrientation, MapLayer } from './types';
 import { useMapStore } from './store/mapStore';
+import { generateRectangularGrid, buildHexEdgeGraph, findHexEdgePath } from './utils/hexMath';
 
 declare global {
   interface Window {
@@ -342,7 +343,30 @@ const App: React.FC = () => {
       });
       console.log('Scanner result:', result);
       if (result.status === 'success' && result.data && result.data.layers) {
-        setLayers(result.data.layers);
+        let newLayers = result.data.layers;
+        
+        // Auto-snap any newly imported borders that were detected as snapped
+        const borderLayer = newLayers.find((l: any) => l.type === 'border');
+        if (borderLayer && Array.isArray(borderLayer.data)) {
+           const grid = generateRectangularGrid(mapWidth, mapHeight, orientation);
+           const graph = buildHexEdgeGraph(orientation, grid);
+           borderLayer.data = borderLayer.data.map((line: any) => {
+              if (line.borderStyle === 'snapped' && line.points.length >= 4) {
+                 let newPoints: number[] = [];
+                 for (let i = 0; i < line.points.length - 2; i += 2) {
+                     const p1 = {x: line.points[i], y: line.points[i+1]};
+                     const p2 = {x: line.points[i+2], y: line.points[i+3]};
+                     const path = findHexEdgePath(p1, p2, graph);
+                     if (i === 0) newPoints.push(path[0], path[1]);
+                     newPoints.push(...path.slice(2));
+                 }
+                 return { ...line, points: newPoints };
+              }
+              return line;
+           });
+        }
+        
+        setLayers(newLayers);
         if (result.data.globalCoastlines) {
           setGlobalCoastlines(result.data.globalCoastlines);
         }
