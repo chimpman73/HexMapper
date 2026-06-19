@@ -60,11 +60,11 @@ This backlog is prioritized based on structural dependencies. Foundational infra
 *Why it's important:* Gives users professional interoperability by letting them pull generated maps back into Photoshop with intact layer structures.
 - Implement an export feature to save the resulting digital map as a fully layered `.psd` file.
 
-**11. Advanced River Enhancements**
+**11. ~~Advanced River Enhancements~~ [COMPLETED]**
 *Why it's important:* Adds dynamic scaling and attachments to vector lines.
-- **River Details:** Add new River tools (adding fords, waterfalls, etc.). These brushes can only be painted along a river, perpendicular to a river. We might want some way to attach them to a river (in case the river is moved) and to slide them up or down the river if edited.
+- ~~**River Details:** Add new River tools (adding fords, waterfalls, etc.). These brushes can only be painted along a river, perpendicular to a river. We might want some way to attach them to a river (in case the river is moved) and to slide them up or down the river if edited.~~ [COMPLETED]
 - ~~**Coastal Snapping:** Create a river to coastal snapping tool that snaps the end of a river to coastline.~~ [COMPLETED]
-- **Dynamic Widths:** Revisit rivers. Have rivers grow and shrink based on how many tributaries either come in or go out. For example, a river by itself is the standard width, but for each tributary added it grows by a pixel wide. Branch points (something that attaches to the coastline) would make the river width shrink.
+- ~~**Dynamic Widths:** Revisit rivers. Have rivers grow and shrink based on how many tributaries either come in or go out. For example, a river by itself is the standard width, but for each tributary added it grows by a pixel wide. Branch points (something that attaches to the coastline) would make the river width shrink.~~ [COMPLETED]
 
 ---
 
