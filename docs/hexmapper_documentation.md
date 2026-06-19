@@ -93,6 +93,7 @@ HexMapper includes a robust, vector-based drawing system for Roads and Rivers th
   - **Point-by-Point Drawing**: Users can click to drop anchor vertices, rubber-banding the line segment by segment. Double-clicking commits the vector to the canvas. Pressing `ESC` or right-clicking at any time cancels the drawing.
   - **Node Editing**: Selecting an existing road, river, or coastline enters "Edit Mode". White circular anchor nodes appear at every vertex. Users can drag these nodes in real-time to reshape the path. For closed polygons like islands, strict hit detection ensures the interior remains hollow and clickable.
   - **Node Insertion**: Double-clicking on the line dynamically inserts a new anchor node at that specific position for finer control.
+- **River Features**: Users can select custom River Feature brushes (e.g., waterfalls, bridges, cataracts) directly from the River layer palette. These features mathematically compute the tangent of the local river segment and automatically snap into place, rotating perfectly perpendicular to the water flow. Because they are structurally tied to the river's vector geometry, dragging river anchor nodes will dynamically update the positions and rotation of all attached features in real-time. Features can be selectively erased independently of the underlying river line.
 
 ## 7. Extracted Vector Injection
 When the Optical Map Reconstruction Engine scans an image (such as the Global Shoreline or Rivers pass), the resulting raw coordinate data is seamlessly converted into standard, editable `VectorLine` objects.
