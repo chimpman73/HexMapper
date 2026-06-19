@@ -42,6 +42,7 @@ interface MapState {
   assetsBasePath: string;
   roadConfig: any;
   riverConfig: any;
+  selectedVertex: {lineId: string, index: number} | null;
 
   // Actions
   setOrientation: (o: HexOrientation) => void;
@@ -75,6 +76,7 @@ interface MapState {
   setAssetsBasePath: (p: string) => void;
   setRoadConfig: (c: any) => void;
   setRiverConfig: (c: any) => void;
+  setSelectedVertex: (v: {lineId: string, index: number} | null) => void;
 
   undo: () => void;
   redo: () => void;
@@ -139,6 +141,7 @@ export const useMapStore = create<MapState>((set) => ({
   assetsBasePath: '',
   roadConfig: null,
   riverConfig: null,
+  selectedVertex: null,
 
   setOrientation: (o) => set({ orientation: o }),
   setShowCoordinates: (s) => set({ showCoordinates: s }),
@@ -179,6 +182,7 @@ export const useMapStore = create<MapState>((set) => ({
   setAssetsBasePath: (p) => set({ assetsBasePath: p }),
   setRoadConfig: (c) => set({ roadConfig: c }),
   setRiverConfig: (c) => set({ riverConfig: c }),
+  setSelectedVertex: (v) => set({ selectedVertex: v }),
 
   undo: () => set((state) => {
     if (state.pastLayers.length === 0) return state;

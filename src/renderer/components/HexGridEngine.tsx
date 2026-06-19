@@ -120,6 +120,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
           }
 
           const vLayer = layer as import('../types').VectorLayer;
+          const coastlines = layers.filter(l => l.type === 'coastline').flatMap(l => l.data as import('../types').VectorLine[]);
           return (
             <VectorLayerRenderer
               key={`group-${layer.id}`}
@@ -135,6 +136,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
               roadConfig={roadConfig}
               riverConfig={riverConfig}
               activeColor={activeColor}
+              coastlines={coastlines}
               setLayers={setLayers}
               setSelectedLineId={setSelectedLineId}
               setHoveredLineId={setHoveredLineId}

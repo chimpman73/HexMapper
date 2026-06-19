@@ -6,6 +6,7 @@ import { generateCliffHashes, distToSegment, getRelativePointerPosition } from '
 import { pixelToHex, hexToPixel, getHexCorners } from '../../utils/hexMath';
 import { generateFractalLine } from '../../utils/fractalMath';
 import { useMapStore } from '../../store/mapStore';
+import { computeRiverFlows, FlowResult } from '../../utils/riverFlowMath';
 import Konva from 'konva';
 
 interface VectorLayerRendererProps {
@@ -21,6 +22,7 @@ interface VectorLayerRendererProps {
   roadConfig: any;
   riverConfig: any;
   activeColor: string | null;
+  coastlines: VectorLine[];
   setLayers: React.Dispatch<React.SetStateAction<Layer[]>>;
   setSelectedLineId: (id: string | null) => void;
   setHoveredLineId: (id: string | null) => void;
@@ -29,8 +31,14 @@ interface VectorLayerRendererProps {
 const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
   layer, activeLayer, activeLayerId, hoveredLineId, selectedLineId, isVectorMode,
   activeRoadStyle, activeRiverStyle, activeCoastlineStyle, roadConfig, riverConfig, activeColor,
-  setLayers, setSelectedLineId, setHoveredLineId
+  coastlines, setLayers, setSelectedLineId, setHoveredLineId
 }) => {
+  const { selectedVertex, setSelectedVertex } = useMapStore();
+
+  React.useEffect(() => {
+    setSelectedVertex(null);
+  }, [selectedLineId, setSelectedVertex]);
+
   const processedLines = React.useMemo(() => {
     if (!Array.isArray(layer.data)) return [];
     return layer.data.map((line) => {
@@ -40,6 +48,11 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
       }
       return { ...line, displayPoints };
     });
+  }, [layer.data, layer.type]);
+
+  const riverFlows = React.useMemo(() => {
+    if (layer.type !== 'river') return null;
+    return computeRiverFlows(layer.data as VectorLine[], 5);
   }, [layer.data, layer.type]);
 
   return (
@@ -149,7 +162,9 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
           }}
           onMouseDown={(e) => {
             if (isVectorMode && activeLayerId === layer.id) {
-              if (activeColor === null) {
+              const state = useMapStore.getState();
+              const isEraser = layer.type === 'border' ? state.activeBorderColor === null : activeColor === null;
+              if (isEraser) {
                 e.cancelBubble = true;
                 setHoveredLineId(null);
                 setLayers(prev => prev.map(l => {
@@ -195,30 +210,89 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
               shadowBlur={15}
             />
           )}
-          <Line
-            points={displayPoints}
-            stroke={strokeColor}
-            strokeWidth={line.strokeWidth}
-            hitStrokeWidth={Math.max(20, line.strokeWidth)}
-            tension={line.tension}
-            lineCap="round"
-            lineJoin="round"
-            closed={layer.type === 'coastline'}
-            dash={roadDash}
-            opacity={hoveredLineId === line.id ? 0.5 : layer.opacity}
-            hitFunc={(ctx, shape) => {
-              ctx.beginPath();
-              const pts = shape.points();
-              if (pts.length >= 4) {
-                ctx.moveTo(pts[0], pts[1]);
-                for(let i=2; i<pts.length; i+=2) {
-                  ctx.lineTo(pts[i], pts[i+1]);
+          {layer.type === 'river' && riverFlows ? (
+            <Group>
+              {riverFlows[line.id]?.map((segment, idx) => {
+                if (segment.isTaper) {
+                  const x1 = segment.points[0], y1 = segment.points[1];
+                  const x2 = segment.points[2], y2 = segment.points[3];
+                  const dx = x2 - x1, dy = y2 - y1;
+                  const len = Math.sqrt(dx*dx + dy*dy);
+                  const nx = len === 0 ? 0 : -dy / len;
+                  const ny = len === 0 ? 0 : dx / len;
+                  const endW = segment.width / 2;
+                  
+                  const mx = x1 + dx / 2;
+                  const my = y1 + dy / 2;
+                  
+                  return (
+                    <Group key={`river-seg-${line.id}-${idx}`}>
+                      <Line
+                        points={[
+                          x1, y1,
+                          mx + nx * endW, my + ny * endW,
+                          mx - nx * endW, my - ny * endW
+                        ]}
+                        fill={strokeColor}
+                        closed={true}
+                        opacity={hoveredLineId === line.id ? 0.5 : layer.opacity}
+                      />
+                      <Line
+                        points={[mx, my, x2, y2]}
+                        stroke={strokeColor}
+                        strokeWidth={segment.width}
+                        hitStrokeWidth={Math.max(20, segment.width)}
+                        tension={0}
+                        lineCap="round"
+                        lineJoin="round"
+                        dash={roadDash}
+                        opacity={hoveredLineId === line.id ? 0.5 : layer.opacity}
+                      />
+                    </Group>
+                  );
                 }
-                if (shape.closed()) ctx.closePath();
-              }
-              ctx.strokeShape(shape);
-            }}
-          />
+                return (
+                  <Line
+                    key={`river-seg-${line.id}-${idx}`}
+                    points={segment.points}
+                    stroke={strokeColor}
+                    strokeWidth={segment.width}
+                    hitStrokeWidth={Math.max(20, segment.width)}
+                    tension={line.tension}
+                    lineCap="round"
+                    lineJoin="round"
+                    dash={roadDash}
+                    opacity={hoveredLineId === line.id ? 0.5 : layer.opacity}
+                  />
+                );
+              })}
+            </Group>
+          ) : (
+            <Line
+              points={displayPoints}
+              stroke={strokeColor}
+              strokeWidth={line.strokeWidth}
+              hitStrokeWidth={Math.max(20, line.strokeWidth)}
+              tension={line.tension}
+              lineCap="round"
+              lineJoin="round"
+              closed={layer.type === 'coastline'}
+              dash={roadDash}
+              opacity={hoveredLineId === line.id ? 0.5 : layer.opacity}
+              hitFunc={(ctx, shape) => {
+                ctx.beginPath();
+                const pts = shape.points();
+                if (pts.length >= 4) {
+                  ctx.moveTo(pts[0], pts[1]);
+                  for(let i=2; i<pts.length; i+=2) {
+                    ctx.lineTo(pts[i], pts[i+1]);
+                  }
+                  if (shape.closed()) ctx.closePath();
+                }
+                ctx.strokeShape(shape);
+              }}
+            />
+          )}
           {layer.type === 'road' && line.roadStyle === 'tunnel' && (
              <Line
                 points={displayPoints}
@@ -240,7 +314,8 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
                   x={line.points[ptIndex * 2]}
                   y={line.points[ptIndex * 2 + 1]}
                   radius={5}
-                  fill="#ffffff"
+                  hitStrokeWidth={15}
+                  fill={selectedVertex?.lineId === line.id && selectedVertex?.index === ptIndex ? "#ffff00" : "#ffffff"}
                   stroke="#ff5252"
                   strokeWidth={2}
                   draggable
@@ -257,7 +332,7 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
                        setLayers(prev => {
                          prev.forEach(l => {
                            if (l.type === 'coastline') {
-                             (l.data as VectorLine[]).forEach(cLine => {
+                             (l.data as import('../types').VectorLine[]).forEach(cLine => {
                                for (let i = 0; i < cLine.points.length - 2; i += 2) {
                                  const p1 = { x: cLine.points[i], y: cLine.points[i+1] };
                                  const p2 = { x: cLine.points[i+2], y: cLine.points[i+3] };
@@ -317,7 +392,7 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
                      newPoints[ptIndex * 2 + 1] = py;
                      setLayers(prev => prev.map(l => {
                        if (l.id === layer.id) {
-                         const vl = l as VectorLayer;
+                         const vl = l as import('../types').VectorLayer;
                          return { ...vl, data: vl.data.map(dl => dl.id === line.id ? { ...dl, points: newPoints } : dl) };
                        }
                        return l;
@@ -333,6 +408,7 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
                   }}
                   onMouseDown={(e) => {
                      e.cancelBubble = true;
+                     setSelectedVertex({ lineId: line.id, index: ptIndex });
                   }}
                 />
               ))}

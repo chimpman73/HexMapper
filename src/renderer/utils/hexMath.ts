@@ -155,7 +155,7 @@ export function buildHexEdgeGraph(orientation: HexOrientation, grid: HexCube[], 
   return { adj, size };
 }
 
-export function findHexEdgePath(startPixel: Point, endPixel: Point, graph: HexEdgeGraph): number[] {
+export function findHexEdgePath(startPixel: Point, endPixel: Point, graph: HexEdgeGraph, bannedNodes: string[] = []): number[] {
   const { adj, size } = graph;
   const nodeKey = (x: number, y: number) => `${Math.round(x)},${Math.round(y)}`;
 
@@ -166,7 +166,6 @@ export function findHexEdgePath(startPixel: Point, endPixel: Point, graph: HexEd
   let minDistEnd = Infinity;
 
   for (const [key, neighbors] of adj.entries()) {
-    // just pick the first neighbor's source coordinates to represent this node
     const [sx, sy] = key.split(',').map(Number);
     
     const dStart = (sx - startPixel.x) ** 2 + (sy - startPixel.y) ** 2;
@@ -185,12 +184,13 @@ export function findHexEdgePath(startPixel: Point, endPixel: Point, graph: HexEd
   if (!startNode || !endNode) return [startPixel.x, startPixel.y, endPixel.x, endPixel.y];
   if (startNode.key === endNode.key) return [startNode.x, startNode.y];
 
+  const bannedSet = new Set(bannedNodes);
+
   // A* pathfinding
   const queue = [{ node: startNode, path: [startNode.x, startNode.y], cost: 0 }];
   const visited = new Set<string>();
   
   while (queue.length > 0) {
-    // sort by cost + heuristic (euclidean distance to end)
     queue.sort((a, b) => {
       const fA = a.cost + Math.sqrt((a.node.x - endNode!.x) ** 2 + (a.node.y - endNode!.y) ** 2);
       const fB = b.cost + Math.sqrt((b.node.x - endNode!.x) ** 2 + (b.node.y - endNode!.y) ** 2);
@@ -208,7 +208,7 @@ export function findHexEdgePath(startPixel: Point, endPixel: Point, graph: HexEd
     const neighbors = adj.get(current.node.key) || [];
     for (const n of neighbors) {
       const nKey = nodeKey(n.x, n.y);
-      if (!visited.has(nKey)) {
+      if (!visited.has(nKey) && !bannedSet.has(nKey)) {
         queue.push({
           node: { x: n.x, y: n.y, key: nKey },
           path: [...current.path, n.x, n.y],

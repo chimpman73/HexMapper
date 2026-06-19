@@ -48,8 +48,28 @@ export function useMapInteraction() {
         setSelectedLineId(null);
         setDrawingAnchors([]);
       }
-      if (e.key === 'Delete') {
-        if (selectedLineId && activeLayerId) {
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        const state = useMapStore.getState();
+        if (state.selectedVertex) {
+           setLayers(prev => prev.map(l => {
+            if (l.id === activeLayerId && (l.type === 'river' || l.type === 'cliff' || l.type === 'border' || l.type === 'label' || l.type === 'road' || l.type === 'coastline')) {
+               const newData = (l.data as VectorLine[]).map(dl => {
+                 if (dl.id === state.selectedVertex!.lineId) {
+                   const newPoints = [...dl.points];
+                   const vIndex = state.selectedVertex!.index;
+
+                   newPoints.splice(vIndex * 2, 2);
+                   if (newPoints.length < 4) return null;
+                   return { ...dl, points: newPoints };
+                 }
+                 return dl;
+               }).filter(Boolean) as VectorLine[];
+               return { ...l, data: newData } as VectorLayer;
+            }
+            return l;
+          }));
+          state.setSelectedVertex(null);
+        } else if (selectedLineId && activeLayerId) {
           setLayers(prev => prev.map(l => {
             if (l.id === activeLayerId && (l.type === 'river' || l.type === 'cliff' || l.type === 'border' || l.type === 'label' || l.type === 'road' || l.type === 'coastline')) {
               return { ...l, data: (l.data as VectorLine[]).filter(d => d.id !== selectedLineId) } as VectorLayer;
@@ -301,7 +321,15 @@ export function useMapInteraction() {
     if (isVectorMode && isDrawingPath && currentLine && currentLine.length >= 4) {
       const state = useMapStore.getState();
       const isBorderSnap = activeLayer?.type === 'border' && state.activeBorderStyle === 'snapped';
-      const finalPoints = isBorderSnap ? currentLine : drawingAnchors;
+      let finalPoints = isBorderSnap ? currentLine : drawingAnchors;
+      
+      if (finalPoints.length >= 4) {
+        const len = finalPoints.length;
+        if (finalPoints[len - 4] === finalPoints[len - 2] && finalPoints[len - 3] === finalPoints[len - 1]) {
+          finalPoints = finalPoints.slice(0, -2);
+        }
+      }
+      
       setLayers(prev => prev.map(l => {
         if (l.id === activeLayerId && (l.type === 'road' || l.type === 'river' || l.type === 'coastline' || l.type === 'border')) {
           const state = useMapStore.getState();
