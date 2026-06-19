@@ -72,9 +72,10 @@ const App: React.FC = () => {
 
   // Determine the primary background image to use for auto-sizing the map
   const firstBgImagePath = layers.find(l => l.type === 'bg_image')?.data?.imagePath;
+  const importType = useMapStore(s => s.importType);
 
   useEffect(() => {
-    if (firstBgImagePath) {
+    if (firstBgImagePath && importType !== null) {
       const img = new window.Image();
       img.onload = () => {
         const imgW = img.width * bgScaleX;
@@ -91,7 +92,7 @@ const App: React.FC = () => {
       };
       img.src = `local://file?path=${encodeURIComponent(firstBgImagePath)}`;
     }
-  }, [firstBgImagePath, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, orientation, setMapWidth, setMapHeight]);
+  }, [firstBgImagePath, importType, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, orientation, setMapWidth, setMapHeight]);
 
   const handleResolveUnknown = async (unknownId: string, action: 'ignore' | 'map' | 'save', payload?: any) => {
     const unk = unknowns.find(u => u.id === unknownId);
