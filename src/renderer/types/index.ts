@@ -39,6 +39,13 @@ export type RoadStyle = 'path' | 'road' | 'tunnel' | 'highlight';
 export type RiverStyle = 'stream' | 'river' | 'highlight';
 export type BorderStyle = 'smooth' | 'snapped' | 'highlight';
 
+export interface VectorFeature {
+  id: string;
+  brushUrl: string;
+  segmentIndex: number;
+  t: number;
+}
+
 export interface VectorLine {
   id: string;
   points: number[];
@@ -53,6 +60,7 @@ export interface VectorLine {
   borderStyle?: BorderStyle;
   invert?: boolean; 
   brushKey?: string;
+  features?: VectorFeature[];
 }
 
 export interface VectorLayer extends BaseLayer {

@@ -22,6 +22,7 @@ interface MapState {
   showImportModal: boolean;
   
   activeBrush: string | null;
+  activeFeatureBrush: string | null;
   activeColor: string | null;
   activeLineWidth: number;
   activeRoadStyle?: RoadStyle;
@@ -62,6 +63,7 @@ interface MapState {
   setImportDirPath: (p: string | null) => void;
   setShowImportModal: (s: boolean) => void;
   setActiveBrush: (b: string | null) => void;
+  setActiveFeatureBrush: (b: string | null) => void;
   setActiveColor: (c: string | null) => void;
   setActiveLineWidth: (w: number) => void;
   setActiveRoadStyle: (s: RoadStyle) => void;
@@ -111,6 +113,7 @@ export const useMapStore = create<MapState>((set) => ({
   showImportModal: false,
   
   activeBrush: null,
+  activeFeatureBrush: null,
   activeColor: '#3b82f6',
   activeLineWidth: 10,
   activeRoadStyle: 'path',
@@ -160,6 +163,7 @@ export const useMapStore = create<MapState>((set) => ({
   setImportDirPath: (p) => set({ importDirPath: p }),
   setShowImportModal: (s) => set({ showImportModal: s }),
   setActiveBrush: (b) => set({ activeBrush: b }),
+  setActiveFeatureBrush: (b) => set({ activeFeatureBrush: b }),
   setActiveColor: (c) => set({ activeColor: c }),
   setActiveLineWidth: (w) => set({ activeLineWidth: w }),
   setActiveRoadStyle: (s) => set({ activeRoadStyle: s }),

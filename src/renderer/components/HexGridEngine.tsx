@@ -24,7 +24,7 @@ import Konva from 'konva';
 
 const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, ref) => {
   const {
-    orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeColor, activeBorderColor, activeLineWidth, activeBorderWidth, activeRoadStyle, activeRiverStyle, activeCoastlineStyle, roadConfig, riverConfig, layers, setLayers, activeLayerId, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines, globalBorders, highlightedHexKey, currentStyle, assetsBasePath
+    orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeFeatureBrush, activeColor, activeBorderColor, activeLineWidth, activeBorderWidth, activeRoadStyle, activeRiverStyle, activeCoastlineStyle, roadConfig, riverConfig, layers, setLayers, activeLayerId, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines, globalBorders, highlightedHexKey, currentStyle, assetsBasePath
   } = useMapStore();
   const stageRef = useRef<Konva.Stage>(null);
 
@@ -51,7 +51,17 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
 
   const proceduralEdges: Array<{ id: string; points: number[]; color: string; type: LayerType }> = [];
 
-
+  const getCursor = () => {
+    if (isRightClickPan) return 'grabbing';
+    if (activeFeatureBrush) {
+      return `url(${activeFeatureBrush}) 15 15, crosshair`;
+    }
+    if (activeBrush) {
+      return `url(${activeBrush}) 15 15, crosshair`;
+    }
+    if (isPaintingHex || isVectorMode) return 'crosshair';
+    return 'default';
+  };
 
   return (
     <Stage
@@ -65,7 +75,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
       y={position.y}
       scaleX={scale}
       scaleY={scale}
-      style={{ cursor: isRightClickPan ? 'grabbing' : ((isPaintingHex || isVectorMode) ? 'crosshair' : 'default') }}
+      style={{ cursor: getCursor() }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}

@@ -8,7 +8,35 @@ import { generateFractalLine } from '../../utils/fractalMath';
 import { useMapStore } from '../../store/mapStore';
 import { computeRiverFlows, FlowResult } from '../../utils/riverFlowMath';
 import Konva from 'konva';
+import { Image as KonvaImage } from 'react-konva';
 
+const RiverFeatureImage: React.FC<{ feature: import('../../types').VectorFeature, x: number, y: number, rotation: number, opacity: number }> = ({ feature, x, y, rotation, opacity }) => {
+  const [image, setImage] = React.useState<HTMLImageElement | null>(null);
+
+  React.useEffect(() => {
+    const img = new window.Image();
+    img.src = feature.brushUrl;
+    img.onload = () => setImage(img);
+  }, [feature.brushUrl]);
+
+  if (!image) return null;
+
+  // Render at half the size of a standard hex tile
+  return (
+    <KonvaImage
+      id={feature.id}
+      image={image}
+      x={x}
+      y={y}
+      scaleX={0.5}
+      scaleY={0.5}
+      offsetX={image.width / 2}
+      offsetY={image.height / 2}
+      rotation={rotation}
+      opacity={opacity}
+    />
+  );
+};
 interface VectorLayerRendererProps {
   layer: VectorLayer;
   activeLayer: Layer | undefined;
@@ -166,10 +194,31 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
               const isEraser = layer.type === 'border' ? state.activeBorderColor === null : activeColor === null;
               if (isEraser) {
                 e.cancelBubble = true;
+                const clickedNode = e.target;
+                if (clickedNode.attrs.id && clickedNode.attrs.id.startsWith('feat_')) {
+                  const featId = clickedNode.attrs.id;
+                  setLayers(prev => prev.map(l => {
+                    if (l.id === layer.id) {
+                      const vl = l as import('../../types').VectorLayer;
+                      return {
+                        ...vl,
+                        data: vl.data.map(dl => {
+                          if (dl.id === line.id) {
+                            return { ...dl, features: dl.features?.filter(f => f.id !== featId) };
+                          }
+                          return dl;
+                        })
+                      };
+                    }
+                    return l;
+                  }));
+                  return;
+                }
+                
                 setHoveredLineId(null);
                 setLayers(prev => prev.map(l => {
                   if (l.id === layer.id) {
-                    const vl = l as VectorLayer;
+                    const vl = l as import('../../types').VectorLayer;
                     return { ...vl, data: vl.data.filter(dl => dl.id !== line.id) };
                   }
                   return l;
@@ -293,6 +342,25 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
               }}
             />
           )}
+
+          {line.features?.map(feat => {
+             const x1 = line.points[feat.segmentIndex * 2];
+             const y1 = line.points[feat.segmentIndex * 2 + 1];
+             const x2 = line.points[feat.segmentIndex * 2 + 2];
+             const y2 = line.points[feat.segmentIndex * 2 + 3];
+             
+             if (x1 === undefined || x2 === undefined) return null;
+
+             const x = x1 + (x2 - x1) * feat.t;
+             const y = y1 + (y2 - y1) * feat.t;
+             
+             const dx = x2 - x1;
+             const dy = y2 - y1;
+             const angle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+             
+             return <RiverFeatureImage key={feat.id} feature={feat} x={x} y={y} rotation={angle} opacity={layer.opacity} />;
+          })}
+
           {layer.type === 'road' && line.roadStyle === 'tunnel' && (
              <Line
                 points={displayPoints}

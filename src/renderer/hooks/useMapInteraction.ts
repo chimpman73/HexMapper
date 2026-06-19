@@ -60,7 +60,18 @@ export function useMapInteraction() {
 
                    newPoints.splice(vIndex * 2, 2);
                    if (newPoints.length < 4) return null;
-                   return { ...dl, points: newPoints };
+                   
+                   let newFeatures = dl.features;
+                   if (newFeatures) {
+                     newFeatures = newFeatures.map(f => {
+                       if (f.segmentIndex >= vIndex && f.segmentIndex > 0) {
+                         return { ...f, segmentIndex: f.segmentIndex - 1 };
+                       }
+                       return f;
+                     }).filter(f => f.segmentIndex < (newPoints.length / 2) - 1);
+                   }
+                   
+                   return { ...dl, points: newPoints, features: newFeatures };
                  }
                  return dl;
                }).filter(Boolean) as VectorLine[];
@@ -206,6 +217,61 @@ export function useMapInteraction() {
           if (stage) {
             const rawPos = getRelativePointerPosition(stage);
             const state = useMapStore.getState();
+
+            // Handle placing river features
+            if (activeLayer?.type === 'river' && state.activeFeatureBrush) {
+              let bestLineId: string | null = null;
+              let bestSegment = -1;
+              let bestT = 0;
+              let minDist = Infinity;
+              
+              (activeLayer.data as import('../types').VectorLine[]).forEach(dl => {
+                 for(let i=0; i<dl.points.length-2; i+=2) {
+                   const p1 = {x: dl.points[i], y: dl.points[i+1]};
+                   const p2 = {x: dl.points[i+2], y: dl.points[i+3]};
+                   const l2 = (p2.x - p1.x)*(p2.x - p1.x) + (p2.y - p1.y)*(p2.y - p1.y);
+                   let t = 0;
+                   if (l2 > 0) t = Math.max(0, Math.min(1, ((rawPos.x - p1.x) * (p2.x - p1.x) + (rawPos.y - p1.y) * (p2.y - p1.y)) / l2));
+                   const projX = p1.x + t * (p2.x - p1.x);
+                   const projY = p1.y + t * (p2.y - p1.y);
+                   const dist = Math.sqrt((rawPos.x - projX)*(rawPos.x - projX) + (rawPos.y - projY)*(rawPos.y - projY));
+                   
+                   if (dist < 30 && dist < minDist) {
+                      minDist = dist;
+                      bestLineId = dl.id;
+                      bestSegment = i / 2;
+                      bestT = t;
+                   }
+                 }
+              });
+              
+              if (bestLineId) {
+                 setLayers(prev => prev.map(l => {
+                   if (l.id === activeLayerId) {
+                      return {
+                        ...l,
+                        data: (l.data as import('../types').VectorLine[]).map(dl => {
+                           if (dl.id === bestLineId) {
+                              return {
+                                 ...dl,
+                                 features: [...(dl.features || []), {
+                                    id: `feat_${Date.now()}`,
+                                    brushUrl: state.activeFeatureBrush!,
+                                    segmentIndex: bestSegment,
+                                    t: bestT
+                                 }]
+                              };
+                           }
+                           return dl;
+                        })
+                      } as import('../types').VectorLayer;
+                   }
+                   return l;
+                 }));
+              }
+              return; // Do not fall through to vector drawing
+            }
+
             const isBorderSnap = activeLayer?.type === 'border' && state.activeBorderStyle === 'snapped';
             const pos = snapPoint(rawPos, isBorderSnap, activeLayer?.data || []);
 

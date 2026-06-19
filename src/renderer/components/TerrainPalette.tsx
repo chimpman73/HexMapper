@@ -16,11 +16,12 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = () => {
   const [selectedBorderLine, setSelectedBorderLine] = useState<any>(null);
   
   const { 
-    activeBrush, setActiveBrush, layers, activeLayerId, activeColor, setActiveColor, activeLineWidth, setActiveLineWidth, activeRoadStyle, setActiveRoadStyle, activeRiverStyle, setActiveRiverStyle, activeCoastlineStyle, setActiveCoastlineStyle, activeBorderStyle, setActiveBorderStyle, activeBorderColor, setActiveBorderColor, activeBorderWidth, setActiveBorderWidth, currentStyle, roadConfig, riverConfig, setLayers, mapWidth, mapHeight, orientation
+    activeBrush, setActiveBrush, activeFeatureBrush, setActiveFeatureBrush, layers, activeLayerId, activeColor, setActiveColor, activeLineWidth, setActiveLineWidth, activeRoadStyle, setActiveRoadStyle, activeRiverStyle, setActiveRiverStyle, activeCoastlineStyle, setActiveCoastlineStyle, activeBorderStyle, setActiveBorderStyle, activeBorderColor, setActiveBorderColor, activeBorderWidth, setActiveBorderWidth, currentStyle, roadConfig, riverConfig, setLayers, mapWidth, mapHeight, orientation
   } = useMapStore();
 
   const activeLayer = layers.find(l => l.id === activeLayerId) || layers[0];
   const [brushes, setBrushes] = useState<string[]>([]);
+  const [featureBrushes, setFeatureBrushes] = useState<string[]>([]);
 
   React.useEffect(() => {
     if (activeLayer.type === 'road') {
@@ -83,6 +84,19 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = () => {
     };
     if (activeLayer.type === 'terrain' || activeLayer.type === 'city') {
       loadDefault();
+    }
+  }, [activeLayer.type, currentStyle]);
+
+  React.useEffect(() => {
+    const loadFeatures = async () => {
+      if (window.api?.getDefaultTiles) {
+        const files = await window.api.getDefaultTiles(currentStyle || 'Hollow Moon', 'Rivers');
+        const urls = files.map((f: string) => `local://file?path=${encodeURIComponent(f)}`);
+        setFeatureBrushes(urls);
+      }
+    };
+    if (activeLayer.type === 'river') {
+      loadFeatures();
     }
   }, [activeLayer.type, currentStyle]);
 
@@ -209,6 +223,44 @@ const TerrainPalette: React.FC<TerrainPaletteProps> = () => {
                 onChange={(e) => activeLayer.type === 'border' ? setActiveBorderWidth(parseInt(e.target.value)) : setActiveLineWidth(parseInt(e.target.value))}
                 style={{width: '100%'}}
               />
+            </div>
+          )}
+
+          {activeLayer.type === 'river' && featureBrushes.length > 0 && (
+            <div style={{marginBottom: '15px'}}>
+              <label style={{color: '#ccc', fontSize: '14px', display: 'block', marginBottom: '5px'}}>River Features:</label>
+              <div className={styles.brushGrid}>
+                <div 
+                  className={`${styles.brushItem} ${activeFeatureBrush === null ? styles.active : ''}`}
+                  onClick={() => setActiveFeatureBrush(null)}
+                >
+                  <div className={styles.eraser}>None</div>
+                </div>
+                {featureBrushes.map((url, i) => (
+                  <div 
+                    key={i} 
+                    className={`${styles.brushItem} ${activeFeatureBrush === url ? styles.active : ''}`}
+                    onClick={() => setActiveFeatureBrush(url)}
+                    style={{ position: 'relative', overflow: 'hidden' }}
+                  >
+                    <div style={{
+                       position: 'absolute',
+                       top: 4, bottom: 4, left: 4, right: 4,
+                       backgroundColor: '#7cb342',
+                       clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+                       zIndex: 0
+                    }}>
+                       <div style={{
+                          position: 'absolute',
+                          top: 0, bottom: 0, left: '50%', transform: 'translateX(-50%)',
+                          width: '6px',
+                          backgroundColor: '#3b82f6',
+                       }} />
+                    </div>
+                    <img src={url} alt="feature brush" className={styles.brushImg} style={{ position: 'relative', zIndex: 1, objectFit: 'contain', width: '100%', height: '100%' }} />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
