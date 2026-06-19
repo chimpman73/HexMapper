@@ -111,3 +111,12 @@
   flex: 1;
   overflow: hidden;
 }
+
+.rightPanel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 250px;
+  border-left: 1px solid var(--toolbar-border);
+  background-color: var(--card-bg);
+}
