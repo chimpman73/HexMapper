@@ -7,6 +7,7 @@ import { generateRectangularGrid, hexToPixel, getHexCorners, isHexEqual, HEX_NEI
 import { HexCube, HexOrientation, MapLayer, TerrainLayer, VectorLayer, CityLayer, CoastlineLayer, BorderLayer, LayerType, RoadStyle, RiverStyle } from '../types';
 import { useMapStore } from '../store/mapStore';
 import BgImageRenderer from './BgImageRenderer';
+import BrushCursorOverlay from './BrushCursorOverlay';
 
 interface HexGridEngineProps {}
 
@@ -21,6 +22,8 @@ import TerrainLayerRenderer from './layers/TerrainLayerRenderer';
 import VectorLayerRenderer from './layers/VectorLayerRenderer';
 
 import Konva from 'konva';
+import { Image as KonvaImage } from 'react-konva';
+
 
 const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, ref) => {
   const {
@@ -49,18 +52,31 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
 
   const grid = useMemo(() => generateRectangularGrid(mapWidth, mapHeight, orientation), [mapWidth, mapHeight, orientation]);
 
-  const proceduralEdges: Array<{ id: string; points: number[]; color: string; type: LayerType }> = [];
+  const [rawPointerPos, setRawPointerPos] = useState<{x: number, y: number} | null>(null);
 
   const getCursor = () => {
     if (isRightClickPan) return 'grabbing';
-    if (activeFeatureBrush) {
-      return `url(${activeFeatureBrush}) 15 15, crosshair`;
-    }
-    if (activeBrush) {
-      return `url(${activeBrush}) 15 15, crosshair`;
-    }
+    if (activeFeatureBrush || activeBrush) return 'none';
     if (isPaintingHex || isVectorMode) return 'crosshair';
     return 'default';
+  };
+
+  const handleStageMouseMove = (e: KonvaEventObject<MouseEvent>) => {
+    handleMouseMove(e);
+    const stage = stageRef.current;
+    if (stage) {
+      const pos = stage.getPointerPosition();
+      if (pos) {
+        const logicalX = (pos.x - stage.x()) / stage.scaleX();
+        const logicalY = (pos.y - stage.y()) / stage.scaleY();
+        setRawPointerPos({x: logicalX, y: logicalY});
+      }
+    }
+  };
+
+  const handleStageMouseLeave = (e: KonvaEventObject<MouseEvent>) => {
+    handleMouseUp(e);
+    setRawPointerPos(null);
   };
 
   return (
@@ -77,9 +93,9 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
       scaleY={scale}
       style={{ cursor: getCursor() }}
       onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
+      onMouseMove={handleStageMouseMove}
       onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
+      onMouseLeave={handleStageMouseLeave}
       onContextMenu={(e) => { e.evt.preventDefault(); }}
     >
       <Layer>
@@ -205,6 +221,15 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
             )}
             {activeLayer?.type === 'cliff' && generateCliffHashes(currentLine, isShiftPressed, activeColor || '#000000', activeLineWidth, 'current')}
           </React.Fragment>
+        )}
+      </Layer>
+      <Layer listening={false}>
+        {(activeFeatureBrush || activeBrush) && rawPointerPos && (
+          <BrushCursorOverlay 
+            url={activeFeatureBrush || activeBrush || ''} 
+            x={rawPointerPos.x} 
+            y={rawPointerPos.y} 
+          />
         )}
       </Layer>
     </Stage>

@@ -1,0 +1,10 @@
+{
+  "fontFamily": "Roboto",
+  "fontSize": 10,
+  "fontWeight": "normal",
+  "fill": "#f5f5f5",
+  "stroke": "#000000",
+  "strokeWidth": 0,
+  "padding": 2,
+  "align": "center"
+}
