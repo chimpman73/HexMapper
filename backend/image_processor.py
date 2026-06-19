@@ -6,6 +6,7 @@ from typing import List, Dict, Any, Tuple, Optional
 
 from layer_data import LayerData
 from map_data import MapData
+from vector_extractor import VectorExtractor
 
 class ImageProcessor:
     def __init__(self, bg_scale_x: float, bg_scale_y: float, bg_offset_x: float, bg_offset_y: float):
@@ -13,95 +14,9 @@ class ImageProcessor:
         self._bg_scale_y = bg_scale_y
         self._bg_offset_x = bg_offset_x
         self._bg_offset_y = bg_offset_y
+        self._vector_extractor = VectorExtractor(bg_scale_x, bg_scale_y, bg_offset_x, bg_offset_y)
 
-    def _walk_skeleton_to_paths(self, skeleton: np.ndarray, min_length: int = 10, epsilon_factor: float = 0.005) -> List[List[Dict[str, float]]]:
-        h, w = skeleton.shape
-        visited = np.zeros((h, w), dtype=bool)
-        
-        endpoints = []
-        for y in range(1, h-1):
-            for x in range(1, w-1):
-                if skeleton[y, x] > 0:
-                    neighbors = (skeleton[y-1:y+2, x-1:x+2] > 0).sum() - 1
-                    if neighbors == 1 or neighbors == 0:
-                        endpoints.append((x, y))
-        
-        def get_neighbors(x, y):
-            n = []
-            for dy in [-1, 0, 1]:
-                for dx in [-1, 0, 1]:
-                    if dx == 0 and dy == 0: continue
-                    nx, ny = x + dx, y + dy
-                    if 0 <= nx < w and 0 <= ny < h and skeleton[ny, nx] > 0 and not visited[ny, nx]:
-                        n.append((nx, ny))
-            return n
 
-        paths = []
-        for ep in endpoints:
-            if visited[ep[1], ep[0]]: continue
-            path = []
-            curr = ep
-            while curr:
-                path.append(curr)
-                visited[curr[1], curr[0]] = True
-                n = get_neighbors(curr[0], curr[1])
-                curr = n[0] if n else None
-            if len(path) > 1:
-                paths.append(path)
-                
-        for y in range(1, h-1):
-            for x in range(1, w-1):
-                if skeleton[y, x] > 0 and not visited[y, x]:
-                    path = []
-                    curr = (x, y)
-                    while curr:
-                        path.append(curr)
-                        visited[curr[1], curr[0]] = True
-                        n = get_neighbors(curr[0], curr[1])
-                        curr = n[0] if n else None
-                    if len(path) > 1:
-                        paths.append(path)
-
-        result = []
-        for path in paths:
-            if len(path) < min_length:
-                continue
-            pts = np.array(path, dtype=np.int32).reshape((-1, 1, 2))
-            perimeter = cv2.arcLength(pts, False)
-            epsilon = epsilon_factor * perimeter
-            approx = cv2.approxPolyDP(pts, epsilon, False)
-            path_points = []
-            for p in approx:
-                cx = p[0][0] * self._bg_scale_x + self._bg_offset_x
-                cy = p[0][1] * self._bg_scale_y + self._bg_offset_y
-                path_points.append({"x": cx, "y": cy})
-            if len(path_points) > 1:
-                result.append(path_points)
-        return result
-
-    def _extract_borders(self, mask_clean: np.ndarray) -> List[List[Dict[str, float]]]:
-        skeleton = cv2.ximgproc.thinning(mask_clean, thinningType=cv2.ximgproc.THINNING_ZHANGSUEN)
-        return self._walk_skeleton_to_paths(skeleton)
-
-    def _extract_rivers(self, river_mask: np.ndarray) -> List[List[Dict[str, float]]]:
-        skeleton_rivers = cv2.ximgproc.thinning(river_mask, thinningType=cv2.ximgproc.THINNING_ZHANGSUEN)
-        return self._walk_skeleton_to_paths(skeleton_rivers)
-
-    def _extract_coastlines(self, water_mask: np.ndarray) -> List[List[Dict[str, float]]]:
-        coastlines = []
-        contours, _ = cv2.findContours(water_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-        for cnt in contours:
-            perimeter = cv2.arcLength(cnt, True)
-            epsilon = 0.0005 * perimeter
-            approx = cv2.approxPolyDP(cnt, epsilon, True)
-            path_points = []
-            for p in approx:
-                cx = p[0][0] * self._bg_scale_x + self._bg_offset_x
-                cy = p[0][1] * self._bg_scale_y + self._bg_offset_y
-                path_points.append({"x": cx, "y": cy})
-            if len(path_points) > 2:
-                coastlines.append(path_points)
-        return coastlines
 
     def process_aligned_map(self, image_path: str, coastline_templates: List[Dict[str, Any]]) -> MapData:
         data = MapData()
@@ -130,7 +45,7 @@ class ImageProcessor:
         kernel_border = np.ones((3, 3), np.uint8)
         red_mask_clean = cv2.morphologyEx(red_mask, cv2.MORPH_OPEN, kernel_border)
         
-        data.global_borders.extend(self._extract_borders(red_mask_clean))
+        data.global_borders.extend(self._vector_extractor.extract_borders(red_mask_clean))
 
         # RIVER EXTRACTION
         lower_blue = np.array([90, 50, 50])
@@ -145,7 +60,7 @@ class ImageProcessor:
         river_mask = cv2.morphologyEx(rivers, cv2.MORPH_OPEN, kernel_small)
         river_mask = cv2.morphologyEx(river_mask, cv2.MORPH_DILATE, kernel_small, iterations=1)
         
-        data.global_rivers.extend(self._extract_rivers(river_mask))
+        data.global_rivers.extend(self._vector_extractor.extract_rivers(river_mask))
 
         # INPAINTING
         inpaint_mask = cv2.bitwise_or(red_mask_clean, river_mask)
@@ -172,7 +87,7 @@ class ImageProcessor:
         water_mask = cv2.morphologyEx(water_mask, cv2.MORPH_CLOSE, kernel)
         data.water_mask = water_mask
         
-        data.global_coastlines.extend(self._extract_coastlines(water_mask))
+        data.global_coastlines.extend(self._vector_extractor.extract_coastlines(water_mask))
 
         data.coastline_layers.append(LayerData("Coastline", img, None))
         data.terrain_layers.append(LayerData("Terrain", img, None))
@@ -240,14 +155,14 @@ class ImageProcessor:
                 if mask is not None:
                     kernel_border = np.ones((3, 3), np.uint8)
                     mask_clean = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_border)
-                    data.global_borders.extend(self._extract_borders(mask_clean))
+                    data.global_borders.extend(self._vector_extractor.extract_borders(mask_clean))
                             
             elif lname.startswith("river"):
                 mask = get_layer_mask(img)
                 if mask is not None:
                     kernel_tiny = np.ones((2, 2), np.uint8)
                     mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel_tiny, iterations=1)
-                    data.global_rivers.extend(self._extract_rivers(mask))
+                    data.global_rivers.extend(self._vector_extractor.extract_rivers(mask))
                             
             elif lname.startswith("coastline"):
                 water_mask = get_layer_mask(img)
@@ -257,7 +172,7 @@ class ImageProcessor:
                     water_mask_clean = cv2.morphologyEx(water_mask, cv2.MORPH_OPEN, kernel)
                     water_mask_clean = cv2.morphologyEx(water_mask_clean, cv2.MORPH_CLOSE, kernel)
                     
-                    layer_coastlines = self._extract_coastlines(water_mask_clean)
+                    layer_coastlines = self._vector_extractor.extract_coastlines(water_mask_clean)
                     data.global_coastlines.extend(layer_coastlines)
                 else:
                     layer_coastlines = []

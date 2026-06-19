@@ -28,6 +28,12 @@ This backlog is prioritized based on structural dependencies. Foundational infra
 - ~~Add strict Python type hinting (`typing` module) to function signatures and complex data structures.~~
 - ~~Implement specific error handling (e.g., catching `FileNotFoundError` or `cv2.error` instead of broad `Exception` blocks).~~
 
+**5. ~~Codebase SRP Refactoring (Frontend & Backend)~~ [COMPLETED]**
+*Why it's important:* Ensures the application remains scalable and maintainable by breaking down "God Classes" into strict, single-responsibility modules.
+- ~~Refactor the massive React `App.tsx` into distinct UI components (`Toolbar`, `Sidebar`, etc.) and Hooks.~~
+- ~~Decompose the massive Python `HexScanner` into modular map data parsers (`TerrainScanner`, `CityScanner`, `LayerAssembler`).~~
+- ~~Extract CV2 vector geometry out of `ImageProcessor` into a dedicated math script.~~
+
 ---
 
 ## 🟡 Medium Priority (Feature Enhancements & QoL)

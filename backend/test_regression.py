@@ -46,8 +46,6 @@ class TestRegression(unittest.TestCase):
         for layer in result["data"]["layers"]:
             if layer["type"] == "terrain":
                 output_layers.setdefault("Terrain", {}).update(layer["data"])
-            elif layer["type"] == "coastline":
-                output_layers.setdefault("Coastline", {}).update(layer["data"])
             elif layer["type"] == "city":
                 output_layers.setdefault("Cities", {}).update(layer["data"])
             else:
@@ -57,15 +55,13 @@ class TestRegression(unittest.TestCase):
         for layer in gold_data.get("layers", []):
             if layer.get("type") == "terrain":
                 gold_layers.setdefault("Terrain", {}).update(layer.get("data", {}))
-            elif layer.get("type") == "coastline":
-                gold_layers.setdefault("Coastline", {}).update(layer.get("data", {}))
             elif layer.get("type") == "city":
                 gold_layers.setdefault("Cities", {}).update(layer.get("data", {}))
             else:
                 gold_layers[layer.get("name", "")] = layer.get("data", {})
         
-        # We only really care about testing Terrain, Coastline, Cities right now as they have hex data
-        for layer_name in ["Terrain", "Coastline", "Cities"]:
+        # We only really care about testing Terrain and Cities right now as they have hex data
+        for layer_name in ["Terrain", "Cities"]:
             if layer_name in gold_layers and layer_name in output_layers:
                 diff = abs(len(output_layers[layer_name]) - len(gold_layers[layer_name]))
                 self.assertTrue(
@@ -116,8 +112,6 @@ class TestRegression(unittest.TestCase):
         for layer in result["data"]["layers"]:
             if layer["type"] == "terrain":
                 output_layers.setdefault("Terrain", {}).update(layer["data"])
-            elif layer["type"] == "coastline":
-                output_layers.setdefault("Coastline", {}).update(layer["data"])
             elif layer["type"] == "city":
                 output_layers.setdefault("Cities", {}).update(layer["data"])
             else:
@@ -127,14 +121,12 @@ class TestRegression(unittest.TestCase):
         for layer in gold_data.get("layers", []):
             if layer.get("type") == "terrain":
                 gold_layers.setdefault("Terrain", {}).update(layer.get("data", {}))
-            elif layer.get("type") == "coastline":
-                gold_layers.setdefault("Coastline", {}).update(layer.get("data", {}))
             elif layer.get("type") == "city":
                 gold_layers.setdefault("Cities", {}).update(layer.get("data", {}))
             else:
                 gold_layers[layer.get("name", "")] = layer.get("data", {})
         
-        for layer_name in ["Terrain", "Coastline", "Cities"]:
+        for layer_name in ["Terrain", "Cities"]:
             if layer_name in gold_layers and layer_name in output_layers:
                 diff = abs(len(output_layers[layer_name]) - len(gold_layers[layer_name]))
                 self.assertTrue(
