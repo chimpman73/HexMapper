@@ -42,6 +42,20 @@ class HexScanner:
                     r = row - offset
                     hexes.append((q, r))
 
+        hex_grid_mask = np.zeros((data.height, data.width), dtype=np.uint8)
+        for (q, r) in hexes:
+            cx, cy = self._hex_grid.hex_to_pixel(q, r, orientation)
+            img_x = int((cx - self._bg_offset_x) / self._bg_scale_x)
+            img_y = int((cy - self._bg_offset_y) / self._bg_scale_y)
+            R_x = self._hex_grid.hex_size / self._bg_scale_x
+            R_y = self._hex_grid.hex_size / self._bg_scale_y
+            hex_poly = []
+            for i in range(6):
+                angle_deg = 60 * i - 30 if orientation == 'flat' else 60 * i
+                angle_rad = math.pi / 180 * angle_deg
+                hex_poly.append([int(img_x + R_x * math.cos(angle_rad)), int(img_y + R_y * math.sin(angle_rad))])
+            cv2.polylines(hex_grid_mask, [np.array(hex_poly, dtype=np.int32)], True, 255, 4)
+
         for (q, r) in hexes:
             cx, cy = self._hex_grid.hex_to_pixel(q, r, orientation)
             
@@ -238,33 +252,23 @@ class HexScanner:
                     for p in path_points:
                         flat_points.extend([p["x"], p["y"]])
 
-                    # Heuristic to detect if it's a snapped line:
-                    # If most points are close to a hex corner, it's snapped.
+                    # Mask overlap heuristic to detect if it's a snapped line
                     snapped = False
                     if len(path_points) > 2:
-                        close_points = 0
+                        border_mask = np.zeros((data.height, data.width), dtype=np.uint8)
+                        pts = []
                         for p in path_points:
-                            px, py = p["x"], p["y"]
-                            q_f = (2.0 / 3.0 * px) / self._hex_grid.hex_size if orientation == "flat" else (math.sqrt(3) / 3.0 * px - 1.0 / 3.0 * py) / self._hex_grid.hex_size
-                            r_f = (-1.0 / 3.0 * px + math.sqrt(3) / 3.0 * py) / self._hex_grid.hex_size if orientation == "flat" else (2.0 / 3.0 * py) / self._hex_grid.hex_size
-                            q, r, s = round(q_f), round(r_f), round(-q_f-r_f)
-                            q_diff, r_diff, s_diff = abs(q - q_f), abs(r - r_f), abs(s - (-q_f-r_f))
-                            if q_diff > r_diff and q_diff > s_diff: q = -r-s
-                            elif r_diff > s_diff: r = -q-s
-                            else: s = -q-r
-                            
-                            cx, cy = self._hex_grid.hex_to_pixel(q, r, orientation)
-                            corners = []
-                            for i in range(6):
-                                angle_deg = 60 * i - 30 if orientation == "flat" else 60 * i
-                                angle_rad = math.pi / 180 * angle_deg
-                                corners.append((cx + self._hex_grid.hex_size * math.cos(angle_rad), cy + self._hex_grid.hex_size * math.sin(angle_rad)))
-                            
-                            min_d = min(math.hypot(px - c[0], py - c[1]) for c in corners)
-                            if min_d < self._hex_grid.hex_size * 0.25:
-                                close_points += 1
-                                
-                        if close_points / len(path_points) > 0.6:
+                            img_x = int((p["x"] - self._bg_offset_x) / self._bg_scale_x)
+                            img_y = int((p["y"] - self._bg_offset_y) / self._bg_scale_y)
+                            pts.append([img_x, img_y])
+                        
+                        cv2.polylines(border_mask, [np.array(pts, dtype=np.int32)], False, 255, 1)
+                        overlap = cv2.bitwise_and(border_mask, hex_grid_mask)
+                        
+                        total_pixels = cv2.countNonZero(border_mask)
+                        overlap_pixels = cv2.countNonZero(overlap)
+                        
+                        if total_pixels > 0 and (overlap_pixels / total_pixels) > 0.6:
                             snapped = True
 
                     border_layer["data"].append({
