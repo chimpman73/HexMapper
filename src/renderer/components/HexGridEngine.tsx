@@ -20,6 +20,7 @@ import { useMapInteraction } from '../hooks/useMapInteraction';
 import GridLayerRenderer from './layers/GridLayerRenderer';
 import TerrainLayerRenderer from './layers/TerrainLayerRenderer';
 import VectorLayerRenderer from './layers/VectorLayerRenderer';
+import CliffHexRenderer from './layers/CliffHexRenderer';
 
 import Konva from 'konva';
 import { Image as KonvaImage } from 'react-konva';
@@ -154,8 +155,52 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
             );
           }
 
-          const vLayer = layer as import('../types').VectorLayer;
           const coastlines = layers.filter(l => l.type === 'coastline').flatMap(l => l.data as import('../types').VectorLine[]);
+          
+          if (layer.type === 'cliff') {
+            const cliffLayer = layer as import('../types').CliffLayer;
+            return (
+              <Group key={`group-${layer.id}`}>
+                <CliffHexRenderer
+                  layer={cliffLayer}
+                  grid={grid}
+                  orientation={orientation}
+                  isVectorMode={isVectorMode || false}
+                  activeLayerId={activeLayerId}
+                  hoveredHex={hoveredHex}
+                  highlightedHexKey={highlightedHexKey}
+                  currentStyle={currentStyle}
+                  assetsBasePath={assetsBasePath}
+                  showCoordinates={showCoordinates}
+                  isPaintingHex={isPaintingHex}
+                  setHoveredHex={setHoveredHex}
+                  handlePaintHex={handlePaintHex}
+                  activeAction={activeAction}
+                  activeBrush={activeBrush}
+                />
+                <VectorLayerRenderer
+                  layer={cliffLayer}
+                  activeLayer={activeLayer}
+                  activeLayerId={activeLayerId}
+                  hoveredLineId={hoveredLineId}
+                  selectedLineId={selectedLineId}
+                  isVectorMode={isVectorMode || false}
+                  activeRoadStyle={activeRoadStyle || 'road'}
+                  activeRiverStyle={activeRiverStyle || 'river'}
+                  activeCoastlineStyle={activeCoastlineStyle || 'smooth'}
+                  roadConfig={roadConfig}
+                  riverConfig={riverConfig}
+                  activeColor={activeColor}
+                  coastlines={coastlines}
+                  setLayers={setLayers}
+                  setSelectedLineId={setSelectedLineId}
+                  setHoveredLineId={setHoveredLineId}
+                />
+              </Group>
+            );
+          }
+
+          const vLayer = layer as import('../types').VectorLayer;
           return (
             <VectorLayerRenderer
               key={`group-${layer.id}`}
@@ -213,6 +258,8 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
                     ? '#222222'
                     : activeLayer?.type === 'border'
                     ? activeBorderColor
+                    : activeLayer?.type === 'cliff'
+                    ? (activeColor || '#555555')
                     : (activeColor || '#000000')
                 }
                 strokeWidth={activeLayer?.type === 'border' ? activeBorderWidth : activeLineWidth}
@@ -228,7 +275,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
                 }
               />
             )}
-            {activeLayer?.type === 'cliff' && generateCliffHashes(currentLine, isShiftPressed, activeColor || '#000000', activeLineWidth, 'current')}
+            {activeLayer?.type === 'cliff' && generateCliffHashes(currentLine, isShiftPressed, activeColor || '#555555', activeLineWidth, 'current')}
           </React.Fragment>
         )}
       </Layer>

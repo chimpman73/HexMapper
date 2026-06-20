@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import styles from './LayerPalette.module.css';
 
-import { RoadStyle, RiverStyle, CoastlineStyle, BorderStyle } from '../types';
+import { RoadStyle, RiverStyle, CoastlineStyle, BorderStyle, CliffStyle } from '../types';
 import { useMapStore } from '../store/mapStore';
-import { generateRoadBrush, generateRiverBrush, generateCoastlineBrush, generateBorderBrush } from '../utils/brushGenerators';
+import { generateRoadBrush, generateRiverBrush, generateCoastlineBrush, generateBorderBrush, generateCliffBrush } from '../utils/brushGenerators';
 
 const LayerPalette: React.FC = () => {
   const [roadBrushes, setRoadBrushes] = useState<{type: RoadStyle, url: string}[]>([]);
   const [riverBrushes, setRiverBrushes] = useState<{type: RiverStyle, url: string}[]>([]);
   const [coastlineBrushes, setCoastlineBrushes] = useState<{type: CoastlineStyle, url: string}[]>([]);
   const [borderBrushes, setBorderBrushes] = useState<{type: BorderStyle, url: string}[]>([]);
+  const [cliffBrushes, setCliffBrushes] = useState<{type: CliffStyle, url: string}[]>([]);
   
   const { 
     activeAction, setActiveAction,
@@ -24,6 +25,7 @@ const LayerPalette: React.FC = () => {
     activeRiverStyle, setActiveRiverStyle, 
     activeCoastlineStyle, setActiveCoastlineStyle, 
     activeBorderStyle, setActiveBorderStyle, 
+    activeCliffStyle, setActiveCliffStyle,
     activeBorderColor, setActiveBorderColor, 
     activeBorderWidth, setActiveBorderWidth, 
     currentStyle, roadConfig, riverConfig, setRoadConfig, setRiverConfig, assetsBasePath
@@ -72,6 +74,15 @@ const LayerPalette: React.FC = () => {
   }, [activeLayer.type]);
 
   useEffect(() => {
+    if (activeLayer.type === 'cliff') {
+      setCliffBrushes([
+        { type: 'smooth', url: generateCliffBrush('smooth') },
+        { type: 'fractal', url: generateCliffBrush('fractal') }
+      ]);
+    }
+  }, [activeLayer.type]);
+
+  useEffect(() => {
     const loadDefault = async () => {
       if (window.api?.getDefaultTiles) {
         let folder = 'Terrain';
@@ -86,7 +97,7 @@ const LayerPalette: React.FC = () => {
         setBrushes(relPaths);
       }
     };
-    if (activeLayer.type === 'terrain' || activeLayer.type === 'city') {
+    if (activeLayer.type === 'terrain' || activeLayer.type === 'city' || activeLayer.type === 'cliff') {
       loadDefault();
     }
   }, [activeLayer.type, currentStyle]);
@@ -259,6 +270,24 @@ const LayerPalette: React.FC = () => {
           </div>
         )}
 
+        {activeLayer.type === 'cliff' && setActiveCliffStyle && (
+          <div style={{marginBottom: '15px'}}>
+            <label style={{color: '#ccc', fontSize: '14px', display: 'block', marginBottom: '5px'}}>Cliff Styles:</label>
+            {cliffBrushes.map(brush => renderToolRow(
+              brush.type, brush.url, brush.type === 'highlight' ? 'Highlight' : brush.type,
+              activeCliffStyle === brush.type && activeAction === 'paint' && !activeBrush,
+              () => { setActiveCliffStyle(brush.type); setActiveBrush(null); },
+              activeColor || '#000000',
+              (c) => setActiveColor(c),
+              activeLineWidth || 3,
+              (w) => setActiveLineWidth(w)
+            ))}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', padding: '5px', background: '#333', borderRadius: '4px' }}>
+              <span style={{color: 'white', fontSize: '12px'}}>Note: Hold Shift while drawing to invert cliff downslope direction.</span>
+            </div>
+          </div>
+        )}
+
         {activeLayer.type === 'border' && setActiveBorderStyle && (
           <div style={{marginBottom: '15px'}}>
             <label style={{color: '#ccc', fontSize: '14px', display: 'block', marginBottom: '5px'}}>Border Styles:</label>
@@ -324,9 +353,11 @@ const LayerPalette: React.FC = () => {
       </div>
 
       <div className={styles.brushesSection}>
-        {(activeLayer.type === 'terrain' || activeLayer.type === 'city') && (
+        {(activeLayer.type === 'terrain' || activeLayer.type === 'city' || activeLayer.type === 'cliff') && (
           <div style={{marginBottom: '15px'}}>
-            <label style={{color: '#ccc', fontSize: '14px', display: 'block', marginBottom: '5px'}}>Brushes:</label>
+            <label style={{color: '#ccc', fontSize: '14px', display: 'block', marginBottom: '5px'}}>
+              {activeLayer.type === 'cliff' ? 'Terrain Brushes (Downslope):' : 'Brushes:'}
+            </label>
             <div className={styles.brushGrid}>
               {brushes.map((url, i) => (
                 <div 

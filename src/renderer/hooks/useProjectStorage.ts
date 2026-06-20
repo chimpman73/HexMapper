@@ -35,6 +35,18 @@ export const useProjectStorage = (engineRef: React.RefObject<any>) => {
               loadedLayers.push(gridLayer);
             }
           }
+          
+          // Migrate legacy cliff layers
+          loadedLayers = loadedLayers.map(l => {
+            if (l.type === 'cliff' && Array.isArray(l.data)) {
+              return { ...l, data: { lines: l.data, hexes: {} } };
+            }
+            if (l.type === 'cliff' && !l.data) {
+              return { ...l, data: { lines: [], hexes: {} } };
+            }
+            return l;
+          });
+          
           useMapStore.getState().setLayers(loadedLayers);
 
           // Calculate the max extent of the loaded hexes

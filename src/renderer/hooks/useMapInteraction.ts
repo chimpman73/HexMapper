@@ -5,6 +5,7 @@ import { HexCube, HexOrientation } from '../types';
 import { useMapStore } from '../store/mapStore';
 import { VectorLayer, VectorLine } from '../types';
 import { pixelToHex, hexToPixel, getHexCorners, generateRectangularGrid, buildHexEdgeGraph, findHexEdgePath, HexEdgeGraph } from '../utils/hexMath';
+import { isHexIntersectedByLine } from '../utils/cliffMath';
 
 export function useMapInteraction() {
   const { 
@@ -53,7 +54,8 @@ export function useMapInteraction() {
         if (state.selectedVertex) {
            setLayers(prev => prev.map(l => {
             if (l.id === activeLayerId && (l.type === 'river' || l.type === 'cliff' || l.type === 'border' || l.type === 'label' || l.type === 'road' || l.type === 'coastline')) {
-               const newData = (l.data as VectorLine[]).map(dl => {
+               const lines = l.type === 'cliff' ? (l.data as any).lines : l.data as VectorLine[];
+               const newData = lines.map(dl => {
                  if (dl.id === state.selectedVertex!.lineId) {
                    const newPoints = [...dl.points];
                    const vIndex = state.selectedVertex!.index;
@@ -75,6 +77,7 @@ export function useMapInteraction() {
                  }
                  return dl;
                }).filter(Boolean) as VectorLine[];
+               if (l.type === 'cliff') return { ...l, data: { ...(l as any).data, lines: newData } };
                return { ...l, data: newData } as VectorLayer;
             }
             return l;
@@ -83,6 +86,10 @@ export function useMapInteraction() {
         } else if (selectedLineId && activeLayerId) {
           setLayers(prev => prev.map(l => {
             if (l.id === activeLayerId && (l.type === 'river' || l.type === 'cliff' || l.type === 'border' || l.type === 'label' || l.type === 'road' || l.type === 'coastline')) {
+              if (l.type === 'cliff') {
+                 const cl = l as import('../types').CliffLayer;
+                 return { ...cl, data: { ...cl.data, lines: cl.data.lines.filter(d => d.id !== selectedLineId) } };
+              }
               return { ...l, data: (l.data as VectorLine[]).filter(d => d.id !== selectedLineId) } as VectorLayer;
             }
             return l;
@@ -118,14 +125,17 @@ export function useMapInteraction() {
   }, []);
 
   const handlePaintHex = useCallback((hex: HexCube) => {
-    if (isVectorMode) return;
+    if (isVectorMode && activeLayer?.type !== 'cliff') return;
     const state = useMapStore.getState();
+    if (isVectorMode && activeLayer?.type === 'cliff' && (!state.activeBrush || state.activeAction !== 'paint')) return;
+    
     const key = `${hex.q},${hex.r},${hex.s}`;
 
     if (state.activeAction === 'select') {
-      if (activeLayer && activeLayer.data[key]) {
+      const data = activeLayer?.type === 'cliff' ? (activeLayer?.data as any).hexes : activeLayer?.data;
+      if (activeLayer && data && data[key]) {
         state.setHighlightedHexKey(key);
-        state.setActiveBrush(activeLayer.data[key]);
+        state.setActiveBrush(data[key]);
       } else {
         state.setHighlightedHexKey(null);
       }
@@ -138,8 +148,25 @@ export function useMapInteraction() {
     if (brushValue === undefined && state.activeAction !== 'erase') return;
     
     setLayers(prev => prev.map(l => {
-      if (l.id === activeLayerId && (l.type === 'terrain' || l.type === 'city' || l.type === 'coastline' || l.type === 'border')) {
-        const newData = { ...l.data };
+      if (l.id === activeLayerId && (l.type === 'terrain' || l.type === 'city' || l.type === 'coastline' || l.type === 'border' || l.type === 'cliff')) {
+        if (l.type === 'cliff') {
+           const cl = l as import('../types').CliffLayer;
+           let intersects = false;
+           for (const line of cl.data.lines) {
+             if (isHexIntersectedByLine(hex, useMapStore.getState().orientation, line.points)) {
+               intersects = true;
+               break;
+             }
+           }
+           if (!intersects && brushValue !== null) return l;
+
+           const newHexes = { ...cl.data.hexes };
+           if (brushValue === null) delete newHexes[key];
+           else newHexes[key] = brushValue;
+           return { ...cl, data: { ...cl.data, hexes: newHexes } };
+        }
+
+        const newData = { ...(l.data as Record<string, string>) };
         if (brushValue === null) delete newData[key];
         else newData[key] = brushValue;
         return { ...l, data: newData };
@@ -225,8 +252,11 @@ export function useMapInteraction() {
     }
     
     if (e.evt.button === 0 && !e.evt.altKey) {
-      if (isVectorMode) {
-        if (activeColor !== null || activeLayer?.type === 'road' || activeLayer?.type === 'river' || activeLayer?.type === 'coastline' || activeLayer?.type === 'border') {
+      const isDrawingCliffVector = activeLayer?.type === 'cliff' && !state.activeBrush;
+      const isOtherVector = activeLayer?.type === 'road' || activeLayer?.type === 'river' || activeLayer?.type === 'coastline' || activeLayer?.type === 'border';
+      
+      if (isVectorMode && (isDrawingCliffVector || isOtherVector)) {
+        if (activeColor !== null || isDrawingCliffVector || isOtherVector) {
           const stage = e.target.getStage();
           if (stage && e.target === stage) setSelectedLineId(null);
           if (stage) {
@@ -290,9 +320,10 @@ export function useMapInteraction() {
             }
 
             const isBorderSnap = activeLayer?.type === 'border' && state.activeBorderStyle === 'snapped';
-            const pos = snapPoint(rawPos, isBorderSnap, activeLayer?.data || []);
+            const layerLines = activeLayer?.type === 'cliff' ? (activeLayer?.data as any)?.lines || [] : (Array.isArray(activeLayer?.data) ? activeLayer?.data : []);
+            const pos = snapPoint(rawPos, isBorderSnap, layerLines);
 
-            if ((activeLayer?.type === 'road' && activeRoadStyle !== 'highlight') || (activeLayer?.type === 'river' && activeRiverStyle !== 'highlight') || (activeLayer?.type === 'border' && state.activeBorderStyle !== 'highlight')) {
+            if ((activeLayer?.type === 'road' && activeRoadStyle !== 'highlight') || (activeLayer?.type === 'river' && activeRiverStyle !== 'highlight') || (activeLayer?.type === 'border' && state.activeBorderStyle !== 'highlight') || (activeLayer?.type === 'cliff' && state.activeCliffStyle !== 'highlight' && !state.activeBrush)) {
               if (!isDrawingPath) {
                 setIsDrawingPath(true);
                 setCurrentLine([pos.x, pos.y, pos.x, pos.y]);
@@ -342,7 +373,8 @@ export function useMapInteraction() {
         const rawPos = getRelativePointerPosition(stage);
         const state = useMapStore.getState();
         const isBorderSnap = activeLayer?.type === 'border' && state.activeBorderStyle === 'snapped';
-        const pos = snapPoint(rawPos, isBorderSnap, activeLayer?.data || []);
+        const layerLines = activeLayer?.type === 'cliff' ? (activeLayer?.data as any)?.lines || [] : (Array.isArray(activeLayer?.data) ? activeLayer?.data : []);
+        const pos = snapPoint(rawPos, isBorderSnap, layerLines);
 
         if (isDrawingPath) {
            if (isBorderSnap && hexEdgeGraph && drawingAnchors.length > 0) {
@@ -376,15 +408,23 @@ export function useMapInteraction() {
             const newData = {
               id: Date.now().toString(),
               points: currentLine,
-              stroke: l.type === 'border' ? activeBorderColor : (activeColor || (l.type === 'coastline' ? '#222222' : '#000000')),
+              stroke: l.type === 'border' ? activeBorderColor : (activeColor || (l.type === 'coastline' ? '#222222' : (l.type === 'cliff' ? '#555555' : '#000000'))),
               strokeWidth: l.type === 'border' ? activeBorderWidth : activeLineWidth,
               tension: l.type === 'coastline' && state.activeCoastlineStyle === 'fractal' ? 0 : l.type === 'border' && state.activeBorderStyle === 'snapped' ? 0 : 0.5,
               invert: isShiftPressed,
               roadStyle: l.type === 'road' ? activeRoadStyle : undefined,
               riverStyle: l.type === 'river' ? activeRiverStyle : undefined,
               coastlineStyle: l.type === 'coastline' ? state.activeCoastlineStyle : undefined,
-              borderStyle: l.type === 'border' ? state.activeBorderStyle : undefined
+              borderStyle: l.type === 'border' ? state.activeBorderStyle : undefined,
+              cliffStyle: l.type === 'cliff' ? state.activeCliffStyle : undefined
             };
+            if (l.type === 'cliff') {
+               const cl = l as import('../types').CliffLayer;
+               const isLegacy = Array.isArray(cl.data);
+               const existingLines = isLegacy ? cl.data : (cl.data.lines || []);
+               const existingHexes = isLegacy ? {} : (cl.data.hexes || {});
+               return { ...cl, data: { lines: [...existingLines, newData], hexes: existingHexes } };
+            }
             return {
               ...l,
               data: [...(l.data as VectorLine[]), newData]
@@ -415,20 +455,28 @@ export function useMapInteraction() {
       }
       
       setLayers(prev => prev.map(l => {
-        if (l.id === activeLayerId && (l.type === 'road' || l.type === 'river' || l.type === 'coastline' || l.type === 'border')) {
+        if (l.id === activeLayerId && (l.type === 'road' || l.type === 'river' || l.type === 'coastline' || l.type === 'border' || l.type === 'cliff')) {
           const state = useMapStore.getState();
           const newData = {
             id: Date.now().toString(),
             points: finalPoints,
-            stroke: l.type === 'border' ? activeBorderColor : (activeColor || (l.type === 'coastline' ? '#222222' : '#000000')),
+            stroke: l.type === 'border' ? activeBorderColor : (activeColor || (l.type === 'coastline' ? '#222222' : (l.type === 'cliff' ? '#555555' : '#000000'))),
             strokeWidth: l.type === 'border' ? activeBorderWidth : activeLineWidth,
             tension: l.type === 'coastline' && state.activeCoastlineStyle === 'fractal' ? 0 : l.type === 'border' && state.activeBorderStyle === 'snapped' ? 0 : 0.5,
             invert: isShiftPressed,
             roadStyle: l.type === 'road' ? activeRoadStyle : undefined,
             riverStyle: l.type === 'river' ? activeRiverStyle : undefined,
             coastlineStyle: l.type === 'coastline' ? state.activeCoastlineStyle : undefined,
-            borderStyle: l.type === 'border' ? state.activeBorderStyle : undefined
+            borderStyle: l.type === 'border' ? state.activeBorderStyle : undefined,
+            cliffStyle: l.type === 'cliff' ? state.activeCliffStyle : undefined
           };
+          if (l.type === 'cliff') {
+             const cl = l as import('../types').CliffLayer;
+             const isLegacy = Array.isArray(cl.data);
+             const existingLines = isLegacy ? cl.data : (cl.data.lines || []);
+             const existingHexes = isLegacy ? {} : (cl.data.hexes || {});
+             return { ...cl, data: { lines: [...existingLines, newData], hexes: existingHexes } };
+          }
           return {
             ...l,
             data: [...(l.data as VectorLine[]), newData]

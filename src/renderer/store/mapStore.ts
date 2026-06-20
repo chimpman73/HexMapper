@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { HexOrientation, MapLayer, RoadStyle, RiverStyle, CoastlineStyle } from '../types';
+import { HexOrientation, MapLayer, RoadStyle, RiverStyle, CoastlineStyle, BorderStyle, CliffStyle } from '../types';
 export type EditorAction = 'paint' | 'select' | 'move' | 'highlight' | 'erase';
 
 interface MapState {
@@ -31,6 +31,7 @@ interface MapState {
   activeRiverStyle?: RiverStyle;
   activeCoastlineStyle?: CoastlineStyle;
   activeBorderStyle?: BorderStyle;
+  activeCliffStyle?: CliffStyle;
   activeBorderColor: string;
   activeBorderWidth: number;
   
@@ -73,6 +74,7 @@ interface MapState {
   setActiveRiverStyle: (s: RiverStyle) => void;
   setActiveCoastlineStyle: (s: CoastlineStyle) => void;
   setActiveBorderStyle: (s: BorderStyle) => void;
+  setActiveCliffStyle: (s: CliffStyle) => void;
   setLayers: (l: MapLayer[] | ((prev: MapLayer[]) => MapLayer[])) => void;
   setActiveLayerId: (id: string) => void;
   setIsScanning: (s: boolean) => void;
@@ -123,19 +125,20 @@ export const useMapStore = create<MapState>((set) => ({
   activeAction: 'paint',
   activeBrush: null,
   activeFeatureBrush: null,
-  activeColor: '#3b82f6',
-  activeLineWidth: 10,
+  activeColor: '#555555',
+  activeLineWidth: 5,
   activeRoadStyle: 'path',
   activeRiverStyle: 'river',
   activeCoastlineStyle: 'smooth',
   activeBorderStyle: 'smooth',
+  activeCliffStyle: 'smooth',
   activeBorderColor: '#dc2626',
   activeBorderWidth: 5,
   
   layers: [
     { id: '1', name: 'Terrain', type: 'terrain', visible: true, opacity: 1, data: {} },
     { id: '4', name: 'Coastline', type: 'coastline', visible: true, opacity: 1, data: [] },
-    { id: '2', name: 'Cliffs', type: 'cliff', visible: true, opacity: 1, data: [] },
+    { id: '2', name: 'Cliffs', type: 'cliff', visible: true, opacity: 1, data: { lines: [], hexes: {} } },
     { id: '3', name: 'Rivers', type: 'river', visible: true, opacity: 1, data: [] },
     { id: '9', name: 'Roads', type: 'road', visible: true, opacity: 1, data: [] },
     { id: '5', name: 'Cities', type: 'city', visible: true, opacity: 1, data: {} },
@@ -185,6 +188,7 @@ export const useMapStore = create<MapState>((set) => ({
   setActiveRiverStyle: (s) => set({ activeRiverStyle: s }),
   setActiveCoastlineStyle: (s) => set({ activeCoastlineStyle: s }),
   setActiveBorderStyle: (s) => set({ activeBorderStyle: s }),
+  setActiveCliffStyle: (s) => set({ activeCliffStyle: s }),
   setLayers: (l) => set((state) => {
     const nextLayers = typeof l === 'function' ? l(state.layers) : l;
     if (nextLayers === state.layers) return state;
@@ -253,7 +257,7 @@ export const useMapStore = create<MapState>((set) => ({
       type: type as any,
       visible: true,
       opacity: 1,
-      data: type === 'cliff' || type === 'river' || type === 'label' || type === 'road' || type === 'coastline' || type === 'border' ? [] : {}
+      data: type === 'cliff' ? { lines: [], hexes: {} } : (type === 'river' || type === 'label' || type === 'road' || type === 'coastline' || type === 'border' ? [] : {})
     };
     return { layers: [...state.layers, newLayer] };
   }),

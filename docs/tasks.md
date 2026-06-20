@@ -253,10 +253,10 @@ This backlog is prioritized based on structural dependencies. Foundational infra
 
 ## 🟢 Low Priority (Polish & Stability)
 
-**11. Add Customization UI for the Hex Grid Layer**
+**11. ~~Add Customization UI for the Hex Grid Layer~~ [COMPLETED]**
 *Why it's important:* A simple visual polish task that isn't blocking any other development.
-- Expose the newly separated `Hex Grid` layer properties to the React frontend UI.
-- Add controls (e.g., in `TerrainPalette` or layer options) to allow users to dynamically change the grid line color and stroke thickness.
+- ~~Expose the newly separated `Hex Grid` layer properties to the React frontend UI.~~
+- ~~Add controls (e.g., in `TerrainPalette` or layer options) to allow users to dynamically change the grid line color and stroke thickness.~~
 
 **12. Implement Frontend Test Coverage**
 *Why it's important:* Vital for long-term stability, but we should write these tests *after* we finish the massive Layer Management UI rework (Priority 1 & 2), otherwise the tests will need to be rewritten immediately.

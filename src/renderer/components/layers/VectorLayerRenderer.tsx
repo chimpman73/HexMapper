@@ -1,7 +1,7 @@
 import React from 'react';
 import { Group, Line, Shape } from 'react-konva';
 import { Circle } from 'react-konva';
-import { VectorLayer, Layer, VectorLine } from '../../types';
+import { VectorLayer, Layer, VectorLine, CliffLayer } from '../../types';
 import { generateCliffHashes, distToSegment, getRelativePointerPosition } from '../../utils/vectorMath';
 import { pixelToHex, hexToPixel, getHexCorners } from '../../utils/hexMath';
 import { generateFractalLine } from '../../utils/fractalMath';
@@ -43,7 +43,7 @@ const RiverFeatureImage: React.FC<{ feature: import('../../types').VectorFeature
   );
 };
 interface VectorLayerRendererProps {
-  layer: VectorLayer;
+  layer: VectorLayer | CliffLayer;
   activeLayer: Layer | undefined;
   activeLayerId: string | null;
   hoveredLineId: string | null;
@@ -72,9 +72,25 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
     setSelectedVertex(null);
   }, [selectedLineId, setSelectedVertex]);
 
+  const updateLines = React.useCallback((updater: (lines: VectorLine[]) => VectorLine[]) => {
+    setLayers(prev => prev.map(l => {
+      if (l.id === layer.id) {
+        if (l.type === 'cliff') {
+           const cl = l as CliffLayer;
+           return { ...cl, data: { ...cl.data, lines: updater(cl.data.lines) } };
+        } else {
+           const vl = l as VectorLayer;
+           return { ...vl, data: updater(vl.data) };
+        }
+      }
+      return l;
+    }));
+  }, [layer.id, setLayers]);
+
   const processedLines = React.useMemo(() => {
-    if (!Array.isArray(layer.data)) return [];
-    return layer.data.map((line) => {
+    const lines = layer.type === 'cliff' ? (layer.data as any).lines : layer.data;
+    if (!Array.isArray(lines)) return [];
+    return lines.map((line: VectorLine) => {
       let displayPoints = line.points;
       if (layer.type === 'coastline' && line.coastlineStyle === 'fractal') {
          displayPoints = generateFractalLine(line.points, 3, 10);
@@ -180,13 +196,7 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
                 }
                 const newPoints = [...line.points];
                 newPoints.splice(bestIndex, 0, pos.x, pos.y);
-                setLayers(prev => prev.map(l => {
-                  if (l.id === layer.id) {
-                    const vl = l as VectorLayer;
-                    return { ...vl, data: vl.data.map(dl => dl.id === line.id ? { ...dl, points: newPoints } : dl) };
-                  }
-                  return l;
-                }));
+                updateLines(lines => lines.map(dl => dl.id === line.id ? { ...dl, points: newPoints } : dl));
               }
             }
           }}
@@ -199,47 +209,32 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
                 const clickedNode = e.target;
                 if (clickedNode.attrs.id && clickedNode.attrs.id.startsWith('feat_')) {
                   const featId = clickedNode.attrs.id;
-                  setLayers(prev => prev.map(l => {
-                    if (l.id === layer.id) {
-                      const vl = l as import('../../types').VectorLayer;
-                      return {
-                        ...vl,
-                        data: vl.data.map(dl => {
-                          if (dl.id === line.id) {
-                            return { ...dl, features: dl.features?.filter(f => f.id !== featId) };
-                          }
-                          return dl;
-                        })
-                      };
+                  updateLines(lines => lines.map(dl => {
+                    if (dl.id === line.id) {
+                      return { ...dl, features: dl.features?.filter(f => f.id !== featId) };
                     }
-                    return l;
+                    return dl;
                   }));
                   return;
                 }
                 
                 setHoveredLineId(null);
-                setLayers(prev => prev.map(l => {
-                  if (l.id === layer.id) {
-                    const vl = l as import('../../types').VectorLayer;
-                    return { ...vl, data: vl.data.filter(dl => dl.id !== line.id) };
-                  }
-                  return l;
-                }));
-              } else if (layer.type === 'road' || layer.type === 'river' || layer.type === 'coastline' || layer.type === 'border') {
+                updateLines(lines => lines.filter(dl => dl.id !== line.id));
+              } else if (layer.type === 'road' || layer.type === 'river' || layer.type === 'coastline' || layer.type === 'border' || layer.type === 'cliff') {
                 e.cancelBubble = true;
                 setSelectedLineId(line.id);
               }
             }
           }}
           onMouseEnter={(e) => {
-            if (isVectorMode && (activeColor === null || layer.type === 'road' || layer.type === 'river' || layer.type === 'coastline' || layer.type === 'border') && activeLayerId === layer.id) {
+            if (isVectorMode && (activeColor === null || layer.type === 'road' || layer.type === 'river' || layer.type === 'coastline' || layer.type === 'border' || layer.type === 'cliff') && activeLayerId === layer.id) {
               const stage = e.target.getStage();
               if (stage) stage.container().style.cursor = 'pointer';
               setHoveredLineId(line.id);
             }
           }}
           onMouseLeave={(e) => {
-            if (isVectorMode && (activeColor === null || layer.type === 'road' || layer.type === 'river' || layer.type === 'coastline' || layer.type === 'border') && activeLayerId === layer.id) {
+            if (isVectorMode && (activeColor === null || layer.type === 'road' || layer.type === 'river' || layer.type === 'coastline' || layer.type === 'border' || layer.type === 'cliff') && activeLayerId === layer.id) {
               const stage = e.target.getStage();
               if (stage) stage.container().style.cursor = 'crosshair';
               if (hoveredLineId === line.id) setHoveredLineId(null);
@@ -376,7 +371,7 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
              />
           )}
           {layer.type === 'cliff' && generateCliffHashes(displayPoints, line.invert, hoveredLineId === line.id ? '#ff5252' : line.stroke, line.strokeWidth, line.id, hoveredLineId === line.id ? 0.5 : layer.opacity)}
-          {selectedLineId === line.id && (layer.type === 'road' || layer.type === 'river' || layer.type === 'coastline' || layer.type === 'border') && (
+          {selectedLineId === line.id && (layer.type === 'road' || layer.type === 'river' || layer.type === 'coastline' || layer.type === 'border' || layer.type === 'cliff') && (
             <Group>
               {Array.from({ length: line.points.length / 2 }).map((_, ptIndex) => (
                 <Circle
@@ -460,13 +455,7 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
                      
                      newPoints[ptIndex * 2] = px;
                      newPoints[ptIndex * 2 + 1] = py;
-                     setLayers(prev => prev.map(l => {
-                       if (l.id === layer.id) {
-                         const vl = l as import('../types').VectorLayer;
-                         return { ...vl, data: vl.data.map(dl => dl.id === line.id ? { ...dl, points: newPoints } : dl) };
-                       }
-                       return l;
-                     }));
+                     updateLines(lines => lines.map(dl => dl.id === line.id ? { ...dl, points: newPoints } : dl));
                   }}
                   onMouseEnter={(e) => {
                      const stage = e.target.getStage();

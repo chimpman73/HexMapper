@@ -38,6 +38,7 @@ export type CoastlineStyle = 'smooth' | 'fractal' | 'highlight';
 export type RoadStyle = 'path' | 'road' | 'tunnel' | 'highlight';
 export type RiverStyle = 'stream' | 'river' | 'highlight';
 export type BorderStyle = 'smooth' | 'snapped' | 'highlight';
+export type CliffStyle = 'smooth' | 'fractal' | 'highlight';
 
 export interface VectorFeature {
   id: string;
@@ -58,14 +59,23 @@ export interface VectorLine {
   riverStyle?: RiverStyle;
   coastlineStyle?: CoastlineStyle;
   borderStyle?: BorderStyle;
+  cliffStyle?: CliffStyle;
   invert?: boolean; 
   brushKey?: string;
   features?: VectorFeature[];
 }
 
 export interface VectorLayer extends BaseLayer {
-  type: 'river' | 'cliff' | 'label' | 'road' | 'coastline' | 'border';
+  type: 'river' | 'label' | 'road' | 'coastline' | 'border';
   data: VectorLine[];
+}
+
+export interface CliffLayer extends BaseLayer {
+  type: 'cliff';
+  data: {
+    lines: VectorLine[];
+    hexes: Record<string, string>;
+  };
 }
 
 export interface GridLayer extends BaseLayer {
@@ -85,7 +95,7 @@ export interface GroupLayer extends BaseLayer {
   data: {};
 }
 
-export type MapLayer = TerrainLayer | CityLayer | VectorLayer | GridLayer | BgImageLayer | GroupLayer;
+export type MapLayer = TerrainLayer | CityLayer | VectorLayer | CliffLayer | GridLayer | BgImageLayer | GroupLayer;
 
 export interface PythonScriptArgs {
   action?: string;
