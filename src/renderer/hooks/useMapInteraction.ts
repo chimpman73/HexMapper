@@ -119,10 +119,24 @@ export function useMapInteraction() {
 
   const handlePaintHex = useCallback((hex: HexCube) => {
     if (isVectorMode) return;
-    const brushValue = activeLayer?.type === 'border' ? activeColor : activeBrush;
-    if (brushValue === undefined) return;
-    
+    const state = useMapStore.getState();
     const key = `${hex.q},${hex.r},${hex.s}`;
+
+    if (state.activeAction === 'select') {
+      if (activeLayer && activeLayer.data[key]) {
+        state.setHighlightedHexKey(key);
+        state.setActiveBrush(activeLayer.data[key]);
+      } else {
+        state.setHighlightedHexKey(null);
+      }
+      return;
+    }
+
+    if (state.activeAction !== 'paint' && state.activeAction !== 'erase') return;
+
+    const brushValue = state.activeAction === 'erase' ? null : (activeLayer?.type === 'border' ? activeColor : activeBrush);
+    if (brushValue === undefined && state.activeAction !== 'erase') return;
+    
     setLayers(prev => prev.map(l => {
       if (l.id === activeLayerId && (l.type === 'terrain' || l.type === 'city' || l.type === 'coastline' || l.type === 'border')) {
         const newData = { ...l.data };
@@ -195,7 +209,8 @@ export function useMapInteraction() {
   }, []);
 
   const handleMouseDown = useCallback((e: KonvaEventObject<MouseEvent>) => {
-    if (e.evt.button === 2) {
+    const state = useMapStore.getState();
+    if (e.evt.button === 2 || (e.evt.button === 0 && state.activeAction === 'move')) {
       setIsRightClickPan(true);
       setLastPanPos({ x: e.evt.clientX, y: e.evt.clientY });
       
@@ -217,6 +232,8 @@ export function useMapInteraction() {
           if (stage) {
             const rawPos = getRelativePointerPosition(stage);
             const state = useMapStore.getState();
+
+            if (state.activeAction !== 'paint') return;
 
             // Handle placing river features
             if (activeLayer?.type === 'river' && state.activeFeatureBrush) {
@@ -345,7 +362,8 @@ export function useMapInteraction() {
   }, [isRightClickPan, lastPanPos, isVectorMode, currentLine, getRelativePointerPosition, isDrawingPath]);
 
   const handleMouseUp = useCallback((e: KonvaEventObject<MouseEvent>) => {
-    if (e.evt.button === 2) {
+    const state = useMapStore.getState();
+    if (e.evt.button === 2 || (e.evt.button === 0 && state.activeAction === 'move')) {
       setIsRightClickPan(false);
       return;
     }

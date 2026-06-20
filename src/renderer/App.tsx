@@ -1,8 +1,8 @@
 import React, { useRef, useEffect } from 'react';
 import styles from './index.module.css';
 import HexGridEngine, { HexGridEngineRef } from './components/HexGridEngine';
-import TerrainPalette from './components/TerrainPalette';
-import LayerPanel from './components/LayerPanel';
+import LayerPalette from './components/LayerPalette';
+import LayerStack from './components/LayerStack';
 import UnknownsPanel from './components/UnknownsPanel';
 import Toolbar from './components/Toolbar';
 import ImportModal from './components/ImportModal';
@@ -145,12 +145,12 @@ const App: React.FC = () => {
       <Toolbar engineRef={engineRef} />
       
       <div className={styles.workspace}>
-        <TerrainPalette />
+        <LayerPalette />
         <div className={styles.canvasContainer}>
           <HexGridEngine ref={engineRef} />
         </div>
         <div className={styles.rightPanel}>
-          <LayerPanel />
+          <LayerStack />
           {unknowns.length > 0 && showUnknownsPanel && (
             <UnknownsPanel 
               unknowns={unknowns} 

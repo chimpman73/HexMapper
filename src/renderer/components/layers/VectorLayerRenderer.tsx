@@ -12,12 +12,17 @@ import { Image as KonvaImage } from 'react-konva';
 
 const RiverFeatureImage: React.FC<{ feature: import('../../types').VectorFeature, x: number, y: number, rotation: number, opacity: number }> = ({ feature, x, y, rotation, opacity }) => {
   const [image, setImage] = React.useState<HTMLImageElement | null>(null);
+  const { assetsBasePath, currentStyle } = useMapStore();
 
   React.useEffect(() => {
     const img = new window.Image();
-    img.src = feature.brushUrl;
+    let src = feature.brushUrl;
+    if (src && !src.startsWith('local://') && assetsBasePath && currentStyle) {
+      src = `local://file?path=${encodeURIComponent(`${assetsBasePath}/styles/${currentStyle}/tiles/${src}`)}`;
+    }
+    img.src = src;
     img.onload = () => setImage(img);
-  }, [feature.brushUrl]);
+  }, [feature.brushUrl, assetsBasePath, currentStyle]);
 
   if (!image) return null;
 
@@ -61,7 +66,7 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
   activeRoadStyle, activeRiverStyle, activeCoastlineStyle, roadConfig, riverConfig, activeColor,
   coastlines, setLayers, setSelectedLineId, setHoveredLineId
 }) => {
-  const { selectedVertex, setSelectedVertex } = useMapStore();
+  const { selectedVertex, setSelectedVertex, activeAction } = useMapStore();
 
   React.useEffect(() => {
     setSelectedVertex(null);
@@ -113,13 +118,10 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
         if (layer.type === 'coastline' && hoveredLineId !== line.id) {
           strokeColor = '#222222';
         }
-        let innerTunnelColor;
         let isHighlighted = false;
-        if (activeLayerId === layer.id) {
-          isHighlighted = (layer.type === 'road' && activeRoadStyle === 'highlight') || 
-                          (layer.type === 'river' && activeRiverStyle === 'highlight') ||
-                          (layer.type === 'coastline' && activeCoastlineStyle === 'highlight') ||
-                          (layer.type === 'border' && useMapStore.getState().activeBorderStyle === 'highlight');
+        let innerTunnelColor;
+        if (activeLayerId === layer.id && activeAction === 'highlight') {
+          isHighlighted = true;
         }
         
         if (layer.type === 'road') {
@@ -191,7 +193,7 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
           onMouseDown={(e) => {
             if (isVectorMode && activeLayerId === layer.id) {
               const state = useMapStore.getState();
-              const isEraser = layer.type === 'border' ? state.activeBorderColor === null : activeColor === null;
+              const isEraser = state.activeAction === 'erase';
               if (isEraser) {
                 e.cancelBubble = true;
                 const clickedNode = e.target;

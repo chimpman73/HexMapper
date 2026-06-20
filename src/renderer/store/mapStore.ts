@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { HexOrientation, MapLayer, RoadStyle, RiverStyle, CoastlineStyle } from '../types';
+export type EditorAction = 'paint' | 'select' | 'move' | 'highlight' | 'erase';
 
 interface MapState {
   orientation: HexOrientation;
@@ -21,6 +22,7 @@ interface MapState {
   importDirPath: string | null;
   showImportModal: boolean;
   
+  activeAction: EditorAction;
   activeBrush: string | null;
   activeFeatureBrush: string | null;
   activeColor: string | null;
@@ -62,6 +64,7 @@ interface MapState {
   setImportType: (t: 'image' | 'directory' | null) => void;
   setImportDirPath: (p: string | null) => void;
   setShowImportModal: (s: boolean) => void;
+  setActiveAction: (a: EditorAction) => void;
   setActiveBrush: (b: string | null) => void;
   setActiveFeatureBrush: (b: string | null) => void;
   setActiveColor: (c: string | null) => void;
@@ -112,6 +115,7 @@ export const useMapStore = create<MapState>((set) => ({
   importDirPath: null,
   showImportModal: false,
   
+  activeAction: 'paint',
   activeBrush: null,
   activeFeatureBrush: null,
   activeColor: '#3b82f6',
@@ -162,6 +166,7 @@ export const useMapStore = create<MapState>((set) => ({
   setImportType: (t) => set({ importType: t }),
   setImportDirPath: (p) => set({ importDirPath: p }),
   setShowImportModal: (s) => set({ showImportModal: s }),
+  setActiveAction: (a) => set({ activeAction: a }),
   setActiveBrush: (b) => set({ activeBrush: b }),
   setActiveFeatureBrush: (b) => set({ activeFeatureBrush: b }),
   setActiveColor: (c) => set({ activeColor: c }),

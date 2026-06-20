@@ -37,8 +37,6 @@ const HexTile: React.FC<HexTileProps> = ({
       <Line
         points={points}
         fill={fillColor || (imageSrc ? undefined : (isHovered ? '#bb86fc' : (isBaseLayer ? '#1e1e1e' : 'transparent')))}
-        stroke={isHovered ? '#03dac6' : 'transparent'}
-        strokeWidth={isHovered ? 3 : 0}
         closed
       />
       {image && (
@@ -57,6 +55,17 @@ const HexTile: React.FC<HexTileProps> = ({
             listening={false}
           />
         </Group>
+      )}
+      {isHovered && (
+        <Line
+          points={points}
+          stroke="#ffff00"
+          strokeWidth={4}
+          listening={false}
+          closed
+          shadowColor="#ffff00"
+          shadowBlur={10}
+        />
       )}
       {showCoordinates && (
         <Text

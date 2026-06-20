@@ -1,0 +1,115 @@
+.paletteContainer {
+  width: 250px;
+  background-color: #1a1a1a;
+  border-right: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.loadButton {
+  background-color: #bb86fc;
+  color: #000;
+  border: none;
+  padding: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.loadButton:hover {
+  background-color: #3700b3;
+  color: white;
+}
+
+.brushGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.brushItem {
+  width: 60px;
+  height: 60px;
+  background-color: #2a2a2a;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.brushItem:hover {
+  border-color: #555;
+}
+
+.brushItem.active {
+  border-color: #03dac6;
+}
+
+.brushImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  position: relative;
+  z-index: 1;
+}
+
+.hexBackground {
+  position: absolute;
+  top: 4px; bottom: 4px; left: 4px; right: 4px;
+  background-color: #7cb342;
+  clip-path: polygon(100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%, 25% 6.7%, 75% 6.7%);
+  z-index: 0;
+}
+
+.eraser {
+  color: #888;
+  font-size: 0.8rem;
+  z-index: 1;
+  position: relative;
+}
+
+.actionBtn {
+  flex: 1;
+  height: 40px;
+  background-color: #2a2a2a;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.actionBtn:hover {
+  border-color: #555;
+}
+
+.actionBtn.active {
+  border-color: #03dac6;
+}
+
+.colorInput {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+}
+.colorInput::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.colorInput::-webkit-color-swatch {
+  border: 1px solid #555;
+  border-radius: 50%;
+}

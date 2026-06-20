@@ -19,22 +19,28 @@ interface TerrainLayerRendererProps {
   isPaintingHex: boolean;
   setHoveredHex: (h: HexCube | null) => void;
   handlePaintHex: (h: HexCube) => void;
+  activeAction?: string;
+  activeBrush?: string | null;
 }
 
 const TerrainLayerRenderer: React.FC<TerrainLayerRendererProps> = ({
   layer, grid, orientation, isVectorMode, activeLayerId, hoveredHex, highlightedHexKey,
   currentStyle, assetsBasePath, hasBgImage, showCoordinates, isPaintingHex,
-  setHoveredHex, handlePaintHex
+  setHoveredHex, handlePaintHex, activeAction, activeBrush
 }) => {
   const tiles = grid.map((hex) => {
     const key = `${hex.q},${hex.r},${hex.s}`;
     const isMouseHovered = (!isVectorMode && activeLayerId === layer.id && hoveredHex) ? isHexEqual(hex, hoveredHex) : false;
-    const isHovered = isMouseHovered || highlightedHexKey === key;
+    let isHovered = isMouseHovered || highlightedHexKey === key;
     
     const isColorLayer = layer.type === 'border';
     const isImageLayer = layer.type === 'terrain' || layer.type === 'city';
     
     let imageSrc = isImageLayer ? layer.data[key] : undefined;
+    
+    if (activeAction === 'highlight' && activeLayerId === layer.id && isImageLayer && activeBrush && imageSrc === activeBrush) {
+      isHovered = true;
+    }
     
     if (imageSrc && !imageSrc.startsWith('local://') && assetsBasePath && currentStyle) {
       imageSrc = `local://file?path=${encodeURIComponent(`${assetsBasePath}/styles/${currentStyle}/tiles/${imageSrc}`)}`;

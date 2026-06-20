@@ -27,7 +27,7 @@ import { Image as KonvaImage } from 'react-konva';
 
 const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, ref) => {
   const {
-    orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeFeatureBrush, activeColor, activeBorderColor, activeLineWidth, activeBorderWidth, activeRoadStyle, activeRiverStyle, activeCoastlineStyle, roadConfig, riverConfig, layers, setLayers, activeLayerId, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines, globalBorders, highlightedHexKey, currentStyle, assetsBasePath
+    orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeFeatureBrush, activeColor, activeBorderColor, activeLineWidth, activeBorderWidth, activeRoadStyle, activeRiverStyle, activeCoastlineStyle, roadConfig, riverConfig, layers, setLayers, activeLayerId, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines, globalBorders, highlightedHexKey, currentStyle, assetsBasePath, activeAction
   } = useMapStore();
   const stageRef = useRef<Konva.Stage>(null);
 
@@ -54,9 +54,16 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
 
   const [rawPointerPos, setRawPointerPos] = useState<{x: number, y: number} | null>(null);
 
+  const isTerrainOrCity = activeLayer?.type === 'terrain' || activeLayer?.type === 'city';
+  const isRiverFeature = activeLayer?.type === 'river' && activeFeatureBrush !== null;
+  const showBrushOverlay = activeAction === 'paint' && ((isTerrainOrCity && activeBrush) || isRiverFeature);
+
   const getCursor = () => {
-    if (isRightClickPan) return 'grabbing';
-    if (activeFeatureBrush || activeBrush) return 'none';
+    if (activeAction === 'move' || isRightClickPan) return 'grab';
+    if (activeAction === 'select') return 'pointer';
+    if (activeAction === 'highlight') return 'crosshair';
+    if (activeAction === 'erase') return 'crosshair';
+    if (showBrushOverlay) return 'none';
     if (isPaintingHex || isVectorMode) return 'crosshair';
     return 'default';
   };
@@ -141,6 +148,8 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
                 isPaintingHex={isPaintingHex}
                 setHoveredHex={setHoveredHex}
                 handlePaintHex={handlePaintHex}
+                activeAction={activeAction}
+                activeBrush={activeBrush}
               />
             );
           }
@@ -224,12 +233,12 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
         )}
       </Layer>
       <Layer listening={false}>
-        {(activeFeatureBrush || activeBrush) && rawPointerPos && (
-          <BrushCursorOverlay 
-            url={activeFeatureBrush || activeBrush || ''} 
-            x={rawPointerPos.x} 
-            y={rawPointerPos.y} 
-          />
+        {showBrushOverlay && rawPointerPos && (
+           <BrushCursorOverlay 
+             url={(activeLayer?.type === 'river' ? activeFeatureBrush : activeBrush) || ''} 
+             x={rawPointerPos.x} 
+             y={rawPointerPos.y} 
+           />
         )}
       </Layer>
     </Stage>
