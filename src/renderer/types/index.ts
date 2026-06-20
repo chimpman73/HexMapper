@@ -70,7 +70,7 @@ export interface VectorLayer extends BaseLayer {
 
 export interface GridLayer extends BaseLayer {
   type: 'grid';
-  data: {};
+  data: { color?: string };
 }
 
 export interface BgImageLayer extends BaseLayer {

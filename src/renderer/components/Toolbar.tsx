@@ -10,8 +10,6 @@ interface ToolbarProps {
 
 const Toolbar: React.FC<ToolbarProps> = ({ engineRef }) => {
   const {
-    orientation, setOrientation,
-    showCoordinates, setShowCoordinates,
     mapWidth, setMapWidth,
     mapHeight, setMapHeight,
     unknowns,
@@ -67,17 +65,6 @@ const Toolbar: React.FC<ToolbarProps> = ({ engineRef }) => {
             />
           </label>
           <label className={styles.controlLabel}>
-            Orientation:
-            <select 
-              className={styles.select} 
-              value={orientation} 
-              onChange={(e) => setOrientation(e.target.value as HexOrientation)}
-            >
-              <option value="flat">Flat-topped</option>
-              <option value="pointy">Pointy-topped</option>
-            </select>
-          </label>
-          <label className={styles.controlLabel}>
             Style:
             <select 
               className={styles.select} 
@@ -86,14 +73,6 @@ const Toolbar: React.FC<ToolbarProps> = ({ engineRef }) => {
             >
               {stylesList.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
-          </label>
-          <label className={styles.controlLabel}>
-            <input 
-              type="checkbox" 
-              checked={showCoordinates} 
-              onChange={(e) => setShowCoordinates(e.target.checked)} 
-            />
-            Show Coordinates
           </label>
         </div>
       </div>

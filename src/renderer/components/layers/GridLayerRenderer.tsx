@@ -14,11 +14,12 @@ const GridLayerRenderer: React.FC<GridLayerRendererProps> = ({ layer, grid, orie
     <Group opacity={layer.opacity} listening={false}>
       {grid.map((hex) => {
         const key = `${hex.q},${hex.r},${hex.s}`;
+        const color = layer.data.color || "#333333";
         return (
           <Line
             key={`grid-${key}`}
             points={getHexCorners(hexToPixel(hex, orientation), orientation)}
-            stroke="#333333"
+            stroke={color}
             strokeWidth={2}
             closed
             listening={false}
