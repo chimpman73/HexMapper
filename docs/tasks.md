@@ -85,27 +85,23 @@ This backlog is prioritized based on structural dependencies. Foundational infra
 - ~~To draw coastline we use multiple brush types. These are lines again, with smooth lines versus fractal lines. These are generated upon map import.~~
 - For Borders we may want multiple line types. Smooth lines (like rivers or roads), fractal lines, lines that "snap" to the hex grid. This also needs to get imported when we create a map.
 
-**9. LayerPalette UI Standardization**
+**9. ~~LayerPalette UI Standardization~~ [COMPLETED]**
 *Why it's important:* The left-hand brush/tool panel currently lacks a consistent layout convention across layer types. Establishing a shared structure now will make future layer-specific tools predictable and maintainable, and give users a coherent experience regardless of which layer they are editing.
-- Re-label the left-hand hex brush panel as the **LayerPalette**.
-- **Section 1 — "Actions":** A compact row of hex-shaped icon buttons present on every layer type. Proposed tools:
-  - *Select* (arrow icon) — select a hex or object
-  - *Move* (fist/grab icon) — drag a hex or object
-  - *Highlight* (highlight hex icon) — temporarily highlight a hex for reference
-  - *Erase* (eraser hex icon) — erase the contents of a hex
-- **Section 2 — "Tools":** Layer-specific non-hex-brush tools (e.g., coastline editors, river drawing tools, road path tools). Define a consistent button shape, icon style, and active/hover state for all tool buttons across all layers.
-- **Section 3 — "Brushes":** Standard hex-stamp brushes for the current layer. Consistent grid layout, preview thumbnail size, and selection highlight across all layers.
-- Document the layout convention (spacing, section headers, icon sizes) so all future layers implement it the same way.
-- Not all layers will expose every section (e.g., a Labels layer may have no Brushes), but the ordering and styling of whichever sections appear must remain consistent.
+- ~~Re-label the left-hand hex brush panel as the **LayerPalette**.~~
+- ~~**Section 1 — "Actions":** A compact row of hex-shaped icon buttons present on every layer type.~~
+- ~~**Section 2 — "Tools":** Layer-specific non-hex-brush tools (e.g., coastline editors, river drawing tools, road path tools). Define a consistent button shape, icon style, and active/hover state for all tool buttons across all layers.~~
+- ~~**Section 3 — "Brushes":** Standard hex-stamp brushes for the current layer. Consistent grid layout, preview thumbnail size, and selection highlight across all layers.~~
+- ~~Document the layout convention (spacing, section headers, icon sizes) so all future layers implement it the same way.~~
+- ~~Not all layers will expose every section (e.g., a Labels layer may have no Brushes), but the ordering and styling of whichever sections appear must remain consistent.~~
 
-**10. LayerStack UI Standardization**
+**10. ~~LayerStack UI Standardization~~ [COMPLETED]**
 *Why it's important:* The right-hand layer panel needs a proper name and a consistent visual identity. Clear, recognizable icons for each layer type will make the stack easier to scan at a glance and set the standard for any new layers added in the future.
-- Re-label the right-hand layer panel as the **LayerStack**.
-- Audit all existing layer types and assign each a distinct, meaningful icon (e.g., Terrain, Rivers, Roads, Cities, Coastlines, Labels, Hex Grid, Background Image, etc.).
-- Review and rework any current icons that are poor representations of their layer — prioritize clarity and recognizability at small sizes.
-- Establish a consistent icon style guide (line weight, fill vs. outline, size, color treatment) so all layer icons feel like a cohesive set.
-- Ensure icons remain legible in both active and inactive/hidden states (e.g., dimmed when a layer is hidden).
-- Document the icon convention so future layer types can follow the same standard.
+- ~~Re-label the right-hand layer panel as the **LayerStack**.~~
+- ~~Audit all existing layer types and assign each a distinct, meaningful icon (e.g., Terrain, Rivers, Roads, Cities, Coastlines, Labels, Hex Grid, Background Image, etc.).~~
+- ~~Review and rework any current icons that are poor representations of their layer — prioritize clarity and recognizability at small sizes.~~
+- ~~Establish a consistent icon style guide (line weight, fill vs. outline, size, color treatment) so all layer icons feel like a cohesive set.~~
+- ~~Ensure icons remain legible in both active and inactive/hidden states (e.g., dimmed when a layer is hidden).~~
+- ~~Document the icon convention so future layer types can follow the same standard.~~
 
 **11. LayerStack Drag-and-Drop Reordering**
 *Why it's important:* Currently layers can only be reordered via up/down buttons. Drag-and-drop is the natural, expected interaction for a layer stack and will make reorganizing complex maps with many layers significantly faster and more intuitive.
