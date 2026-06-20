@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('api', {
   getStyles: () => ipcRenderer.invoke('fs:getStyles'),
   getAssetsBasePath: () => ipcRenderer.invoke('fs:getAssetsBasePath'),
   getDefaultTiles: (style?: string, folder?: string) => ipcRenderer.invoke('fs:getDefaultTiles', style, folder),
+  getSystemFonts: () => ipcRenderer.invoke('fs:getSystemFonts'),
   saveMap: (dataString: string) => ipcRenderer.invoke('map:save', dataString),
   loadMap: () => ipcRenderer.invoke('map:load'),
   exportImage: (dataUrl: string) => ipcRenderer.invoke('map:exportImage', dataUrl),

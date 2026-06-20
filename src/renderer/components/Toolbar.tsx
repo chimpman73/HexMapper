@@ -39,6 +39,9 @@ const Toolbar: React.FC<ToolbarProps> = ({ engineRef }) => {
               ⚠️ {unknowns.length} Unknowns
             </button>
           )}
+          <button className={styles.projectButton} onClick={() => useMapStore.getState().setShowMapSettingsModal(true)} title="Map Settings" style={{marginLeft: '10px'}}>
+            ⚙️ Settings
+          </button>
         </div>
         <div className={styles.toolbarControls}>
           <label className={styles.controlLabel}>

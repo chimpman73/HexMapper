@@ -8,7 +8,8 @@ export const useProjectStorage = (engineRef: React.RefObject<any>) => {
       layers: state.layers,
       mapWidth: state.mapWidth,
       mapHeight: state.mapHeight,
-      orientation: state.orientation
+      orientation: state.orientation,
+      mapVariables: state.mapVariables
     };
     const result = await window.api.saveMap(JSON.stringify(projectData, null, 2));
     if (result.success) {
@@ -63,6 +64,13 @@ export const useProjectStorage = (engineRef: React.RefObject<any>) => {
           }
           
           if (projectData.orientation) useMapStore.getState().setOrientation(projectData.orientation);
+          
+          if (projectData.mapVariables) {
+            useMapStore.getState().setMapVariables(projectData.mapVariables);
+          } else {
+            // Apply defaults for older saves
+            useMapStore.getState().setMapVariables({ fontName: 'Arial', hexSize: 1, hexUnit: 'miles' });
+          }
         }
       } catch (err) {
         console.error('Invalid project file:', err);

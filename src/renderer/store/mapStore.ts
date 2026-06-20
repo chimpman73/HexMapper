@@ -93,6 +93,11 @@ interface MapState {
   toggleLayerVisibility: (id: string) => void;
   setActiveBorderColor: (c: string) => void;
   setActiveBorderWidth: (w: number) => void;
+
+  mapVariables: import('../types').MapVariables;
+  setMapVariables: (v: Partial<import('../types').MapVariables>) => void;
+  showMapSettingsModal: boolean;
+  setShowMapSettingsModal: (s: boolean) => void;
 }
 
 export const useMapStore = create<MapState>((set) => ({
@@ -149,6 +154,11 @@ export const useMapStore = create<MapState>((set) => ({
   roadConfig: null,
   riverConfig: null,
   selectedVertex: null,
+  
+  mapVariables: { fontName: 'Arial', hexSize: 1, hexUnit: 'miles' },
+  setMapVariables: (v) => set((state) => ({ mapVariables: { ...state.mapVariables, ...v } })),
+  showMapSettingsModal: false,
+  setShowMapSettingsModal: (s) => set({ showMapSettingsModal: s }),
 
   setOrientation: (o) => set({ orientation: o }),
   setShowCoordinates: (s) => set({ showCoordinates: s }),

@@ -184,6 +184,17 @@ ipcMain.handle('fs:getDefaultTiles', async (event, style: string = 'Hollow Moon'
   }
 });
 
+ipcMain.handle('fs:getSystemFonts', async () => {
+  try {
+    const fontManager = require('font-list');
+    const fonts = await fontManager.getFonts();
+    return fonts.map((f: string) => f.replace(/"/g, ''));
+  } catch (err) {
+    console.error('Error fetching system fonts:', err);
+    return ['Arial', 'Times New Roman', 'Courier New', 'Verdana', 'Georgia', 'Comic Sans MS'];
+  }
+});
+
 ipcMain.handle('map:save', async (event, dataString: string) => {
   if (!mainWindow) return { success: false, error: 'No main window' };
   const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {

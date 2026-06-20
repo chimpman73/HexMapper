@@ -104,6 +104,12 @@ export interface PythonScriptArgs {
   layers?: MapLayer[];
 }
 
+export interface MapVariables {
+  fontName: string;
+  hexSize: number;
+  hexUnit: string;
+}
+
 declare global {
   interface Window {
     api: {
@@ -118,6 +124,7 @@ declare global {
       getStyles: () => Promise<string[]>;
       getAssetsBasePath: () => Promise<string>;
       getDefaultTiles: (style: string, folder: string) => Promise<string[]>;
+      getSystemFonts: () => Promise<string[]>;
     };
     electron: {
       ipcRenderer: {

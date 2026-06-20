@@ -130,18 +130,18 @@ This backlog is prioritized based on structural dependencies. Foundational infra
 - The `name` annotation should be surfaced on the **Label Layer** automatically (see task 15), but annotation data must exist independently of whether a label is currently displayed.
 - Consider future annotation types beyond name: description/notes field, numeric attributes (e.g., population for cities, length for rivers), tags/categories for filtering.
 
-**14. Map Global Variables**
+**14. ~~Map Global Variables~~ [COMPLETED]**
 *Why it's important:* Many features (Label Layer, Legend, scale tools) need shared map-level settings to behave consistently. Centralizing these in the save file ensures they are always available and easy to extend without scattering config across individual layers.
-- Add a `mapVariables` (or equivalent) top-level section to the JSON save format to hold map-wide settings.
-- Implement the following initial variables:
-  - `fontName` (string) — the font used for Labels and the Legend
-  - `hexSize` (number) — the real-world size of a single hex
-  - `hexUnit` (string) — the unit of measurement for `hexSize` (e.g., `"miles"`, `"km"`, `"leagues"`)
-- Build a **Map Settings UI panel** (e.g., accessible from a top menu or map properties dialog) where the user can view and edit all global variables.
-- The `fontName` setting should drive font rendering in the Label Layer (task 15) and any future Legend feature.
-- The `hexSize` + `hexUnit` pair should be used anywhere a real-world distance or scale is displayed (e.g., a scale bar, tooltip distances, export metadata).
-- Design the schema to be easily extensible — new global variables should require only a schema addition and a UI field, not structural changes.
-- Ensure backward compatibility: maps saved without a `mapVariables` section load correctly with sensible defaults.
+- ~~Add a `mapVariables` (or equivalent) top-level section to the JSON save format to hold map-wide settings.~~
+- ~~Implement the following initial variables:~~
+  - ~~`fontName` (string) — the font used for Labels and the Legend~~
+  - ~~`hexSize` (number) — the real-world size of a single hex~~
+  - ~~`hexUnit` (string) — the unit of measurement for `hexSize` (e.g., `"miles"`, `"km"`, `"leagues"`)~~
+- ~~Build a **Map Settings UI panel** (e.g., accessible from a top menu or map properties dialog) where the user can view and edit all global variables.~~
+- ~~The `fontName` setting should drive font rendering in the Label Layer (task 15) and any future Legend feature.~~
+- ~~The `hexSize` + `hexUnit` pair should be used anywhere a real-world distance or scale is displayed (e.g., a scale bar, tooltip distances, export metadata).~~
+- ~~Design the schema to be easily extensible — new global variables should require only a schema addition and a UI field, not structural changes.~~
+- ~~Ensure backward compatibility: maps saved without a `mapVariables` section load correctly with sensible defaults.~~
 
 **15. Label Layer Rework**
 *Why it's important:* Links semantic data between layers. Depends on Object Annotation (task 13) and Map Global Variables (task 14) being in place first — labels read display text from object annotations and use the global font setting.

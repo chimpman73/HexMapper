@@ -7,6 +7,7 @@ import UnknownsPanel from './components/UnknownsPanel';
 import Toolbar from './components/Toolbar';
 import ImportModal from './components/ImportModal';
 import AlignmentSidebar from './components/AlignmentSidebar';
+import MapSettingsModal from './components/MapSettingsModal';
 import { useMapStore } from './store/mapStore';
 
 const App: React.FC = () => {
@@ -164,6 +165,7 @@ const App: React.FC = () => {
       </div>
 
       <ImportModal />
+      <MapSettingsModal />
     </div>
   );
 };

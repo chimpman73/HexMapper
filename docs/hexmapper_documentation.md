@@ -20,6 +20,7 @@ HexMapper is built on a hybrid stack to leverage the strengths of modern web tec
 - **LayerPalette Toolset**: The left-hand panel provides a unified interface for all drawing actions. It includes a consistent "Actions" row (Select, Move, Highlight, Erase), specialized layer tools (e.g. Coastline editor, River brush dropdowns), and the primary "Brushes" section for selecting hex stamps.
 - **Unknowns Resolution Panel**: When the engine detects a symbol it does not recognize, it prompts the user in the UI. The user can choose to add the symbol to the application's permanent asset library, map it to an existing known asset, or explicitly ignore it.
 - **Undo / Redo System**: A robust layer-state history tracker allows users to safely undo or redo the last 30 map editing actions (drawing, erasing, moving nodes, changing layers) simply by pressing `CTRL+Z` and `CTRL+Y` respectively.
+- **Map Settings**: A centralized configuration menu allows users to set global variables—such as the default map font, real-world hex size, and distance units—which are embedded directly into the project save file.
 - **Project Serialization**: Maps can be saved to and loaded from local `.json` files.
 - **Exporting**: The canvas can be exported directly to a high-resolution PNG file.
 
