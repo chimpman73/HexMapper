@@ -82,6 +82,10 @@ class VectorExtractor:
         skeleton_rivers = cv2.ximgproc.thinning(river_mask, thinningType=cv2.ximgproc.THINNING_ZHANGSUEN)
         return self.walk_skeleton_to_paths(skeleton_rivers)
 
+    def extract_cliffs(self, cliff_mask: np.ndarray) -> List[List[Dict[str, float]]]:
+        skeleton_cliffs = cv2.ximgproc.thinning(cliff_mask, thinningType=cv2.ximgproc.THINNING_ZHANGSUEN)
+        return self.walk_skeleton_to_paths(skeleton_cliffs)
+
     def extract_coastlines(self, water_mask: np.ndarray) -> List[List[Dict[str, float]]]:
         coastlines = []
         contours, _ = cv2.findContours(water_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)

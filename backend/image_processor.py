@@ -163,6 +163,18 @@ class ImageProcessor:
                     kernel_tiny = np.ones((2, 2), np.uint8)
                     mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel_tiny, iterations=1)
                     data.global_rivers.extend(self._vector_extractor.extract_rivers(mask))
+
+            elif lname.startswith("cliff"):
+                mask = get_layer_mask(img)
+                ink_mask = None
+                if mask is not None:
+                    kernel_tiny = np.ones((2, 2), np.uint8)
+                    mask_dilated = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel_tiny, iterations=1)
+                    data.global_cliffs.extend(self._vector_extractor.extract_cliffs(mask_dilated))
+                    ink_mask = mask_dilated
+                    
+                bgr = composite_over_bg(img)
+                data.cliff_layers.append(LayerData(layer_name, bgr, ink_mask))
                             
             elif lname.startswith("coastline"):
                 water_mask = get_layer_mask(img)

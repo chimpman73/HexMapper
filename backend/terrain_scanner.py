@@ -17,10 +17,14 @@ class TerrainScanner:
         x_start, x_end = ctx["x_start"], ctx["x_end"]
         y_start, y_end = ctx["y_start"], ctx["y_end"]
         
-        for t_layer in data.terrain_layers:
-            ext_key = f"terrain_{t_layer.name}"
+        layers_to_process = [(l, "terrain") for l in data.terrain_layers]
+        if hasattr(data, 'cliff_layers'):
+            layers_to_process.extend([(l, "cliff") for l in data.cliff_layers])
+            
+        for t_layer, layer_type in layers_to_process:
+            ext_key = f"{layer_type}_{t_layer.name}"
             if ext_key not in extracted_layers:
-                extracted_layers[ext_key] = {"name": t_layer.name, "type": "terrain", "data": {}}
+                extracted_layers[ext_key] = {"name": t_layer.name, "type": layer_type, "data": {}}
                 
             if t_layer.img_bgr is not None:
                 land_mask = cv2.bitwise_not(ctx["region_mask"])

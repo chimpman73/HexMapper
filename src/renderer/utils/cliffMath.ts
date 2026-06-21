@@ -72,6 +72,33 @@ export function getDownslopePolygon(hex: HexCube, orientation: HexOrientation, l
   
   const curvePoints = getCurvePoints(linePoints, 0.5, 10);
   
+  // Extend the global curve points tangentially at the ends to ensure the mask splits the hex cleanly
+  const EXT = 300;
+  if (linePoints.length >= 4) {
+    // Start tangent
+    const dx0 = linePoints[0] - linePoints[2];
+    const dy0 = linePoints[1] - linePoints[3];
+    const len0 = Math.sqrt(dx0*dx0 + dy0*dy0);
+    if (len0 > 0) {
+      curvePoints.unshift(
+        linePoints[0] + (dx0 / len0) * EXT,
+        linePoints[1] + (dy0 / len0) * EXT
+      );
+    }
+    
+    // End tangent
+    const lx = linePoints.length;
+    const dx1 = linePoints[lx - 2] - linePoints[lx - 4];
+    const dy1 = linePoints[lx - 1] - linePoints[lx - 3];
+    const len1 = Math.sqrt(dx1*dx1 + dy1*dy1);
+    if (len1 > 0) {
+      curvePoints.push(
+        linePoints[lx - 2] + (dx1 / len1) * EXT,
+        linePoints[lx - 1] + (dy1 / len1) * EXT
+      );
+    }
+  }
+  
   let firstIdx = -1;
   let lastIdx = -1;
   
@@ -140,24 +167,21 @@ export function getDownslopePolygon(hex: HexCube, orientation: HexOrientation, l
     }
   }
   
-  // Extend the polygon far in the downslope direction
+  // Build downslope region using overlapping quadrilaterals to prevent winding rule holes
   const D = 160;
-  const offsetPoints: Point[] = [];
-  for (let i = points.length - 1; i >= 0; i--) {
-    offsetPoints.push({
-      x: points[i].x + vNormals[i].x * D,
-      y: points[i].y + vNormals[i].y * D
-    });
-  }
-  
   const poly: number[] = [];
-  // Trace the cliff line
-  for (const p of points) {
-    poly.push(p.x, p.y);
-  }
-  // Trace back along the extended offset boundary
-  for (const p of offsetPoints) {
-    poly.push(p.x, p.y);
+  
+  for (let i = 0; i < points.length - 1; i++) {
+    const p1 = points[i];
+    const p2 = points[i+1];
+    const n1 = vNormals[i];
+    const n2 = vNormals[i+1];
+    
+    poly.push(p1.x, p1.y);
+    poly.push(p2.x, p2.y);
+    poly.push(p2.x + n2.x * D, p2.y + n2.y * D);
+    poly.push(p1.x + n1.x * D, p1.y + n1.y * D);
+    poly.push(NaN, NaN);
   }
   
   return poly;

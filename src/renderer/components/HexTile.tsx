@@ -43,23 +43,50 @@ const HexTile: React.FC<HexTileProps> = ({
       {image && (
         <Group clipFunc={(ctx) => {
           ctx.beginPath();
-          if (clipPolygon && clipPolygon.length >= 6) {
-            ctx.moveTo(clipPolygon[0] - center.x, clipPolygon[1] - center.y);
-            for(let i=2; i<clipPolygon.length; i+=2) ctx.lineTo(clipPolygon[i] - center.x, clipPolygon[i+1] - center.y);
-          } else {
-            ctx.moveTo(points[0], points[1]);
-            for(let i=2; i<points.length; i+=2) ctx.lineTo(points[i], points[i+1]);
-          }
+          ctx.moveTo(points[0], points[1]);
+          for(let i=2; i<points.length; i+=2) ctx.lineTo(points[i], points[i+1]);
           ctx.closePath();
         }}>
-          <KonvaImage
-            image={image}
-            x={-HEX_SIZE}
-            y={-HEX_SIZE}
-            width={HEX_SIZE * 2}
-            height={HEX_SIZE * 2}
-            listening={false}
-          />
+          {clipPolygon && clipPolygon.length >= 6 ? (
+            <Group clipFunc={(ctx) => {
+              ctx.beginPath();
+              let isNewPath = true;
+              for(let i=0; i<clipPolygon.length; i+=2) {
+                const x = clipPolygon[i];
+                const y = clipPolygon[i+1];
+                if (Number.isNaN(x) || Number.isNaN(y)) {
+                  ctx.closePath();
+                  isNewPath = true;
+                } else {
+                  if (isNewPath) {
+                    ctx.moveTo(x - center.x, y - center.y);
+                    isNewPath = false;
+                  } else {
+                    ctx.lineTo(x - center.x, y - center.y);
+                  }
+                }
+              }
+              if (!isNewPath) ctx.closePath();
+            }}>
+              <KonvaImage
+                image={image}
+                x={-HEX_SIZE}
+                y={-HEX_SIZE}
+                width={HEX_SIZE * 2}
+                height={HEX_SIZE * 2}
+                listening={false}
+              />
+            </Group>
+          ) : (
+            <KonvaImage
+              image={image}
+              x={-HEX_SIZE}
+              y={-HEX_SIZE}
+              width={HEX_SIZE * 2}
+              height={HEX_SIZE * 2}
+              listening={false}
+            />
+          )}
         </Group>
       )}
       {isHovered && (

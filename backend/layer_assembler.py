@@ -181,6 +181,32 @@ class LayerAssembler:
                         "borderStyle": "snapped" if snapped else "smooth"
                     })
 
+        # Convert global cliffs to vector lines
+        if data.global_cliffs:
+            cliff_layer = next((l for l in existing_layers if l.get("type") == "cliff"), None)
+            if cliff_layer:
+                if not isinstance(cliff_layer.get("data"), dict):
+                    cliff_layer["data"] = {"lines": [], "hexes": {}}
+                elif "lines" not in cliff_layer.get("data", {}):
+                    old_data = cliff_layer["data"]
+                    cliff_layer["data"] = {"lines": [], "hexes": old_data}
+                
+                for path_points in data.global_cliffs:
+                    if len(path_points) < 2: continue
+                    
+                    flat_points = []
+                    for p in path_points:
+                        flat_points.extend([p["x"], p["y"]])
+
+                    cliff_layer["data"]["lines"].append({
+                        "id": f"cliff_{str(uuid.uuid4())[:8]}",
+                        "points": flat_points,
+                        "stroke": "#555555",
+                        "strokeWidth": 8,
+                        "tension": 0.5,
+                        "cliffStyle": "default"
+                    })
+
         # Convert coastline layers to vector layers with matched colors
         if data.coastline_layers:
             for c_layer in data.coastline_layers:

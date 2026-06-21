@@ -11,7 +11,9 @@ class MapData:
         self._global_coastlines: List[List[Dict[str, float]]] = []
         self._global_borders: List[List[Dict[str, float]]] = []
         self._global_rivers: List[List[Dict[str, float]]] = []
+        self._global_cliffs: List[List[Dict[str, float]]] = []
         self._terrain_layers: List[LayerData] = []
+        self._cliff_layers: List[LayerData] = []
         self._coastline_layers: List[LayerData] = []
         self._city_layers: List[LayerData] = []
         self._source_unknowns: Optional[np.ndarray] = None
@@ -38,7 +40,11 @@ class MapData:
     @property
     def global_rivers(self) -> List[List[Dict[str, float]]]: return self._global_rivers
     @property
+    def global_cliffs(self) -> List[List[Dict[str, float]]]: return self._global_cliffs
+    @property
     def terrain_layers(self) -> List[LayerData]: return self._terrain_layers
+    @property
+    def cliff_layers(self) -> List[LayerData]: return self._cliff_layers
     @property
     def coastline_layers(self) -> List[LayerData]: return self._coastline_layers
     @property

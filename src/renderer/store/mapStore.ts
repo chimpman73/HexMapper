@@ -126,7 +126,7 @@ export const useMapStore = create<MapState>((set) => ({
   activeBrush: null,
   activeFeatureBrush: null,
   activeColor: '#555555',
-  activeLineWidth: 5,
+  activeLineWidth: 8,
   activeRoadStyle: 'path',
   activeRiverStyle: 'river',
   activeCoastlineStyle: 'smooth',

@@ -60,6 +60,12 @@ export const useProjectStorage = (engineRef: React.RefObject<any>) => {
                 if (!isNaN(q) && q + 1 > maxQ) maxQ = q + 1;
                 if (!isNaN(r) && r + 1 > maxR) maxR = r + 1;
               }
+            } else if (l.type === 'cliff' && l.data && l.data.hexes) {
+              for (const key in l.data.hexes) {
+                const [q, r] = key.split(',').map(Number);
+                if (!isNaN(q) && q + 1 > maxQ) maxQ = q + 1;
+                if (!isNaN(r) && r + 1 > maxR) maxR = r + 1;
+              }
             }
           });
 

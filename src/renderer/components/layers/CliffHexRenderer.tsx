@@ -75,7 +75,7 @@ const CliffHexRenderer: React.FC<CliffHexRendererProps> = ({
     if (imageSrc) {
        let intersectPolygon = null;
        for (const line of lines) {
-          const poly = getDownslopePolygon(hex, orientation, line.points, line.invert);
+          const poly = getDownslopePolygon(hex, orientation, line.points, !line.invert);
           if (poly) {
             intersectPolygon = poly;
             break;

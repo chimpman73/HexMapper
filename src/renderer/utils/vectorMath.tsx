@@ -21,7 +21,7 @@ export function getCurvePoints(pts: number[], tension: number = 0.5, numOfSegmen
   p.push(pts[pts.length - 2]);
   p.push(pts[pts.length - 1]);
 
-  for (let i = 2; i < p.length - 2; i += 2) {
+  for (let i = 2; i < p.length - 4; i += 2) {
     const p0x = p[i - 2];
     const p0y = p[i - 1];
     const p1x = p[i];

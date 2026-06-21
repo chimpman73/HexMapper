@@ -77,7 +77,27 @@ export function useMapInteraction() {
                  }
                  return dl;
                }).filter(Boolean) as VectorLine[];
-               if (l.type === 'cliff') return { ...l, data: { ...(l as any).data, lines: newData } };
+               if (l.type === 'cliff') {
+                 const newHexes = { ...(l.data as any).hexes };
+                 const orientation = useMapStore.getState().orientation;
+                 
+                 for (const key in newHexes) {
+                   const [q, r, s] = key.split(',').map(Number);
+                   const hex = { q, r, s };
+                   let intersects = false;
+                   for (const line of newData) {
+                     if (isHexIntersectedByLine(hex, orientation, line.points)) {
+                       intersects = true;
+                       break;
+                     }
+                   }
+                   if (!intersects) {
+                     delete newHexes[key];
+                   }
+                 }
+                 
+                 return { ...l, data: { ...(l as any).data, lines: newData, hexes: newHexes } };
+               }
                return { ...l, data: newData } as VectorLayer;
             }
             return l;
@@ -88,7 +108,28 @@ export function useMapInteraction() {
             if (l.id === activeLayerId && (l.type === 'river' || l.type === 'cliff' || l.type === 'border' || l.type === 'label' || l.type === 'road' || l.type === 'coastline')) {
               if (l.type === 'cliff') {
                  const cl = l as import('../types').CliffLayer;
-                 return { ...cl, data: { ...cl.data, lines: cl.data.lines.filter(d => d.id !== selectedLineId) } };
+                 const newLines = cl.data.lines.filter(d => d.id !== selectedLineId);
+                 
+                 // Remove cliff hexes that no longer touch any remaining lines
+                 const newHexes = { ...cl.data.hexes };
+                 const orientation = useMapStore.getState().orientation;
+                 
+                 for (const key in newHexes) {
+                   const [q, r, s] = key.split(',').map(Number);
+                   const hex = { q, r, s };
+                   let intersects = false;
+                   for (const line of newLines) {
+                     if (isHexIntersectedByLine(hex, orientation, line.points)) {
+                       intersects = true;
+                       break;
+                     }
+                   }
+                   if (!intersects) {
+                     delete newHexes[key];
+                   }
+                 }
+                 
+                 return { ...cl, data: { ...cl.data, lines: newLines, hexes: newHexes } };
               }
               return { ...l, data: (l.data as VectorLine[]).filter(d => d.id !== selectedLineId) } as VectorLayer;
             }
