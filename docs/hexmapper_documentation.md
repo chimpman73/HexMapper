@@ -107,3 +107,22 @@ When the Optical Map Reconstruction Engine scans an image (such as the Global Sh
   - During the final compilation stage of the scanner, the raw array of river paths is intercepted and formatted into vector lines.
   - The backend engine performs a geometric distance check against all generated coastlines. If a river's start or end node is within `0.8 * hex_size` of a shoreline, that specific node is snapped dynamically to the closest point on the coastline segment.
   - These lines are injected directly into the active `river` layer, allowing the user to immediately utilize the **Spline Anchor Editing** tools to refine or correct the automatically extracted rivers. Moving a river anchor in the UI will mathematically project and snap the node to any nearby coastline.
+
+## 8. Testing Infrastructure
+HexMapper employs a dual-strategy testing framework to ensure the integrity of the Optical Map Reconstruction Engine. All tests are located in `backend/tests/` and are executed via `pytest`.
+
+### Test Architecture
+- **Synthetic Vector Tests (`test_vector_extraction.py`)**: Tests fundamental algorithmic logic (e.g., mathematical hex snapping, hachure pruning, coastline polygon intersection). This relies on `generate_synthetic_vectors.py`, a script that systematically draws perfect, noise-free testing assets (like exact length hachures or grid-aligned borders).
+- **End-to-End Regression Tests (`test_map_regression.py`)**: Validates the overall health of the extraction pipeline by running the `MapInterpreter` against massive real-world user maps (`Albheldri` and `Apennines`). It parses the native `map_description.json` (to inject exact X/Y offsets and scales) and compares the generated output payload against known "Gold Standard" JSON map saves to assert identical layer parsing, terrain counts, and city counts.
+
+### Running Tests
+Execute tests from the `backend/` directory using the virtual environment:
+- **Run all tests**: `pytest .\backend\tests\ -v`
+- **Run regression tests**: `pytest .\backend\tests\test_map_regression.py -v`
+- **Run synthetic vector tests**: `pytest .\backend\tests\test_vector_extraction.py -v`
+
+### Managing Expected Results (Updating Gold Standards)
+When algorithmic improvements are intentionally deployed (such as drastically reducing redundant cliff vectors, or training a new Terrain Profile):
+1. The `test_map_regression.py` suite will purposely fail, catching the exact discrepancy between the new logic and the legacy "Gold Standard" save.
+2. To resolve this, load the physical map into the HexMapper UI, execute a full scan, and visually verify the new enhancements.
+3. Save the resulting map via the UI, and overwrite the outdated legacy JSON in `backend/tests/saves/` (e.g., `Albheldri_MultiLayer.json`). The test suite will now pass against the updated algorithmic baseline.

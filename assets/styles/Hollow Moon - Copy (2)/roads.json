@@ -1,0 +1,17 @@
+{
+  "brushBackground": "#7cb342",
+  "path": {
+    "color": "#404040",
+    "dash": [0.1, 15]
+  },
+  "road": {
+    "color": "#404040",
+    "dash": []
+  },
+  "tunnel": {
+    "color": "#404040",
+    "innerColor": "#ffffff",
+    "innerWidthMultiplier": 0.6,
+    "dash": []
+  }
+}

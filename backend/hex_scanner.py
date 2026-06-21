@@ -122,7 +122,7 @@ class HexScanner:
                 self._city_scanner.process_cities(ctx)
 
         # Assemble final layers using the LayerAssembler
-        final_layers = self._layer_assembler.assemble(data, extracted_layers, existing_layers, hex_grid_mask)
+        final_layers = self._layer_assembler.assemble(data, extracted_layers, existing_layers, hex_grid_mask, orientation)
 
         return {
             "status": "success",

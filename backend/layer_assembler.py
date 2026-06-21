@@ -16,7 +16,31 @@ class LayerAssembler:
         self._bg_offset_x = bg_offset_x
         self._bg_offset_y = bg_offset_y
 
-    def assemble(self, data: MapData, extracted_layers: Dict[str, Any], existing_layers: List[Dict[str, Any]], hex_grid_mask: np.ndarray) -> List[Dict[str, Any]]:
+    def _snap_path_to_hex_vertices(self, path_points: List[Dict[str, float]], orientation: str) -> List[Dict[str, float]]:
+        snapped_path = []
+        for p in path_points:
+            q, r = self._hex_grid.pixel_to_hex(p["x"], p["y"], orientation)
+            hq, hr = self._hex_grid.hex_round(q, r)
+            vertices = self._hex_grid.get_hex_vertices(hq, hr, orientation)
+            
+            best_dist = float('inf')
+            best_v = None
+            for vx, vy in vertices:
+                dist = (p["x"] - vx)**2 + (p["y"] - vy)**2
+                if dist < best_dist:
+                    best_dist = dist
+                    best_v = {"x": vx, "y": vy}
+            
+            if not snapped_path:
+                snapped_path.append(best_v)
+            else:
+                last_v = snapped_path[-1]
+                if abs(last_v["x"] - best_v["x"]) > 0.1 or abs(last_v["y"] - best_v["y"]) > 0.1:
+                    snapped_path.append(best_v)
+                    
+        return snapped_path
+
+    def assemble(self, data: MapData, extracted_layers: Dict[str, Any], existing_layers: List[Dict[str, Any]], hex_grid_mask: np.ndarray, orientation: str = 'flat') -> List[Dict[str, Any]]:
         if not existing_layers:
             existing_layers = [
                 { "id": '1', "name": 'Terrain', "type": 'terrain', "visible": True, "opacity": 1, "data": {} },
@@ -96,9 +120,9 @@ class LayerAssembler:
                         threshold = self._hex_grid.hex_size * 0.8
                         
                         for c_path in data.global_coastlines:
-                            for i in range(len(c_path) - 1):
+                            for i in range(len(c_path)):
                                 p1 = c_path[i]
-                                p2 = c_path[i+1]
+                                p2 = c_path[(i+1) % len(c_path)]
                                 
                                 # Distance to start_pt
                                 l2 = (p2["x"] - p1["x"])**2 + (p2["y"] - p1["y"])**2
@@ -149,11 +173,7 @@ class LayerAssembler:
                 for path_points in data.global_borders:
                     if len(path_points) < 2: continue
                     
-                    flat_points = []
-                    for p in path_points:
-                        flat_points.extend([p["x"], p["y"]])
-
-                    # Mask overlap heuristic to detect if it's a snapped line
+                    # Heuristic to detect if it's a snapped line vs smooth
                     snapped = False
                     if len(path_points) > 2:
                         border_mask = np.zeros((data.height, data.width), dtype=np.uint8)
@@ -164,13 +184,32 @@ class LayerAssembler:
                             pts.append([img_x, img_y])
                         
                         cv2.polylines(border_mask, [np.array(pts, dtype=np.int32)], False, 255, 1)
-                        overlap = cv2.bitwise_and(border_mask, hex_grid_mask)
+                        
+                        # Slightly dilate the hex grid mask (which is already 4px thick) to tolerate hand-drawn wobble
+                        kernel = np.ones((3, 3), np.uint8)
+                        thick_grid_mask = cv2.morphologyEx(hex_grid_mask, cv2.MORPH_DILATE, kernel)
+                        
+                        overlap = cv2.bitwise_and(border_mask, thick_grid_mask)
                         
                         total_pixels = cv2.countNonZero(border_mask)
                         overlap_pixels = cv2.countNonZero(overlap)
                         
+                        # 60% overlap is enough to confirm it intended to follow the grid
                         if total_pixels > 0 and (overlap_pixels / total_pixels) > 0.6:
                             snapped = True
+                            
+                    if snapped:
+                        final_points = self._snap_path_to_hex_vertices(path_points, orientation)
+                        if len(final_points) < 2:
+                            # Too short to span between hex vertices, it was likely just a small smooth detail
+                            snapped = False
+                            final_points = path_points
+                    else:
+                        final_points = path_points
+                        
+                    flat_points = []
+                    for p in final_points:
+                        flat_points.extend([p["x"], p["y"]])
 
                     border_layer["data"].append({
                         "id": f"border_{str(uuid.uuid4())[:8]}",

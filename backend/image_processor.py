@@ -168,10 +168,17 @@ class ImageProcessor:
                 mask = get_layer_mask(img)
                 ink_mask = None
                 if mask is not None:
-                    kernel_tiny = np.ones((2, 2), np.uint8)
-                    mask_dilated = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel_tiny, iterations=1)
-                    data.global_cliffs.extend(self._vector_extractor.extract_cliffs(mask_dilated))
-                    ink_mask = mask_dilated
+                    # To eliminate hachures (perpendicular lines) and extract just the main cliff line,
+                    # we perform a heavy morphological close to merge the hachures into a solid ribbon,
+                    # followed by a morphological open to smooth the edges.
+                    kernel_close = np.ones((21, 21), np.uint8)
+                    mask_closed = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_close)
+                    
+                    kernel_open = np.ones((11, 11), np.uint8)
+                    mask_clean = cv2.morphologyEx(mask_closed, cv2.MORPH_OPEN, kernel_open)
+                    
+                    data.global_cliffs.extend(self._vector_extractor.extract_cliffs(mask_clean))
+                    ink_mask = mask_clean
                     
                 bgr = composite_over_bg(img)
                 data.cliff_layers.append(LayerData(layer_name, bgr, ink_mask))
