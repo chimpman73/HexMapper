@@ -9,7 +9,11 @@ export const useProjectStorage = (engineRef: React.RefObject<any>) => {
       mapWidth: state.mapWidth,
       mapHeight: state.mapHeight,
       orientation: state.orientation,
-      mapVariables: state.mapVariables
+      mapVariables: state.mapVariables,
+      bgScaleX: state.bgScaleX,
+      bgScaleY: state.bgScaleY,
+      bgOffsetX: state.bgOffsetX,
+      bgOffsetY: state.bgOffsetY
     };
     const result = await window.api.saveMap(JSON.stringify(projectData, null, 2));
     if (result.success) {
@@ -90,6 +94,11 @@ export const useProjectStorage = (engineRef: React.RefObject<any>) => {
             // Apply defaults for older saves
             useMapStore.getState().setMapVariables({ fontName: 'Arial', hexSize: 1, hexUnit: 'miles' });
           }
+
+          if (projectData.bgScaleX !== undefined) useMapStore.getState().setBgScaleX(projectData.bgScaleX);
+          if (projectData.bgScaleY !== undefined) useMapStore.getState().setBgScaleY(projectData.bgScaleY);
+          if (projectData.bgOffsetX !== undefined) useMapStore.getState().setBgOffsetX(projectData.bgOffsetX);
+          if (projectData.bgOffsetY !== undefined) useMapStore.getState().setBgOffsetY(projectData.bgOffsetY);
         }
       } catch (err: any) {
         useMapStore.getState().setToastMessage({ type: 'error', text: 'Invalid project file: ' + err.message });

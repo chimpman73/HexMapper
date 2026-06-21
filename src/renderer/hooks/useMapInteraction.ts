@@ -235,7 +235,8 @@ export function useMapInteraction() {
               riverStyle: l.type === 'river' ? activeRiverStyle : undefined,
               coastlineStyle: l.type === 'coastline' ? state.activeCoastlineStyle : undefined,
               borderStyle: l.type === 'border' ? state.activeBorderStyle : undefined,
-              cliffStyle: l.type === 'cliff' ? state.activeCliffStyle : undefined
+              cliffStyle: l.type === 'cliff' ? state.activeCliffStyle : undefined,
+              fillPatternUrl: l.type === 'coastline' && state.activeCoastlineFillUrl ? state.activeCoastlineFillUrl : undefined
             };
             if (l.type === 'cliff') {
                const cl = l as import('../types').CliffLayer;
@@ -287,7 +288,8 @@ export function useMapInteraction() {
             riverStyle: l.type === 'river' ? activeRiverStyle : undefined,
             coastlineStyle: l.type === 'coastline' ? state.activeCoastlineStyle : undefined,
             borderStyle: l.type === 'border' ? state.activeBorderStyle : undefined,
-            cliffStyle: l.type === 'cliff' ? state.activeCliffStyle : undefined
+            cliffStyle: l.type === 'cliff' ? state.activeCliffStyle : undefined,
+            fillPatternUrl: l.type === 'coastline' && state.activeCoastlineFillUrl ? state.activeCoastlineFillUrl : undefined
           };
           if (l.type === 'cliff') {
              const cl = l as import('../types').CliffLayer;

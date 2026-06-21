@@ -42,6 +42,42 @@ const RiverFeatureImage: React.FC<{ feature: import('../../types').VectorFeature
     />
   );
 };
+
+const PatternFilledShape: React.FC<{ line: import('../../types').VectorLine & { displayPoints: number[] }, assetsBasePath: string, currentStyle: string }> = ({ line, assetsBasePath, currentStyle }) => {
+  const [image, setImage] = React.useState<HTMLImageElement | null>(null);
+  React.useEffect(() => {
+    if (!line.fillPatternUrl) return;
+    const img = new window.Image();
+    let src = line.fillPatternUrl;
+    if (!src.startsWith('local://')) {
+       src = `local://file?path=${encodeURIComponent(`${assetsBasePath}/styles/${currentStyle}/textures/${src}`)}`;
+    }
+    img.src = src;
+    img.onload = () => setImage(img);
+  }, [line.fillPatternUrl, assetsBasePath, currentStyle]);
+
+  return (
+    <Shape
+      fill={!image ? (line.fill || '#3b82f6') : undefined}
+      fillPatternImage={image || undefined}
+      fillPatternRepeat="repeat"
+      sceneFunc={(context, shape) => {
+        context.beginPath();
+        const pts = line.displayPoints;
+        if (pts.length >= 4) {
+          context.moveTo(pts[0], pts[1]);
+          for (let i = 2; i < pts.length; i += 2) {
+            context.lineTo(pts[i], pts[i+1]);
+          }
+          context.closePath();
+        }
+        context.fillStrokeShape(shape);
+      }}
+      listening={false}
+    />
+  );
+};
+
 interface VectorLayerRendererProps {
   layer: VectorLayer | CliffLayer;
   activeLayer: Layer | undefined;
@@ -70,9 +106,7 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps & { visibleBounds?:
 }) => {
   const { selectedVertex, setSelectedVertex, activeAction } = useMapStore();
 
-  React.useEffect(() => {
-    setSelectedVertex(null);
-  }, [selectedLineId, setSelectedVertex]);
+
 
   const updateLines = React.useCallback((updater: (lines: VectorLine[]) => VectorLine[]) => {
     setLayers(prev => prev.map(l => {
@@ -120,26 +154,16 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps & { visibleBounds?:
   return (
     <React.Fragment key={`group-${layer.id}`}>
       {layer.type === 'coastline' && processedLines.length > 0 && (
-        <Shape
-          fill={processedLines[0].fill || '#3b82f6'}
-          fillRule="evenodd"
-          sceneFunc={(context, shape) => {
-            context.beginPath();
-            processedLines.forEach(line => {
-               const pts = line.displayPoints;
-               if (pts.length >= 4) {
-                 context.moveTo(pts[0], pts[1]);
-                 for (let i = 2; i < pts.length; i += 2) {
-                   context.lineTo(pts[i], pts[i+1]);
-                 }
-                 context.closePath();
-               }
-            });
-            context.fillStrokeShape(shape);
-          }}
-          listening={false}
-          opacity={layer.opacity}
-        />
+        <Group opacity={layer.opacity}>
+          {processedLines.map((line) => (
+            <PatternFilledShape 
+              key={`fill-${line.id}`} 
+              line={line as any} 
+              assetsBasePath={useMapStore.getState().assetsBasePath} 
+              currentStyle={useMapStore.getState().currentStyle} 
+            />
+          ))}
+        </Group>
       )}
       {processedLines.map((line) => {
         let roadDash;

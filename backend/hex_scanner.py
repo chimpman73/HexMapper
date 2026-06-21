@@ -27,7 +27,7 @@ class HexScanner:
         self._city_scanner = CityScanner(base_dir, template_manager, hex_grid)
         self._layer_assembler = LayerAssembler(template_manager, hex_grid, bg_scale_x, bg_scale_y, bg_offset_x, bg_offset_y)
 
-    def scan(self, data: MapData, map_width: int, map_height: int, orientation: str, existing_layers: List[Dict[str, Any]] = None, use_ink_filter: bool = True) -> Dict[str, Any]:
+    def scan(self, data: MapData, map_width: int, map_height: int, orientation: str = 'flat', existing_layers: List[Dict[str, Any]] = None, use_ink_filter: bool = False, is_reimport: bool = False) -> Dict[str, Any]:
         if existing_layers is None:
             existing_layers = []
         extracted_layers = {}
@@ -127,7 +127,7 @@ class HexScanner:
                 self._city_scanner.process_cities(ctx)
 
         # Assemble final layers using the LayerAssembler
-        final_layers = self._layer_assembler.assemble(data, extracted_layers, existing_layers, hex_grid_mask, orientation)
+        final_layers = self._layer_assembler.assemble(data, extracted_layers, existing_layers, hex_grid_mask, orientation, is_reimport)
 
         return {
             "status": "success",

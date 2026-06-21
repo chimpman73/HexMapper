@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from typing import List, Dict
+from typing import List, Dict, Any
 
 class VectorExtractor:
     def __init__(self, bg_scale_x: float, bg_scale_y: float, bg_offset_x: float, bg_offset_y: float) -> None:
@@ -86,9 +86,10 @@ class VectorExtractor:
         skeleton_cliffs = cv2.ximgproc.thinning(cliff_mask, thinningType=cv2.ximgproc.THINNING_ZHANGSUEN)
         return self.walk_skeleton_to_paths(skeleton_cliffs)
 
-    def extract_coastlines(self, water_mask: np.ndarray) -> List[List[Dict[str, float]]]:
+    def extract_coastlines(self, water_mask: np.ndarray, color: str = None) -> List[Dict[str, Any]]:
         coastlines = []
-        contours, _ = cv2.findContours(water_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        # Use RETR_EXTERNAL so we only get the outer boundary of each mask, ignoring inner holes
+        contours, _ = cv2.findContours(water_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         for cnt in contours:
             perimeter = cv2.arcLength(cnt, True)
             epsilon = 0.0005 * perimeter
@@ -98,6 +99,11 @@ class VectorExtractor:
                 cx = p[0][0] * self._bg_scale_x + self._bg_offset_x
                 cy = p[0][1] * self._bg_scale_y + self._bg_offset_y
                 path_points.append({"x": cx, "y": cy})
+                
             if len(path_points) > 2:
-                coastlines.append(path_points)
+                poly_area = cv2.contourArea(approx) * (self._bg_scale_x * self._bg_scale_y)
+                poly_data = {"type": "polygon", "points": path_points, "area": poly_area}
+                if color:
+                    poly_data["fill"] = color
+                coastlines.append(poly_data)
         return coastlines

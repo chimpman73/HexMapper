@@ -119,6 +119,7 @@ const LayerStack: React.FC<LayerStackProps> = () => {
   const [editingLayerId, setEditingLayerId] = React.useState<string | null>(null);
   const [editingName, setEditingName] = React.useState<string>('');
   const [collapsedGroups, setCollapsedGroups] = React.useState<Record<string, boolean>>({});
+  const [reimportingIds, setReimportingIds] = React.useState<string[]>([]);
 
   const toggleGroup = (id: string) => {
     setCollapsedGroups(prev => ({ ...prev, [id]: !prev[id] }));
@@ -238,6 +239,49 @@ const LayerStack: React.FC<LayerStackProps> = () => {
                 </button>
                 <button className={styles.iconBtn} onClick={(e) => { e.stopPropagation(); onMoveLayer(layer.id, 'up'); }} title="Move Up">↑</button>
                 <button className={styles.iconBtn} onClick={(e) => { e.stopPropagation(); onMoveLayer(layer.id, 'down'); }} title="Move Down">↓</button>
+                {layer.type === 'bg_image' && (
+                  <button className={styles.iconBtn} disabled={reimportingIds.includes(layer.id)} onClick={async (e) => {
+                    e.stopPropagation();
+                    const state = useMapStore.getState();
+                    if(window.api?.runPythonScript) {
+                       try {
+                         setReimportingIds(prev => [...prev, layer.id]);
+                         state.setScanProgress(0, `Re-importing ${layer.name}...`);
+                         const res = await window.api.runPythonScript({
+                           action: 'interpret',
+                           mode: 'reimport_layer',
+                           imagePath: (layer.data as any).imagePath,
+                           bgScaleX: state.bgScaleX,
+                           bgScaleY: state.bgScaleY,
+                           bgOffsetX: state.bgOffsetX,
+                           bgOffsetY: state.bgOffsetY,
+                           mapWidth: state.mapWidth,
+                           mapHeight: state.mapHeight,
+                           orientation: state.orientation,
+                           style: state.currentStyle,
+                           layers: []
+                         });
+                         state.setScanProgress(null, '');
+                         if (res.success && res.data?.status === 'success') {
+                           const newLayers = res.data.data.layers || [];
+                           state.setLayers([...state.layers, ...newLayers]);
+                           state.setToastMessage({ type: 'success', text: `Re-import of ${layer.name} complete! Added ${newLayers.length} new layer(s).` });
+                         } else {
+                           console.error('Re-import failed:', res);
+                           state.setToastMessage({ type: 'error', text: 'Re-import failed: ' + (res.error || res.data?.message || 'Unknown error') });
+                         }
+                       } catch (err) {
+                         state.setScanProgress(null, '');
+                         console.error(err);
+                         state.setToastMessage({ type: 'error', text: 'Re-import failed due to an exception' });
+                       } finally {
+                         setReimportingIds(prev => prev.filter(id => id !== layer.id));
+                       }
+                    }
+                  }} title="Re-import layer">
+                    {reimportingIds.includes(layer.id) ? '⏳' : '🔄'}
+                  </button>
+                )}
                 {onDeleteLayer && (
                   <button className={styles.iconBtn} onClick={(e) => { e.stopPropagation(); if(window.confirm(`Are you sure you want to delete the layer "${layer.name}"?`)) onDeleteLayer(layer.id); }} title="Delete" style={{color: '#ef4444'}}>✖</button>
                 )}

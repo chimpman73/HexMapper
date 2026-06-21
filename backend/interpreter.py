@@ -34,12 +34,24 @@ class MapInterpreter:
             # 2. Extract Layers
             if mode == "multi_layer":
                 map_data = image_processor.process_multi_layer(image_path)
+            elif mode == "reimport_layer":
+                from map_data import MapData
+                map_data = MapData()
+                img = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+                if img is not None:
+                    map_data.height, map_data.width = img.shape[:2]
+                    filename = os.path.basename(image_path)
+                    water_mask = image_processor._process_single_file(img, filename, map_data, None)
+                    if water_mask is not None:
+                        map_data.water_mask = water_mask
+                else:
+                    raise FileNotFoundError(f"Could not load image: {image_path}")
             else:
                 map_data = image_processor.process_aligned_map(image_path, template_manager.templates["coastline"])
 
             # 3. Scan Grid
-            existing_layers = args.get("layers", [])
-            return hex_scanner.scan(map_data, map_width, map_height, orientation, existing_layers, use_ink_filter=(mode != "multi_layer"))
+            existing_layers = args.get("layers", []) if mode != "reimport_layer" else []
+            return hex_scanner.scan(map_data, map_width, map_height, orientation, existing_layers, use_ink_filter=(mode == "aligned" or mode == "composite"), is_reimport=(mode == "reimport_layer"))
 
         except FileNotFoundError as e:
             return {"success": False, "error": f"File Not Found: {str(e)}", "code": "FILE_NOT_FOUND", "data": {"trace": traceback.format_exc()}}

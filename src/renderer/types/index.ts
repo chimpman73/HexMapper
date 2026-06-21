@@ -61,6 +61,7 @@ export interface VectorLine {
   tension: number;
   closed?: boolean;
   fill?: string;
+  fillPatternUrl?: string;
   roadStyle?: RoadStyle;
   riverStyle?: RiverStyle;
   coastlineStyle?: CoastlineStyle;

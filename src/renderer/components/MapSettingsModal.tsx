@@ -3,20 +3,29 @@ import styles from '../index.module.css';
 import { useMapStore } from '../store/mapStore';
 
 const MapSettingsModal: React.FC = () => {
-  const { mapVariables, setMapVariables, setShowMapSettingsModal, showMapSettingsModal } = useMapStore();
+  const { mapVariables, setMapVariables, setShowMapSettingsModal, showMapSettingsModal, bgScaleX: storeBgScaleX, bgScaleY: storeBgScaleY, bgOffsetX: storeBgOffsetX, bgOffsetY: storeBgOffsetY, setBgScaleX, setBgScaleY, setBgOffsetX, setBgOffsetY } = useMapStore();
   
   const [fontName, setFontName] = useState(mapVariables.fontName);
   const [hexSize, setHexSize] = useState(mapVariables.hexSize.toString());
   const [hexUnit, setHexUnit] = useState(mapVariables.hexUnit);
   const [systemFonts, setSystemFonts] = useState<string[]>([]);
 
+  const [bgScaleXInput, setBgScaleXInput] = useState(storeBgScaleX.toString());
+  const [bgScaleYInput, setBgScaleYInput] = useState(storeBgScaleY.toString());
+  const [bgOffsetXInput, setBgOffsetXInput] = useState(storeBgOffsetX.toString());
+  const [bgOffsetYInput, setBgOffsetYInput] = useState(storeBgOffsetY.toString());
+
   useEffect(() => {
     if (showMapSettingsModal) {
       setFontName(mapVariables.fontName);
       setHexSize(mapVariables.hexSize.toString());
       setHexUnit(mapVariables.hexUnit);
+      setBgScaleXInput(storeBgScaleX.toString());
+      setBgScaleYInput(storeBgScaleY.toString());
+      setBgOffsetXInput(storeBgOffsetX.toString());
+      setBgOffsetYInput(storeBgOffsetY.toString());
     }
-  }, [showMapSettingsModal, mapVariables]);
+  }, [showMapSettingsModal, mapVariables, storeBgScaleX, storeBgScaleY, storeBgOffsetX, storeBgOffsetY]);
 
   useEffect(() => {
     if (!showMapSettingsModal || systemFonts.length > 0) return;
@@ -49,6 +58,16 @@ const MapSettingsModal: React.FC = () => {
       alert("Please enter a valid positive number for Hex Size.");
       return;
     }
+    const bsX = parseFloat(bgScaleXInput);
+    const bsY = parseFloat(bgScaleYInput);
+    const boX = parseFloat(bgOffsetXInput);
+    const boY = parseFloat(bgOffsetYInput);
+    
+    if (!isNaN(bsX) && bsX > 0) setBgScaleX(bsX);
+    if (!isNaN(bsY) && bsY > 0) setBgScaleY(bsY);
+    if (!isNaN(boX)) setBgOffsetX(boX);
+    if (!isNaN(boY)) setBgOffsetY(boY);
+    
     setMapVariables({ fontName, hexSize: size, hexUnit });
     setShowMapSettingsModal(false);
   };
@@ -96,6 +115,52 @@ const MapSettingsModal: React.FC = () => {
             <option value="feet">Feet</option>
             <option value="meters">Meters</option>
           </select>
+        </div>
+
+        <div style={{ marginBottom: '15px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px', color: '#ccc' }}>Bg Scale X</label>
+            <input 
+              type="number" 
+              value={bgScaleXInput} 
+              onChange={e => setBgScaleXInput(e.target.value)}
+              step="0.01"
+              style={{ width: '100%', padding: '8px', background: '#333', color: 'white', border: '1px solid #555', borderRadius: '4px' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px', color: '#ccc' }}>Bg Scale Y</label>
+            <input 
+              type="number" 
+              value={bgScaleYInput} 
+              onChange={e => setBgScaleYInput(e.target.value)}
+              step="0.01"
+              style={{ width: '100%', padding: '8px', background: '#333', color: 'white', border: '1px solid #555', borderRadius: '4px' }}
+            />
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '25px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px', color: '#ccc' }}>Bg Offset X</label>
+            <input 
+              type="number" 
+              value={bgOffsetXInput} 
+              onChange={e => setBgOffsetXInput(e.target.value)}
+              step="1"
+              style={{ width: '100%', padding: '8px', background: '#333', color: 'white', border: '1px solid #555', borderRadius: '4px' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px', color: '#ccc' }}>Bg Offset Y</label>
+            <input 
+              type="number" 
+              value={bgOffsetYInput} 
+              onChange={e => setBgOffsetYInput(e.target.value)}
+              step="1"
+              style={{ width: '100%', padding: '8px', background: '#333', color: 'white', border: '1px solid #555', borderRadius: '4px' }}
+            />
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>

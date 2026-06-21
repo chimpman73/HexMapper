@@ -110,6 +110,7 @@ class ImageProcessor:
     def process_multi_layer(self, dir_path: str) -> MapData:
         data = MapData()
         
+    def _process_single_file(self, img: np.ndarray, filename: str, data: MapData, accumulated_water_mask: Optional[np.ndarray]) -> Optional[np.ndarray]:
         def get_layer_mask(img: np.ndarray) -> Optional[np.ndarray]:
             if img is None: return None
             if len(img.shape) == 3 and img.shape[2] == 4:
@@ -136,6 +137,110 @@ class ImageProcessor:
                 return img[:, :, :3]
             return img
 
+        lname = filename.lower()
+        layer_name = os.path.splitext(filename)[0]
+
+        if lname.startswith("border"):
+            mask = get_layer_mask(img)
+            if mask is not None:
+                kernel_border = np.ones((3, 3), np.uint8)
+                mask_clean = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_border)
+                data.global_borders.extend(self._vector_extractor.extract_borders(mask_clean))
+                        
+        elif lname.startswith("river"):
+            mask = get_layer_mask(img)
+            if mask is not None:
+                kernel_tiny = np.ones((2, 2), np.uint8)
+                mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel_tiny, iterations=1)
+                data.global_rivers.extend(self._vector_extractor.extract_rivers(mask))
+
+        elif lname.startswith("cliff"):
+            mask = get_layer_mask(img)
+            ink_mask = None
+            if mask is not None:
+                kernel_close = np.ones((21, 21), np.uint8)
+                mask_closed = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_close)
+                
+                kernel_open = np.ones((11, 11), np.uint8)
+                mask_clean = cv2.morphologyEx(mask_closed, cv2.MORPH_OPEN, kernel_open)
+                
+                data.global_cliffs.extend(self._vector_extractor.extract_cliffs(mask_clean))
+                ink_mask = mask_clean
+                
+            bgr = composite_over_bg(img)
+            data.cliff_layers.append(LayerData(layer_name, bgr, ink_mask))
+                        
+        elif lname.startswith("coastline"):
+            water_mask = get_layer_mask(img)
+            if water_mask is not None:
+                if accumulated_water_mask is None:
+                    accumulated_water_mask = np.zeros(water_mask.shape, dtype=np.uint8)
+                accumulated_water_mask = cv2.bitwise_or(accumulated_water_mask, water_mask)
+                kernel = np.ones((5, 5), np.uint8)
+                water_mask_clean = cv2.morphologyEx(water_mask, cv2.MORPH_OPEN, kernel)
+                water_mask_clean = cv2.morphologyEx(water_mask_clean, cv2.MORPH_CLOSE, kernel)
+                
+                layer_coastlines = []
+                # Multi-depth / Multi-color extraction
+                if len(img.shape) == 3:
+                    bgr = img[:, :, :3] if img.shape[2] == 4 else img
+                    
+                    # Quantize colors to group similar shades and ignore compression artifacts
+                    quantized = (bgr // 32) * np.uint8(32) + np.uint8(16)
+                    flat_quantized = quantized[water_mask_clean > 0]
+                    
+                    if len(flat_quantized) > 0:
+                        unique_colors, counts = np.unique(flat_quantized, axis=0, return_counts=True)
+                        total_pixels = len(flat_quantized)
+                        
+                        for color, count in zip(unique_colors, counts):
+                            if count / total_pixels < 0.01:  # Ignore noisy pixels < 1% of area
+                                continue
+                                
+                            color_mask = np.all(quantized == color, axis=-1)
+                            final_mask = np.logical_and(color_mask, water_mask_clean > 0).astype(np.uint8) * 255
+                            
+                            hex_color = f"#{color[2]:02x}{color[1]:02x}{color[0]:02x}"
+                            polygons = self._vector_extractor.extract_coastlines(final_mask, hex_color)
+                            layer_coastlines.extend(polygons)
+                            
+                # Sort all polygons by area descending so shallow/larger draws first
+                layer_coastlines.sort(key=lambda p: p.get("area", 0), reverse=True)
+                data.global_coastlines.extend(layer_coastlines)
+            else:
+                layer_coastlines = []
+            
+            bgr = composite_over_bg(img)
+            data.coastline_layers.append(LayerData(layer_name, bgr, water_mask, layer_coastlines))
+            
+        elif lname.startswith("cit"):
+            c_mask = get_layer_mask(img)
+            ink_mask = None
+            if c_mask is not None:
+                kernel_city = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+                ink_mask = cv2.morphologyEx(c_mask, cv2.MORPH_OPEN, kernel_city)
+            
+            bgr = img[:, :, :3] if len(img.shape) == 3 else cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+            data.city_layers.append(LayerData(layer_name, img, ink_mask))
+            
+            if data.source_unknowns is None:
+                data.source_unknowns = img
+                
+        elif lname.startswith("terrain"):
+            bgr = composite_over_bg(img)
+            ink_mask = None
+            if len(img.shape) == 3 and img.shape[2] == 4:
+                _, ink_mask = cv2.threshold(img[:, :, 3], 10, 255, cv2.THRESH_BINARY)
+            elif bgr is not None:
+                gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+                _, ink_mask = cv2.threshold(gray, 220, 255, cv2.THRESH_BINARY_INV)
+            
+            data.terrain_layers.append(LayerData(layer_name, bgr, ink_mask))
+            
+        return accumulated_water_mask
+
+    def process_multi_layer(self, dir_path: str) -> MapData:
+        data = MapData()
         accumulated_water_mask = None
         width, height = 0, 0
         
@@ -155,83 +260,8 @@ class ImageProcessor:
                 height, width = img.shape[:2]
                 data.width = width
                 data.height = height
-                accumulated_water_mask = np.zeros((height, width), dtype=np.uint8)
 
-            lname = filename.lower()
-            layer_name = os.path.splitext(filename)[0]
-
-            if lname.startswith("border"):
-                mask = get_layer_mask(img)
-                if mask is not None:
-                    kernel_border = np.ones((3, 3), np.uint8)
-                    mask_clean = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_border)
-                    data.global_borders.extend(self._vector_extractor.extract_borders(mask_clean))
-                            
-            elif lname.startswith("river"):
-                mask = get_layer_mask(img)
-                if mask is not None:
-                    kernel_tiny = np.ones((2, 2), np.uint8)
-                    mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel_tiny, iterations=1)
-                    data.global_rivers.extend(self._vector_extractor.extract_rivers(mask))
-
-            elif lname.startswith("cliff"):
-                mask = get_layer_mask(img)
-                ink_mask = None
-                if mask is not None:
-                    # To eliminate hachures (perpendicular lines) and extract just the main cliff line,
-                    # we perform a heavy morphological close to merge the hachures into a solid ribbon,
-                    # followed by a morphological open to smooth the edges.
-                    kernel_close = np.ones((21, 21), np.uint8)
-                    mask_closed = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_close)
-                    
-                    kernel_open = np.ones((11, 11), np.uint8)
-                    mask_clean = cv2.morphologyEx(mask_closed, cv2.MORPH_OPEN, kernel_open)
-                    
-                    data.global_cliffs.extend(self._vector_extractor.extract_cliffs(mask_clean))
-                    ink_mask = mask_clean
-                    
-                bgr = composite_over_bg(img)
-                data.cliff_layers.append(LayerData(layer_name, bgr, ink_mask))
-                            
-            elif lname.startswith("coastline"):
-                water_mask = get_layer_mask(img)
-                if water_mask is not None:
-                    accumulated_water_mask = cv2.bitwise_or(accumulated_water_mask, water_mask)
-                    kernel = np.ones((5, 5), np.uint8)
-                    water_mask_clean = cv2.morphologyEx(water_mask, cv2.MORPH_OPEN, kernel)
-                    water_mask_clean = cv2.morphologyEx(water_mask_clean, cv2.MORPH_CLOSE, kernel)
-                    
-                    layer_coastlines = self._vector_extractor.extract_coastlines(water_mask_clean)
-                    data.global_coastlines.extend(layer_coastlines)
-                else:
-                    layer_coastlines = []
-                
-                bgr = composite_over_bg(img)
-                data.coastline_layers.append(LayerData(layer_name, bgr, water_mask, layer_coastlines))
-                
-            elif lname.startswith("cit"):
-                c_mask = get_layer_mask(img)
-                ink_mask = None
-                if c_mask is not None:
-                    kernel_city = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-                    ink_mask = cv2.morphologyEx(c_mask, cv2.MORPH_OPEN, kernel_city)
-                
-                bgr = img[:, :, :3] if len(img.shape) == 3 else cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-                data.city_layers.append(LayerData(layer_name, img, ink_mask))
-                
-                if data.source_unknowns is None:
-                    data.source_unknowns = img
-                    
-            elif lname.startswith("terrain"):
-                bgr = composite_over_bg(img)
-                ink_mask = None
-                if len(img.shape) == 3 and img.shape[2] == 4:
-                    _, ink_mask = cv2.threshold(img[:, :, 3], 10, 255, cv2.THRESH_BINARY)
-                elif bgr is not None:
-                    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
-                    _, ink_mask = cv2.threshold(gray, 220, 255, cv2.THRESH_BINARY_INV)
-                
-                data.terrain_layers.append(LayerData(layer_name, bgr, ink_mask))
+            accumulated_water_mask = self._process_single_file(img, filename, data, accumulated_water_mask)
 
         if width == 0:
             raise FileNotFoundError("No valid PNG layer files found in the selected directory")

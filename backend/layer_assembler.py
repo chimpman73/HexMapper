@@ -40,11 +40,11 @@ class LayerAssembler:
                     
         return snapped_path
 
-    def assemble(self, data: MapData, extracted_layers: Dict[str, Any], existing_layers: List[Dict[str, Any]], hex_grid_mask: np.ndarray, orientation: str = 'flat') -> List[Dict[str, Any]]:
-        if not existing_layers:
+    def assemble(self, data: MapData, extracted_layers: Dict[str, Any], existing_layers: List[Dict[str, Any]], hex_grid_mask: np.ndarray, orientation: str = 'flat', is_reimport: bool = False) -> List[Dict[str, Any]]:
+        if not existing_layers and not is_reimport:
             existing_layers = [
                 { "id": '1', "name": 'Terrain', "type": 'terrain', "visible": True, "opacity": 1, "data": {} },
-                { "id": '4', "name": 'Coastline', "type": 'coastline', "visible": True, "opacity": 1, "data": {} },
+                { "id": '4', "name": 'Coastline', "type": 'coastline', "visible": True, "opacity": 1, "data": [] },
                 { "id": '2', "name": 'Cliffs', "type": 'cliff', "visible": True, "opacity": 1, "data": [] },
                 { "id": '3', "name": 'Rivers', "type": 'river', "visible": True, "opacity": 1, "data": [] },
                 { "id": '5', "name": 'Cities', "type": 'city', "visible": True, "opacity": 1, "data": {} },
@@ -63,8 +63,11 @@ class LayerAssembler:
                     is_match = (layer.get("name") == ext_info["name"] and layer.get("type") == ext_info["type"])
                     
                 if is_match:
-                    if isinstance(layer.get("data"), dict):
+                    if isinstance(layer.get("data"), dict) and isinstance(ext_info["data"], dict):
                         layer["data"].update(ext_info["data"])
+                    elif isinstance(layer.get("data"), list) and isinstance(ext_info["data"], list):
+                        layer["data"].extend(ext_info["data"])
+                    
                     if "vectors" in ext_info:
                         layer["vectors"] = ext_info["vectors"]
                     matched = True
@@ -251,25 +254,6 @@ class LayerAssembler:
             for c_layer in data.coastline_layers:
                 if not c_layer.vectors:
                     continue
-                    
-                mean_color = None
-                if c_layer.img_bgr is not None and c_layer.ink_mask is not None:
-                    mean_color = cv2.mean(c_layer.img_bgr, mask=c_layer.ink_mask)[:3]
-                    
-                best_match_key = "Coastline/hex_104.png"
-                best_fill_hex = "#3b82f6"
-                
-                if mean_color is not None:
-                    best_dist = float('inf')
-                    b, g, r = mean_color
-                    for t in self._template_manager.templates["coastline"]:
-                        if t.get("mean_color") is not None:
-                            tb, tg, tr = t["mean_color"]
-                            dist = math.sqrt((b - tb)**2 + (g - tg)**2 + (r - tr)**2)
-                            if dist < best_dist:
-                                best_dist = dist
-                                best_match_key = t["key"]
-                                best_fill_hex = f"#{int(tr):02x}{int(tg):02x}{int(tb):02x}"
                 
                 # Check if layer already exists
                 layer_obj = next((l for l in existing_layers if l.get("name") == c_layer.name and l.get("type") == "coastline"), None)
@@ -296,10 +280,46 @@ class LayerAssembler:
                 if not isinstance(layer_obj.get("data"), list):
                     layer_obj["data"] = []
                     
-                for path_points in c_layer.vectors:
+                for poly_data in c_layer.vectors:
+                    if isinstance(poly_data, dict):
+                        path_points = poly_data.get("points", [])
+                        provided_fill = poly_data.get("fill")
+                    else:
+                        path_points = poly_data
+                        provided_fill = None
+
+                    best_match_key = "Coastline/hex_104.png"
+                    best_fill_hex = provided_fill if provided_fill else "#3b82f6"
+                    
+                    if not provided_fill and c_layer.img_bgr is not None and c_layer.ink_mask is not None:
+                        vector_mask = np.zeros(c_layer.ink_mask.shape, dtype=np.uint8)
+                        pts = []
+                        for p in path_points:
+                            img_x = int((p["x"] - self._bg_offset_x) / self._bg_scale_x)
+                            img_y = int((p["y"] - self._bg_offset_y) / self._bg_scale_y)
+                            pts.append([img_x, img_y])
+                            
+                        if len(pts) >= 3:
+                            cv2.fillPoly(vector_mask, [np.array(pts, dtype=np.int32)], 255)
+                            combined_mask = cv2.bitwise_and(vector_mask, c_layer.ink_mask)
+                            
+                            if cv2.countNonZero(combined_mask) > 0:
+                                mean_color = cv2.mean(c_layer.img_bgr, mask=combined_mask)[:3]
+                                best_dist = float('inf')
+                                b, g, r = mean_color
+                                for t in self._template_manager.templates["coastline"]:
+                                    if t.get("mean_color") is not None:
+                                        tb, tg, tr = t["mean_color"]
+                                        dist = math.sqrt((b - tb)**2 + (g - tg)**2 + (r - tr)**2)
+                                        if dist < best_dist:
+                                            best_dist = dist
+                                            best_match_key = t["key"]
+                                            best_fill_hex = f"#{int(tr):02x}{int(tg):02x}{int(tb):02x}"
+                                            
                     flat_points = []
                     for p in path_points:
                         flat_points.extend([p["x"], p["y"]])
+                        
                     layer_obj["data"].append({
                         "id": f"coastline_{str(uuid.uuid4())[:8]}",
                         "points": flat_points,
@@ -307,8 +327,9 @@ class LayerAssembler:
                         "strokeWidth": 3,
                         "tension": 0.5,
                         "coastlineStyle": "smooth",
-                        "brushKey": best_match_key,
-                        "fill": best_fill_hex
+                        "brushKey": best_match_key if not provided_fill else None,
+                        "fill": best_fill_hex,
+                        "fillPatternUrl": best_match_key if not provided_fill else None
                     })
 
         # QoL: Clean up empty terrain and coastline layers if multiple exist and at least one has data

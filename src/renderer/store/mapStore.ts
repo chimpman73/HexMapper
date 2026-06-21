@@ -30,6 +30,7 @@ interface MapState {
   activeRoadStyle?: RoadStyle;
   activeRiverStyle?: RiverStyle;
   activeCoastlineStyle?: CoastlineStyle;
+  activeCoastlineFillUrl: string | null;
   activeBorderStyle?: BorderStyle;
   activeCliffStyle?: CliffStyle;
   activeBorderColor: string;
@@ -75,6 +76,7 @@ interface MapState {
   setActiveRoadStyle: (s: RoadStyle) => void;
   setActiveRiverStyle: (s: RiverStyle) => void;
   setActiveCoastlineStyle: (s: CoastlineStyle) => void;
+  setActiveCoastlineFillUrl: (url: string | null) => void;
   setActiveBorderStyle: (s: BorderStyle) => void;
   setActiveCliffStyle: (s: CliffStyle) => void;
   setLayers: (l: MapLayer[] | ((prev: MapLayer[]) => MapLayer[])) => void;
@@ -139,6 +141,7 @@ export const useMapStore = create<MapState>((set) => ({
   activeRoadStyle: 'path',
   activeRiverStyle: 'river',
   activeCoastlineStyle: 'smooth',
+  activeCoastlineFillUrl: null,
   activeBorderStyle: 'smooth',
   activeCliffStyle: 'smooth',
   activeBorderColor: '#dc2626',
@@ -209,6 +212,7 @@ export const useMapStore = create<MapState>((set) => ({
   setActiveRoadStyle: (s) => set({ activeRoadStyle: s }),
   setActiveRiverStyle: (s) => set({ activeRiverStyle: s }),
   setActiveCoastlineStyle: (s) => set({ activeCoastlineStyle: s }),
+  setActiveCoastlineFillUrl: (url) => set({ activeCoastlineFillUrl: url }),
   setActiveBorderStyle: (s) => set({ activeBorderStyle: s }),
   setActiveCliffStyle: (s) => set({ activeCliffStyle: s }),
   setLayers: (l) => set((state) => {
@@ -229,7 +233,11 @@ export const useMapStore = create<MapState>((set) => ({
   setAssetsBasePath: (p) => set({ assetsBasePath: p }),
   setRoadConfig: (c) => set({ roadConfig: c }),
   setRiverConfig: (c) => set({ riverConfig: c }),
-  setSelectedVertex: (v) => set({ selectedVertex: v }),
+  setSelectedVertex: (v) => set(state => {
+    if (state.selectedVertex === v) return state;
+    if (state.selectedVertex && v && state.selectedVertex.lineId === v.lineId && state.selectedVertex.index === v.index) return state;
+    return { selectedVertex: v };
+  }),
 
   undo: () => set((state) => {
     if (state.pastLayers.length === 0) return state;
