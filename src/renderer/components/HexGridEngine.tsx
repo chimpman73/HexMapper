@@ -102,6 +102,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
   }, [gridChunks, visibleBounds]);
 
   const isZoomedOut = scale < 0.3;
+  const effectiveShowCoordinates = showCoordinates && scale >= 0.5;
 
   const [rawPointerPos, setRawPointerPos] = useState<{x: number, y: number} | null>(null);
 
@@ -196,7 +197,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
                 currentStyle={currentStyle}
                 assetsBasePath={assetsBasePath}
                 hasBgImage={hasBgImage}
-                showCoordinates={showCoordinates}
+                showCoordinates={effectiveShowCoordinates}
                 isPaintingHex={isPaintingHex}
                 setHoveredHex={setHoveredHex}
                 handlePaintHex={handlePaintHex}
@@ -223,7 +224,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
                   highlightedHexKey={highlightedHexKey}
                   currentStyle={currentStyle}
                   assetsBasePath={assetsBasePath}
-                  showCoordinates={showCoordinates}
+                  showCoordinates={effectiveShowCoordinates}
                   isPaintingHex={isPaintingHex}
                   setHoveredHex={setHoveredHex}
                   handlePaintHex={handlePaintHex}
