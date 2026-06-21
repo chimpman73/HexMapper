@@ -34,15 +34,15 @@ This backlog is prioritized based on structural dependencies. Foundational infra
 - ~~Decompose the massive Python `HexScanner` into modular map data parsers (`TerrainScanner`, `CityScanner`, `LayerAssembler`).~~
 - ~~Extract CV2 vector geometry out of `ImageProcessor` into a dedicated math script.~~
 
-**6. Large-Map Rendering Performance & Memory Optimization**
+**6. ~~Large-Map Rendering Performance & Memory Optimization~~ [COMPLETED]**
 *Why it's important:* As map size grows (hundreds of hexes wide/tall), rendering becomes unacceptably laggy. The app should comfortably handle very large maps with no degradation in interactivity. This is a scalability ceiling that must be addressed before large-map workflows are practical.
-- **Viewport Culling:** Audit and enforce that only hexes and objects within the current visible viewport are rendered. Nothing off-screen should be drawn or processed each frame.
-- **Spatial Indexing:** Implement a spatial data structure (e.g., quadtree or spatial hash grid) so hit-testing, hover, and selection queries skip off-screen hexes entirely rather than iterating the full map.
-- **Layer Dirty-Flagging:** Only re-render layers that have actually changed since the last frame. Avoid full-canvas redraws on unrelated interactions.
-- **Object Pooling / Canvas Tiling:** Investigate tiling the canvas into chunks so only dirty tiles are repainted, rather than invalidating the full canvas on every edit.
-- **Memory Audit:** Profile memory usage on a large map and identify the biggest consumers. Explore lazy-loading of brush assets and off-screen layer data.
-- **Benchmarking Target:** Define a concrete performance goal (e.g., smooth 60fps pan/zoom on a map 300+ hexes wide) and add a lightweight benchmark or stress-test map to validate it.
-- **[Optional] Semantic Zooming:** Hide minor details (labels, small streams, city icons) completely when zoomed very far out to further reduce object counts.
+- ~~**Viewport Culling:** Audit and enforce that only hexes and objects within the current visible viewport are rendered. Nothing off-screen should be drawn or processed each frame.~~
+- ~~**Spatial Indexing / Chunking:** Implement a spatial data structure (e.g., chunking the canvas into 20x20 blocks) so hit-testing and React reconciliation skips off-screen hexes entirely rather than iterating the full map.~~
+- ~~**Layer Dirty-Flagging:** Only re-render layers that have actually changed since the last frame. Avoid full-canvas redraws on unrelated interactions.~~
+- ~~**Canvas Tiling & Event Culling:** Implemented aggressive caching and Hit-Graph disabling when zoomed out to suppress 90k+ Konva nodes from blocking the CPU.~~
+- ~~**Memory Audit:** Profile memory usage on a large map and identify the biggest consumers. Explore lazy-loading of brush assets and off-screen layer data.~~
+- ~~**Benchmarking Target:** Define a concrete performance goal (e.g., smooth 60fps pan/zoom on a map 300+ hexes wide) and add a lightweight benchmark or stress-test map to validate it.~~
+- ~~**[Optional] Semantic Zooming:** Hide minor details (labels, small streams, city icons) completely when zoomed very far out to further reduce object counts.~~
 - **[Optional] WebGL Migration:** If extreme scale (>100k interactive hexes) is strictly required, rewrite the core renderer from Canvas2D/Konva to WebGL (PixiJS) to support Sprite Batching.
 
 **7. ~~Backend Python Test Coverage~~ [COMPLETED]**
