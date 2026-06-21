@@ -16,9 +16,10 @@ const BgImageRenderer: React.FC<BgImageRendererProps> = ({ layer, bgScaleX, bgSc
     if (layer.data?.imagePath) {
       const img = new window.Image();
       img.onload = () => setImageObj(img);
-      img.src = `local://file?path=${encodeURIComponent(layer.data.imagePath)}`;
+      const cacheBuster = layer.data.lastUpdated ? `&t=${layer.data.lastUpdated}` : '';
+      img.src = `local://file?path=${encodeURIComponent(layer.data.imagePath)}${cacheBuster}`;
     }
-  }, [layer.data?.imagePath]);
+  }, [layer.data?.imagePath, layer.data?.lastUpdated]);
 
   if (!imageObj) return null;
 

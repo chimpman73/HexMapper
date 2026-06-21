@@ -197,14 +197,16 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps & { visibleBounds?:
         } else if (layer.type === 'river') {
           const styleConfig = riverConfig?.[line.riverStyle || 'river'];
           if (styleConfig) {
-            strokeColor = hoveredLineId === line.id ? '#ff5252' : styleConfig.color;
+            strokeColor = hoveredLineId === line.id ? '#ff5252' : (styleConfig.color || line.stroke || '#3b82f6');
             roadDash = styleConfig.dash?.length > 0 ? styleConfig.dash : undefined;
           } else {
             if (line.riverStyle === 'stream') {
               roadDash = [5, 5];
-              strokeColor = hoveredLineId === line.id ? '#ff5252' : '#60a5fa';
+              strokeColor = hoveredLineId === line.id ? '#ff5252' : (line.stroke || '#60a5fa');
+            } else if (line.riverStyle === 'lava') {
+              strokeColor = hoveredLineId === line.id ? '#ff5252' : (line.stroke || '#eba030');
             } else {
-              strokeColor = hoveredLineId === line.id ? '#ff5252' : '#3b82f6';
+              strokeColor = hoveredLineId === line.id ? '#ff5252' : (line.stroke || '#3b82f6');
             }
           }
         }

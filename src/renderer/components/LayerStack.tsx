@@ -264,7 +264,10 @@ const LayerStack: React.FC<LayerStackProps> = () => {
                          state.setScanProgress(null, '');
                          if (res.success && res.data?.status === 'success') {
                            const newLayers = res.data.data.layers || [];
-                           state.setLayers([...state.layers, ...newLayers]);
+                           const updatedExistingLayers = state.layers.map(l => 
+                             l.id === layer.id ? { ...l, data: { ...l.data, lastUpdated: Date.now() } } : l
+                           );
+                           state.setLayers([...updatedExistingLayers, ...newLayers]);
                            state.setToastMessage({ type: 'success', text: `Re-import of ${layer.name} complete! Added ${newLayers.length} new layer(s).` });
                          } else {
                            console.error('Re-import failed:', res);

@@ -12,6 +12,7 @@ class TemplateManager:
             "terrain": [],
             "coastline": [],
             "city": [],
+            "river": [],
             "ignore": []
         }
         self.load_templates()
@@ -31,6 +32,7 @@ class TemplateManager:
         self._load_dir("Terrain", "terrain")
         self._load_dir("Coastline", "coastline")
         self._load_dir("Cities", "city", use_alpha=True)
+        self._load_dir("Rivers", "river")
         self._load_dir("Ignored", "ignore", use_alpha=True)
 
     def _load_dir(self, dir_name: str, category: str, use_alpha: bool = False) -> None:

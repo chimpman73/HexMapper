@@ -42,7 +42,7 @@ export interface CityLayer extends BaseLayer {
 export type CoastlineStyle = 'smooth' | 'fractal' | 'highlight';
 
 export type RoadStyle = 'path' | 'road' | 'tunnel' | 'highlight';
-export type RiverStyle = 'stream' | 'river' | 'highlight';
+export type RiverStyle = 'stream' | 'river' | 'lava' | 'highlight';
 export type BorderStyle = 'smooth' | 'snapped' | 'highlight';
 export type CliffStyle = 'smooth' | 'fractal' | 'highlight';
 

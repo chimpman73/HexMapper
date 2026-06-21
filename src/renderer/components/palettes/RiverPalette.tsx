@@ -22,7 +22,8 @@ export const RiverPalette: React.FC = () => {
   useEffect(() => {
     setRiverBrushes([
       { type: 'stream', url: generateRiverBrush('stream', riverConfig) },
-      { type: 'river', url: generateRiverBrush('river', riverConfig) }
+      { type: 'river', url: generateRiverBrush('river', riverConfig) },
+      { type: 'lava', url: generateRiverBrush('lava', riverConfig) }
     ]);
   }, [riverConfig]);
 
@@ -34,6 +35,9 @@ export const RiverPalette: React.FC = () => {
           const relPaths = res.data.map((f: string) => {
             const parts = f.split(/[\\/]tiles[\\/]/);
             return parts.length > 1 ? parts[1].replace(/\\/g, '/') : f;
+          }).filter((f: string) => {
+            const filename = f.split('/').pop() || '';
+            return filename.startsWith('feature_');
           });
           setFeatureBrushes(relPaths);
         }

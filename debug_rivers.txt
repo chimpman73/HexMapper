@@ -1,0 +1,400 @@
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #f0a430 (R:240 G:164 B:48)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=5.853305528481577
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=226.40650003387788
+  FINAL MATCH: lava with color #eba030
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd
+Extracted raw color: #61b7e1 (R:97 G:183 B:225)
+  Compared to Rivers/hex_Lava.png (R:235 G:160 B:48): dist=225.46391249210674
+  Compared to Rivers/hex_River.png (R:95 G:180 B:221): dist=4.663704496847544
+  FINAL MATCH: river with color #5fb4dd

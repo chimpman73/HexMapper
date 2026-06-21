@@ -101,78 +101,135 @@ class LayerAssembler:
         # Convert global rivers to vector lines
         if data.global_rivers:
             river_layer = next((l for l in existing_layers if l.get("type") == "river"), None)
-            if river_layer:
-                if not isinstance(river_layer.get("data"), list):
-                    river_layer["data"] = []
-                for path_points in data.global_rivers:
-                    if len(path_points) < 2: continue
-                    
-                    flat_points = []
-                    for p in path_points:
-                        flat_points.extend([p["x"], p["y"]])
-                        
-                    # Snap one endpoint to the nearest coastline if within threshold
-                    if data.global_coastlines:
-                        start_pt = {"x": flat_points[0], "y": flat_points[1]}
-                        end_pt = {"x": flat_points[-2], "y": flat_points[-1]}
-                        
-                        best_dist = float('inf')
-                        best_snap_pt = None
-                        is_start = True
-                        
-                        threshold = self._hex_grid.hex_size * 0.8
-                        
-                        for c_path in data.global_coastlines:
-                            for i in range(len(c_path)):
-                                p1 = c_path[i]
-                                p2 = c_path[(i+1) % len(c_path)]
-                                
-                                # Distance to start_pt
-                                l2 = (p2["x"] - p1["x"])**2 + (p2["y"] - p1["y"])**2
-                                if l2 > 0:
-                                    t = max(0, min(1, ((start_pt["x"] - p1["x"]) * (p2["x"] - p1["x"]) + (start_pt["y"] - p1["y"]) * (p2["y"] - p1["y"])) / l2))
-                                    proj_x = p1["x"] + t * (p2["x"] - p1["x"])
-                                    proj_y = p1["y"] + t * (p2["y"] - p1["y"])
-                                    dist = math.hypot(start_pt["x"] - proj_x, start_pt["y"] - proj_y)
-                                    if dist < best_dist:
-                                        best_dist = dist
-                                        best_snap_pt = {"x": proj_x, "y": proj_y}
-                                        is_start = True
-                                        
-                                # Distance to end_pt
-                                if l2 > 0:
-                                    t = max(0, min(1, ((end_pt["x"] - p1["x"]) * (p2["x"] - p1["x"]) + (end_pt["y"] - p1["y"]) * (p2["y"] - p1["y"])) / l2))
-                                    proj_x = p1["x"] + t * (p2["x"] - p1["x"])
-                                    proj_y = p1["y"] + t * (p2["y"] - p1["y"])
-                                    dist = math.hypot(end_pt["x"] - proj_x, end_pt["y"] - proj_y)
-                                    if dist < best_dist:
-                                        best_dist = dist
-                                        best_snap_pt = {"x": proj_x, "y": proj_y}
-                                        is_start = False
-                                        
-                        if best_snap_pt and best_dist < threshold:
-                            if is_start:
-                                flat_points[0] = best_snap_pt["x"]
-                                flat_points[1] = best_snap_pt["y"]
-                            else:
-                                flat_points[-2] = best_snap_pt["x"]
-                                flat_points[-1] = best_snap_pt["y"]
+            if not river_layer:
+                river_layer = {
+                    "id": f"layer_{str(uuid.uuid4())[:8]}",
+                    "name": "Rivers",
+                    "type": "river",
+                    "visible": True,
+                    "opacity": 1,
+                    "sourceFilename": "Rivers",
+                    "data": []
+                }
+                insert_idx = next((i for i, l in enumerate(existing_layers) if l.get("type") == "coastline"), 0)
+                existing_layers.insert(insert_idx, river_layer)
 
-                    river_layer["data"].append({
-                        "id": f"river_{str(uuid.uuid4())[:8]}",
-                        "points": flat_points,
-                        "stroke": "#3b82f6",
-                        "strokeWidth": 4,
-                        "tension": 0.5,
-                        "riverStyle": "river"
-                    })
+            if not isinstance(river_layer.get("data"), list):
+                river_layer["data"] = []
+                
+            for river_obj in data.global_rivers:
+                path_points = river_obj["points"]
+                river_color = river_obj.get("color", "#3b82f6")
+                
+                # Match river style based on color from templates
+                river_style = "river"
+                try:
+                    r_val = int(river_color[1:3], 16)
+                    g_val = int(river_color[3:5], 16)
+                    b_val = int(river_color[5:7], 16)
+                    
+                    debug_log = f"Extracted raw color: {river_color} (R:{r_val} G:{g_val} B:{b_val})\n"
+                    
+                    if self._template_manager.templates.get("river"):
+                        best_dist = float('inf')
+                        for t in self._template_manager.templates["river"]:
+                            if t.get("mean_color") is not None and "hex_" in t["key"].lower():
+                                tb, tg, tr = t["mean_color"]
+                                dist = math.sqrt((b_val - tb)**2 + (g_val - tg)**2 + (r_val - tr)**2)
+                                debug_log += f"  Compared to {t['key']} (R:{int(tr)} G:{int(tg)} B:{int(tb)}): dist={dist}\n"
+                                if dist < best_dist:
+                                    best_dist = dist
+                                    filename = t["key"].split('/')[-1]
+                                    style_name = filename.lower().replace('hex_', '').replace('.png', '')
+                                    river_style = style_name
+                                    river_color = f"#{int(tr):02x}{int(tg):02x}{int(tb):02x}"
+                        
+                        debug_log += f"  FINAL MATCH: {river_style} with color {river_color}\n"
+                        with open("debug_rivers.txt", "a") as f:
+                            f.write(debug_log)
+                except Exception as e:
+                    with open("debug_rivers.txt", "a") as f:
+                        f.write(f"Exception matching colors: {e}\n")
+
+                if len(path_points) < 2: continue
+                
+                flat_points = []
+                for p in path_points:
+                    flat_points.extend([p["x"], p["y"]])
+                    
+                # Snap one endpoint to the nearest coastline if within threshold
+                if data.global_coastlines:
+                    start_pt = {"x": flat_points[0], "y": flat_points[1]}
+                    end_pt = {"x": flat_points[-2], "y": flat_points[-1]}
+                    
+                    best_dist = float('inf')
+                    best_snap_pt = None
+                    is_start = True
+                    
+                    threshold = self._hex_grid.hex_size * 0.8
+                    
+                    for c_path in data.global_coastlines:
+                        for i in range(len(c_path)):
+                            p1 = c_path[i]
+                            p2 = c_path[(i+1) % len(c_path)]
+                            
+                            # Distance to start_pt
+                            l2 = (p2["x"] - p1["x"])**2 + (p2["y"] - p1["y"])**2
+                            if l2 > 0:
+                                t = max(0, min(1, ((start_pt["x"] - p1["x"]) * (p2["x"] - p1["x"]) + (start_pt["y"] - p1["y"]) * (p2["y"] - p1["y"])) / l2))
+                                proj_x = p1["x"] + t * (p2["x"] - p1["x"])
+                                proj_y = p1["y"] + t * (p2["y"] - p1["y"])
+                                dist = math.hypot(start_pt["x"] - proj_x, start_pt["y"] - proj_y)
+                                if dist < best_dist:
+                                    best_dist = dist
+                                    best_snap_pt = {"x": proj_x, "y": proj_y}
+                                    is_start = True
+                                    
+                            # Distance to end_pt
+                            if l2 > 0:
+                                t = max(0, min(1, ((end_pt["x"] - p1["x"]) * (p2["x"] - p1["x"]) + (end_pt["y"] - p1["y"]) * (p2["y"] - p1["y"])) / l2))
+                                proj_x = p1["x"] + t * (p2["x"] - p1["x"])
+                                proj_y = p1["y"] + t * (p2["y"] - p1["y"])
+                                dist = math.hypot(end_pt["x"] - proj_x, end_pt["y"] - proj_y)
+                                if dist < best_dist:
+                                    best_dist = dist
+                                    best_snap_pt = {"x": proj_x, "y": proj_y}
+                                    is_start = False
+                                    
+                    if best_snap_pt and best_dist < threshold:
+                        if is_start:
+                            flat_points[0] = best_snap_pt["x"]
+                            flat_points[1] = best_snap_pt["y"]
+                        else:
+                            flat_points[-2] = best_snap_pt["x"]
+                            flat_points[-1] = best_snap_pt["y"]
+
+                river_layer["data"].append({
+                    "id": f"river_{str(uuid.uuid4())[:8]}",
+                    "points": flat_points,
+                    "stroke": river_color,
+                    "strokeWidth": 4,
+                    "tension": 0.5,
+                    "riverStyle": river_style
+                })
 
         # Convert global borders to vector lines
         if data.global_borders:
             border_layer = next((l for l in existing_layers if l.get("type") == "border"), None)
-            if border_layer:
-                if not isinstance(border_layer.get("data"), list):
-                    border_layer["data"] = []
+            if not border_layer:
+                border_layer = {
+                    "id": f"layer_{str(uuid.uuid4())[:8]}",
+                    "name": "Borders",
+                    "type": "border",
+                    "visible": True,
+                    "opacity": 1,
+                    "sourceFilename": "Borders",
+                    "data": []
+                }
+                existing_layers.append(border_layer)
+                
+            if not isinstance(border_layer.get("data"), list):
+                border_layer["data"] = []
                 for path_points in data.global_borders:
                     if len(path_points) < 2: continue
                     
@@ -226,12 +283,23 @@ class LayerAssembler:
         # Convert global cliffs to vector lines
         if data.global_cliffs:
             cliff_layer = next((l for l in existing_layers if l.get("type") == "cliff"), None)
-            if cliff_layer:
-                if not isinstance(cliff_layer.get("data"), dict):
-                    cliff_layer["data"] = {"lines": [], "hexes": {}}
-                elif "lines" not in cliff_layer.get("data", {}):
-                    old_data = cliff_layer["data"]
-                    cliff_layer["data"] = {"lines": [], "hexes": old_data}
+            if not cliff_layer:
+                cliff_layer = {
+                    "id": f"layer_{str(uuid.uuid4())[:8]}",
+                    "name": "Cliffs",
+                    "type": "cliff",
+                    "visible": True,
+                    "opacity": 1,
+                    "sourceFilename": "Cliffs",
+                    "data": {"lines": [], "hexes": {}}
+                }
+                existing_layers.append(cliff_layer)
+                
+            if not isinstance(cliff_layer.get("data"), dict):
+                cliff_layer["data"] = {"lines": [], "hexes": {}}
+            elif "lines" not in cliff_layer.get("data", {}):
+                old_data = cliff_layer["data"]
+                cliff_layer["data"] = {"lines": [], "hexes": old_data}
                 
                 for path_points in data.global_cliffs:
                     if len(path_points) < 2: continue

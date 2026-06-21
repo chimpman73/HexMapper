@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from layer_data import LayerData
 
 class MapData:
@@ -10,7 +10,7 @@ class MapData:
         self._water_mask: np.ndarray = np.array([])
         self._global_coastlines: List[List[Dict[str, float]]] = []
         self._global_borders: List[List[Dict[str, float]]] = []
-        self._global_rivers: List[List[Dict[str, float]]] = []
+        self._global_rivers: List[Dict[str, Any]] = []
         self._global_cliffs: List[List[Dict[str, float]]] = []
         self._terrain_layers: List[LayerData] = []
         self._cliff_layers: List[LayerData] = []
@@ -38,7 +38,7 @@ class MapData:
     @property
     def global_borders(self) -> List[List[Dict[str, float]]]: return self._global_borders
     @property
-    def global_rivers(self) -> List[List[Dict[str, float]]]: return self._global_rivers
+    def global_rivers(self) -> List[Dict[str, Any]]: return self._global_rivers
     @property
     def global_cliffs(self) -> List[List[Dict[str, float]]]: return self._global_cliffs
     @property

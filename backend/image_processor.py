@@ -63,7 +63,8 @@ class ImageProcessor:
         river_mask = cv2.morphologyEx(rivers, cv2.MORPH_OPEN, kernel_small)
         river_mask = cv2.morphologyEx(river_mask, cv2.MORPH_DILATE, kernel_small, iterations=1)
         
-        data.global_rivers.extend(self._vector_extractor.extract_rivers(river_mask))
+        for p in self._vector_extractor.extract_rivers(river_mask):
+            data.global_rivers.append({"points": p, "color": "#3b82f6"})
 
         print(json.dumps({"progress": True, "message": "Inpainting artifacts...", "percent": 25}), flush=True)
         # INPAINTING
@@ -152,7 +153,15 @@ class ImageProcessor:
             if mask is not None:
                 kernel_tiny = np.ones((2, 2), np.uint8)
                 mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel_tiny, iterations=1)
-                data.global_rivers.extend(self._vector_extractor.extract_rivers(mask))
+                
+                if len(img.shape) == 3:
+                    bgr = img[:, :, :3] if img.shape[2] == 4 else img
+                    rivers_data = self._vector_extractor.extract_rivers(mask, bgr)
+                    data.global_rivers.extend(rivers_data)
+                else:
+                    paths = self._vector_extractor.extract_rivers(mask)
+                    for p in paths:
+                        data.global_rivers.append({"points": p, "color": "#3b82f6"})
 
         elif lname.startswith("cliff"):
             mask = get_layer_mask(img)
@@ -194,7 +203,7 @@ class ImageProcessor:
                         total_pixels = len(flat_quantized)
                         
                         for color, count in zip(unique_colors, counts):
-                            if count / total_pixels < 0.01:  # Ignore noisy pixels < 1% of area
+                            if count / total_pixels < 0.001 and count < 100:  # Ignore noisy pixels, but allow small pools (like lava)
                                 continue
                                 
                             color_mask = np.all(quantized == color, axis=-1)
