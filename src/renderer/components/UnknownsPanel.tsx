@@ -15,9 +15,10 @@ export default function UnknownsPanel({ unknowns, onResolve, onHover, onClose }:
 
   return (
     <div style={{
-      position: 'absolute', top: 50, right: 260, width: 300, bottom: 0,
-      backgroundColor: '#1e293b', borderLeft: '1px solid #334155', color: '#f8fafc',
-      display: 'flex', flexDirection: 'column', zIndex: 100, overflowY: 'auto'
+      position: 'absolute', top: 50, right: 260, width: 300, bottom: 50,
+      backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px', color: '#f8fafc',
+      display: 'flex', flexDirection: 'column', zIndex: 1000, overflowY: 'auto',
+      boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
     }}>
       <div style={{ padding: '15px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
@@ -29,25 +30,30 @@ export default function UnknownsPanel({ unknowns, onResolve, onHover, onClose }:
         <button 
           onClick={onClose}
           title="Dismiss Panel"
-          style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '16px', padding: '0 5px' }}
+          style={{ background: '#ef4444', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer', fontSize: '14px', padding: '5px 10px', fontWeight: 'bold' }}
         >
-          ✕
+          Close
         </button>
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', padding: '15px' }}>
         {unknowns.map((unk) => (
           <div 
-            key={unk.id}
+            key={unk.id || `unk_${Math.random()}`}
             onMouseEnter={() => onHover(unk.key)}
             onMouseLeave={() => onHover(null)}
             onClick={() => setSelectedUnknown(unk)}
             style={{
               width: '80px', height: '80px', border: selectedUnknown?.id === unk.id ? '2px solid #3b82f6' : '1px solid #334155',
-              borderRadius: '8px', overflow: 'hidden', cursor: 'pointer', backgroundColor: '#0f172a'
+              borderRadius: '8px', overflow: 'hidden', cursor: 'pointer', backgroundColor: '#0f172a',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}
           >
-            <img src={unk.image} alt="unknown" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            {unk.image ? (
+              <img src={unk.image} alt="unknown" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <span style={{ fontSize: '10px', color: '#ef4444' }}>No Image</span>
+            )}
           </div>
         ))}
       </div>

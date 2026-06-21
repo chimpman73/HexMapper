@@ -168,9 +168,20 @@ class VectorExtractor:
 
     def extract_coastlines(self, water_mask: np.ndarray, color: str = None) -> List[Dict[str, Any]]:
         coastlines = []
-        # Use RETR_EXTERNAL so we only get the outer boundary of each mask, ignoring inner holes
-        contours, _ = cv2.findContours(water_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        for cnt in contours:
+        # Use RETR_CCOMP to extract a 2-level hierarchy: outer boundaries and inner holes (islands)
+        contours, hierarchy = cv2.findContours(water_mask, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+        
+        if hierarchy is None:
+            return []
+            
+        hierarchy = hierarchy[0]
+        
+        # Maps outer contour index to its points
+        outer_polys = {}
+        # Maps outer contour index to list of hole points
+        holes_map = {}
+        
+        for i, cnt in enumerate(contours):
             perimeter = cv2.arcLength(cnt, True)
             epsilon = 0.0005 * perimeter
             approx = cv2.approxPolyDP(cnt, epsilon, True)
@@ -181,9 +192,24 @@ class VectorExtractor:
                 path_points.append({"x": cx, "y": cy})
                 
             if len(path_points) > 2:
-                poly_area = cv2.contourArea(approx) * (self._bg_scale_x * self._bg_scale_y)
-                poly_data = {"type": "polygon", "points": path_points, "area": poly_area}
-                if color:
-                    poly_data["fill"] = color
-                coastlines.append(poly_data)
+                parent = hierarchy[i][3]
+                if parent == -1:
+                    outer_polys[i] = path_points
+                else:
+                    if parent not in holes_map:
+                        holes_map[parent] = []
+                    holes_map[parent].append(path_points)
+
+        for idx, path_points in outer_polys.items():
+            pts = np.array([[p["x"], p["y"]] for p in path_points], dtype=np.float32)
+            # Area in hex coordinates because pts are scaled
+            poly_area = cv2.contourArea(pts)
+            
+            poly_data = {"type": "polygon", "points": path_points, "area": poly_area}
+            if idx in holes_map:
+                poly_data["holes"] = holes_map[idx]
+            if color:
+                poly_data["fill"] = color
+            coastlines.append(poly_data)
+            
         return coastlines

@@ -71,6 +71,17 @@ const PatternFilledShape: React.FC<{ line: import('../../types').VectorLine & { 
           }
           context.closePath();
         }
+        if (line.holes) {
+          for (const hole of line.holes) {
+            if (hole.length >= 4) {
+              context.moveTo(hole[0], hole[1]);
+              for (let i = 2; i < hole.length; i += 2) {
+                context.lineTo(hole[i], hole[i+1]);
+              }
+              context.closePath();
+            }
+          }
+        }
         context.fillStrokeShape(shape);
       }}
       listening={false}
@@ -353,30 +364,48 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps & { visibleBounds?:
               })}
             </Group>
           ) : (
-            <Line
-              points={displayPoints}
-              stroke={strokeColor}
-              strokeWidth={line.strokeWidth}
-              hitStrokeWidth={Math.max(20, line.strokeWidth)}
-              tension={line.tension}
-              lineCap="round"
-              lineJoin="round"
-              closed={layer.type === 'coastline'}
-              dash={roadDash}
-              opacity={hoveredLineId === line.id ? 0.5 : layer.opacity}
-              hitFunc={(ctx, shape) => {
-                ctx.beginPath();
-                const pts = shape.points();
-                if (pts.length >= 4) {
-                  ctx.moveTo(pts[0], pts[1]);
-                  for(let i=2; i<pts.length; i+=2) {
-                    ctx.lineTo(pts[i], pts[i+1]);
+            <React.Fragment>
+              <Line
+                points={displayPoints}
+                stroke={strokeColor}
+                strokeWidth={line.strokeWidth}
+                hitStrokeWidth={Math.max(20, line.strokeWidth)}
+                tension={line.tension}
+                lineCap="round"
+                lineJoin="round"
+                closed={layer.type === 'coastline'}
+                dash={roadDash}
+                opacity={hoveredLineId === line.id ? 0.5 : layer.opacity}
+                hitFunc={(ctx, shape) => {
+                  ctx.beginPath();
+                  const pts = shape.points();
+                  if (pts.length >= 4) {
+                    ctx.moveTo(pts[0], pts[1]);
+                    for(let i=2; i<pts.length; i+=2) {
+                      ctx.lineTo(pts[i], pts[i+1]);
+                    }
+                    if (shape.closed()) ctx.closePath();
                   }
-                  if (shape.closed()) ctx.closePath();
-                }
-                ctx.strokeShape(shape);
-              }}
-            />
+                  ctx.strokeShape(shape);
+                }}
+              />
+              {line.holes && line.holes.map((holePts, idx) => (
+                <Line
+                  key={`hole-${line.id}-${idx}`}
+                  points={holePts}
+                  stroke={strokeColor}
+                  strokeWidth={line.strokeWidth}
+                  hitStrokeWidth={Math.max(20, line.strokeWidth)}
+                  tension={line.tension}
+                  lineCap="round"
+                  lineJoin="round"
+                  closed={true}
+                  dash={roadDash}
+                  opacity={hoveredLineId === line.id ? 0.5 : layer.opacity}
+                  listening={false}
+                />
+              ))}
+            </React.Fragment>
           )}
 
           {line.features?.map(feat => {

@@ -56,6 +56,7 @@ export interface VectorFeature {
 export interface VectorLine {
   id: string;
   points: number[];
+  holes?: number[][];
   stroke: string;
   strokeWidth: number;
   tension: number;

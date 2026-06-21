@@ -168,7 +168,8 @@ class LayerAssembler:
                     
                     threshold = self._hex_grid.hex_size * 0.8
                     
-                    for c_path in data.global_coastlines:
+                    for c_path_obj in data.global_coastlines:
+                        c_path = c_path_obj.get("points", []) if isinstance(c_path_obj, dict) else c_path_obj
                         for i in range(len(c_path)):
                             p1 = c_path[i]
                             p2 = c_path[(i+1) % len(c_path)]
@@ -352,14 +353,31 @@ class LayerAssembler:
                     if isinstance(poly_data, dict):
                         path_points = poly_data.get("points", [])
                         provided_fill = poly_data.get("fill")
+                        holes = poly_data.get("holes", [])
                     else:
                         path_points = poly_data
                         provided_fill = None
+                        holes = []
 
                     best_match_key = "Coastline/hex_104.png"
-                    best_fill_hex = provided_fill if provided_fill else "#3b82f6"
+                    best_fill_hex = "#3b82f6"
                     
-                    if not provided_fill and c_layer.img_bgr is not None and c_layer.ink_mask is not None:
+                    if provided_fill:
+                        # Snap provided fill to exact template color
+                        r_val = int(provided_fill[1:3], 16)
+                        g_val = int(provided_fill[3:5], 16)
+                        b_val = int(provided_fill[5:7], 16)
+                        
+                        best_dist = float('inf')
+                        for t in self._template_manager.templates["coastline"]:
+                            if t.get("mean_color") is not None:
+                                tb, tg, tr = t["mean_color"]
+                                dist = math.sqrt((b_val - tb)**2 + (g_val - tg)**2 + (r_val - tr)**2)
+                                if dist < best_dist:
+                                    best_dist = dist
+                                    best_match_key = t["key"]
+                                    best_fill_hex = f"#{int(tr):02x}{int(tg):02x}{int(tb):02x}"
+                    elif c_layer.img_bgr is not None and c_layer.ink_mask is not None:
                         vector_mask = np.zeros(c_layer.ink_mask.shape, dtype=np.uint8)
                         pts = []
                         for p in path_points:
@@ -388,16 +406,24 @@ class LayerAssembler:
                     for p in path_points:
                         flat_points.extend([p["x"], p["y"]])
                         
+                    flat_holes = []
+                    for h in holes:
+                        flat_h = []
+                        for hp in h:
+                            flat_h.extend([hp["x"], hp["y"]])
+                        flat_holes.append(flat_h)
+                        
                     layer_obj["data"].append({
                         "id": f"coastline_{str(uuid.uuid4())[:8]}",
                         "points": flat_points,
+                        "holes": flat_holes if flat_holes else None,
                         "stroke": "#222222",
                         "strokeWidth": 3,
                         "tension": 0.5,
                         "coastlineStyle": "smooth",
-                        "brushKey": best_match_key if not provided_fill else None,
+                        "brushKey": best_match_key,
                         "fill": best_fill_hex,
-                        "fillPatternUrl": best_match_key if not provided_fill else None
+                        "fillPatternUrl": best_match_key
                     })
 
         # QoL: Clean up empty terrain and coastline layers if multiple exist and at least one has data
