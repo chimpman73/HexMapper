@@ -8,7 +8,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import interpreter
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SAVES_DIR = os.path.join(BASE_DIR, "saves")
+TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
+GOLDEN_DIR = os.path.join(TESTS_DIR, "goldenfiles")
 SCALE_FACTOR = 2.09
 
 @pytest.fixture(params=[
@@ -17,8 +18,8 @@ SCALE_FACTOR = 2.09
 ])
 def multi_layer_test_case(request):
     input_folder, gold_file, map_width, map_height = request.param
-    input_path = os.path.join(SAVES_DIR, input_folder)
-    gold_path = os.path.join(SAVES_DIR, gold_file)
+    input_path = os.path.join(GOLDEN_DIR, "inputs", input_folder)
+    gold_path = os.path.join(GOLDEN_DIR, "outputs", gold_file)
     
     if not os.path.exists(input_path):
         pytest.skip(f"Input path {input_path} not found.")
