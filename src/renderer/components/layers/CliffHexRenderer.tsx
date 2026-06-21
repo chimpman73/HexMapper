@@ -114,4 +114,4 @@ const CliffHexRenderer: React.FC<CliffHexRendererProps> = ({
   return <>{tiles}</>;
 };
 
-export default CliffHexRenderer;
+export default React.memo(CliffHexRenderer);

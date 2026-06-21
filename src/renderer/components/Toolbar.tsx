@@ -16,6 +16,8 @@ const Toolbar: React.FC<ToolbarProps> = ({ engineRef }) => {
     showUnknownsPanel, setShowUnknownsPanel,
     setShowImportModal,
     isScanning,
+    scanProgress,
+    scanMessage,
     stylesList,
     currentStyle, setCurrentStyle
   } = useMapStore();
@@ -29,8 +31,8 @@ const Toolbar: React.FC<ToolbarProps> = ({ engineRef }) => {
           <button className={styles.projectButton} onClick={handleSaveProject} disabled={isScanning}>Save Project</button>
           <button className={styles.projectButton} onClick={handleLoadProject} disabled={isScanning}>Load Project</button>
           <button className={`${styles.projectButton} ${styles.export}`} onClick={handleExportImage} disabled={isScanning}>Export PNG</button>
-          <button className={styles.projectButton} onClick={() => setShowImportModal(true)} disabled={isScanning} style={{background: '#f59e0b'}}>
-            {isScanning ? 'Scanning...' : 'Extract Map'}
+          <button className={styles.projectButton} onClick={() => setShowImportModal(true)} disabled={isScanning} style={{background: '#f59e0b', minWidth: '150px'}}>
+            {isScanning ? (scanProgress !== null ? `${scanMessage || 'Scanning'} (${scanProgress}%)` : 'Scanning...') : 'Extract Map'}
           </button>
           {unknowns.length > 0 && (
             <button className={styles.projectButton} onClick={() => setShowUnknownsPanel(!showUnknownsPanel)} style={{background: '#ef4444'}} title="Toggle Unknowns Panel">

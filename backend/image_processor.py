@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import json
 import os
 import math
 from typing import List, Dict, Any, Tuple, Optional
@@ -30,6 +31,7 @@ class ImageProcessor:
         data.height = height
         
         # STEP 0: BORDER EXTRACTION AND INPAINTING
+        print(json.dumps({"progress": True, "message": "Extracting borders...", "percent": 5}), flush=True)
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
         # BORDER EXTRACTION
@@ -47,6 +49,7 @@ class ImageProcessor:
         
         data.global_borders.extend(self._vector_extractor.extract_borders(red_mask_clean))
 
+        print(json.dumps({"progress": True, "message": "Extracting rivers...", "percent": 15}), flush=True)
         # RIVER EXTRACTION
         lower_blue = np.array([90, 50, 50])
         upper_blue = np.array([130, 255, 255])
@@ -62,11 +65,13 @@ class ImageProcessor:
         
         data.global_rivers.extend(self._vector_extractor.extract_rivers(river_mask))
 
+        print(json.dumps({"progress": True, "message": "Inpainting artifacts...", "percent": 25}), flush=True)
         # INPAINTING
         inpaint_mask = cv2.bitwise_or(red_mask_clean, river_mask)
         inpaint_mask = cv2.dilate(inpaint_mask, np.ones((5, 5), np.uint8), iterations=1)
         img = cv2.inpaint(img, inpaint_mask, 3, cv2.INPAINT_TELEA)
         
+        print(json.dumps({"progress": True, "message": "Detecting coastlines...", "percent": 35}), flush=True)
         # GLOBAL SHORELINE GEOMETRY
         img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2Lab).astype(np.float32)
         water_mask = np.zeros((height, width), dtype=np.uint8)
@@ -133,9 +138,14 @@ class ImageProcessor:
 
         accumulated_water_mask = None
         width, height = 0, 0
+        
+        png_files = [f for f in os.listdir(dir_path) if f.lower().endswith(".png")]
+        total_files = len(png_files)
+        processed = 0
 
-        for filename in os.listdir(dir_path):
-            if not filename.lower().endswith(".png"): continue
+        for filename in png_files:
+            processed += 1
+            print(json.dumps({"progress": True, "message": f"Processing layer {filename}...", "percent": int((processed / total_files) * 100)}), flush=True)
             
             path = os.path.join(dir_path, filename)
             img = cv2.imread(path, cv2.IMREAD_UNCHANGED)

@@ -13,6 +13,8 @@ declare global {
       exportImage: (dataUrl: string) => Promise<{ success: boolean; filePath?: string; canceled?: boolean; error?: string }>;
       getStyles: () => Promise<string[]>;
       getAssetsBasePath: () => Promise<string>;
+      onPythonProgress: (callback: (data: any) => void) => void;
+      removePythonProgress: () => void;
     };
     electron: {
       ipcRenderer: {

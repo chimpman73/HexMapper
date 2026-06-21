@@ -1,5 +1,12 @@
 import { HexCube, Point, HexOrientation } from '../types';
 
+export interface BoundingBox {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
 export const HEX_SIZE = 40; // distance from center to corner
 
 // Convert cube coordinates to pixel coordinates
@@ -96,6 +103,16 @@ export const HEX_NEIGHBORS = [
 // Check if two hexes are equal
 export function isHexEqual(a: HexCube, b: HexCube): boolean {
   return a.q === b.q && a.r === b.r && a.s === b.s;
+}
+
+export function isHexInBounds(hex: HexCube, orientation: HexOrientation, bounds: BoundingBox, padding: number = HEX_SIZE * 2): boolean {
+  const center = hexToPixel(hex, orientation, HEX_SIZE);
+  return (
+    center.x >= bounds.minX - padding &&
+    center.x <= bounds.maxX + padding &&
+    center.y >= bounds.minY - padding &&
+    center.y <= bounds.maxY + padding
+  );
 }
 
 // Generate a rectangular grid of hexes

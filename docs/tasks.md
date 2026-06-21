@@ -59,7 +59,8 @@ This backlog is prioritized based on structural dependencies. Foundational infra
 - Surface backend errors to the React UI in a consistent, user-friendly way (e.g., a toast notification or error panel) rather than silently failing or logging only to the console.
 - Define a shared error response schema (e.g., `{ success: false, error: string, code: string }`) used by all Python responses and IPC replies.
 - Add input validation on the Python side as well — reject malformed JSON input with a structured error before any processing begins.
-- Write a developer runbook documenting how to diagnose IPC and backend failures during development.
+- ~~Write a developer runbook documenting how to diagnose IPC and backend failures during development.~~
+- ~~Implement streaming IPC progress updates during long Python backend extractions, displaying real-time feedback in the React UI.~~
 
 ---
 

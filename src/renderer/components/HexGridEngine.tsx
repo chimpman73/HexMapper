@@ -3,7 +3,7 @@ import { Stage, Layer, Line, Group } from 'react-konva';
 import * as import_react_konva from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import HexTile from './HexTile';
-import { generateRectangularGrid, hexToPixel, getHexCorners, isHexEqual, HEX_NEIGHBORS } from '../utils/hexMath';
+import { generateRectangularGrid, hexToPixel, getHexCorners, isHexEqual, HEX_NEIGHBORS, isHexInBounds } from '../utils/hexMath';
 import { HexCube, HexOrientation, MapLayer, TerrainLayer, VectorLayer, CityLayer, CoastlineLayer, BorderLayer, LayerType, RoadStyle, RiverStyle } from '../types';
 import { useMapStore } from '../store/mapStore';
 import BgImageRenderer from './BgImageRenderer';
@@ -52,6 +52,21 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
   const activeLayer = layers.find(l => l.id === activeLayerId);
 
   const grid = useMemo(() => generateRectangularGrid(mapWidth, mapHeight, orientation), [mapWidth, mapHeight, orientation]);
+
+  const visibleBounds = useMemo(() => {
+    const stageWidth = window.innerWidth - 500;
+    const stageHeight = window.innerHeight - 50;
+    return {
+      minX: -position.x / scale,
+      minY: -position.y / scale,
+      maxX: (-position.x + stageWidth) / scale,
+      maxY: (-position.y + stageHeight) / scale,
+    };
+  }, [position.x, position.y, scale]);
+
+  const visibleGrid = useMemo(() => {
+    return grid.filter(h => isHexInBounds(h, orientation, visibleBounds));
+  }, [grid, orientation, visibleBounds]);
 
   const [rawPointerPos, setRawPointerPos] = useState<{x: number, y: number} | null>(null);
 
@@ -128,7 +143,8 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
           }
 
           if (layer.type === 'grid') {
-            return <GridLayerRenderer key={`group-${layer.id}`} layer={layer} grid={grid} orientation={orientation} />;
+            if (scale < 0.3) return null;
+            return <GridLayerRenderer key={`group-${layer.id}`} layer={layer} grid={visibleGrid} orientation={orientation} />;
           }
 
           if (layer.type === 'terrain' || layer.type === 'city') {
@@ -136,7 +152,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
               <TerrainLayerRenderer
                 key={`group-${layer.id}`}
                 layer={layer as any}
-                grid={grid}
+                grid={visibleGrid}
                 orientation={orientation}
                 isVectorMode={isVectorMode || false}
                 activeLayerId={activeLayerId}
@@ -163,7 +179,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
               <Group key={`group-${layer.id}`}>
                 <CliffHexRenderer
                   layer={cliffLayer}
-                  grid={grid}
+                  grid={visibleGrid}
                   orientation={orientation}
                   isVectorMode={isVectorMode || false}
                   activeLayerId={activeLayerId}
@@ -195,6 +211,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
                   setLayers={setLayers}
                   setSelectedLineId={setSelectedLineId}
                   setHoveredLineId={setHoveredLineId}
+                  visibleBounds={visibleBounds}
                 />
               </Group>
             );
@@ -220,6 +237,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
               setLayers={setLayers}
               setSelectedLineId={setSelectedLineId}
               setHoveredLineId={setHoveredLineId}
+              visibleBounds={visibleBounds}
             />
           );
         })}

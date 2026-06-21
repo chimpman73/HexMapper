@@ -61,10 +61,12 @@ interface VectorLayerRendererProps {
   setHoveredLineId: (id: string | null) => void;
 }
 
-const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
+import { BoundingBox } from '../../utils/hexMath';
+
+const VectorLayerRenderer: React.FC<VectorLayerRendererProps & { visibleBounds?: BoundingBox }> = ({
   layer, activeLayer, activeLayerId, hoveredLineId, selectedLineId, isVectorMode,
   activeRoadStyle, activeRiverStyle, activeCoastlineStyle, roadConfig, riverConfig, activeColor,
-  coastlines, setLayers, setSelectedLineId, setHoveredLineId
+  coastlines, setLayers, setSelectedLineId, setHoveredLineId, visibleBounds
 }) => {
   const { selectedVertex, setSelectedVertex, activeAction } = useMapStore();
 
@@ -90,14 +92,25 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
   const processedLines = React.useMemo(() => {
     const lines = layer.type === 'cliff' ? (layer.data as any).lines : layer.data;
     if (!Array.isArray(lines)) return [];
-    return lines.map((line: VectorLine) => {
+    
+    return lines.filter((line: VectorLine) => {
+      if (!visibleBounds) return true;
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (let i = 0; i < line.points.length; i += 2) {
+        if (line.points[i] < minX) minX = line.points[i];
+        if (line.points[i] > maxX) maxX = line.points[i];
+        if (line.points[i+1] < minY) minY = line.points[i+1];
+        if (line.points[i+1] > maxY) maxY = line.points[i+1];
+      }
+      return !(maxX < visibleBounds.minX || minX > visibleBounds.maxX || maxY < visibleBounds.minY || minY > visibleBounds.maxY);
+    }).map((line: VectorLine) => {
       let displayPoints = line.points;
       if (layer.type === 'coastline' && line.coastlineStyle === 'fractal') {
          displayPoints = generateFractalLine(line.points, 3, 10);
       }
       return { ...line, displayPoints };
     });
-  }, [layer.data, layer.type]);
+  }, [layer.data, layer.type, visibleBounds]);
 
   const riverFlows = React.useMemo(() => {
     if (layer.type !== 'river') return null;
@@ -480,4 +493,4 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps> = ({
   );
 };
 
-export default VectorLayerRenderer;
+export default React.memo(VectorLayerRenderer);

@@ -1,7 +1,17 @@
+import { useEffect } from 'react';
 import { useMapStore } from '../store/mapStore';
 import { generateRectangularGrid, buildHexEdgeGraph, findHexEdgePath } from '../utils/hexMath';
 
 export const useMapScanner = () => {
+  useEffect(() => {
+    window.api.onPythonProgress((data) => {
+      const state = useMapStore.getState();
+      if (data.percent !== undefined) state.setScanProgress(data.percent);
+      if (data.message !== undefined) state.setScanMessage(data.message);
+    });
+    return () => window.api.removePythonProgress();
+  }, []);
+
   const handleImportImageSelect = async () => {
     const state = useMapStore.getState();
     state.setShowImportModal(false);
@@ -115,6 +125,8 @@ export const useMapScanner = () => {
     if (state.importType === 'directory' && !state.importDirPath) return;
     
     state.setIsScanning(true);
+    state.setScanProgress(0);
+    state.setScanMessage('Starting scan...');
     try {
       const res = await window.api.runPythonScript({ 
         action: 'interpret', 
@@ -180,6 +192,8 @@ export const useMapScanner = () => {
       alert('Error during scan');
     } finally {
       state.setIsScanning(false);
+      state.setScanProgress(null);
+      state.setScanMessage(null);
     }
   };
 

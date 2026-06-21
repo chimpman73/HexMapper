@@ -1,4 +1,5 @@
 import os
+import json
 import cv2
 import numpy as np
 import math
@@ -61,7 +62,11 @@ class HexScanner:
                 hex_poly.append([int(img_x + R_x * math.cos(angle_rad)), int(img_y + R_y * math.sin(angle_rad))])
             cv2.polylines(hex_grid_mask, [np.array(hex_poly, dtype=np.int32)], True, 255, 4)
 
-        for (q, r) in hexes:
+        total_hexes = len(hexes)
+        for i, (q, r) in enumerate(hexes):
+            if i % 50 == 0:
+                print(json.dumps({"progress": True, "message": "Scanning hexes...", "percent": int((i / total_hexes) * 100)}), flush=True)
+
             cx, cy = self._hex_grid.hex_to_pixel(q, r, orientation)
             
             img_x = int((cx - self._bg_offset_x) / self._bg_scale_x)

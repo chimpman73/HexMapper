@@ -11,7 +11,9 @@ const AlignmentSidebar: React.FC = () => {
     bgScaleY, setBgScaleY,
     bgOffsetX, setBgOffsetX,
     bgOffsetY, setBgOffsetY,
-    isScanning
+    isScanning,
+    scanProgress,
+    scanMessage
   } = useMapStore();
   
   const { handleScanAlignedMap } = useMapScanner();
@@ -43,10 +45,15 @@ const AlignmentSidebar: React.FC = () => {
         
         <div style={{display: 'flex', gap: '5px', marginTop: '10px'}}>
           <button className={`${styles.projectButton} ${styles.export}`} onClick={handleScanAlignedMap} disabled={isScanning} style={{flex: 1}}>
-            {isScanning ? 'Scanning...' : 'Scan Aligned'}
+            {isScanning ? (scanProgress !== null ? `${scanProgress}%` : 'Scanning...') : 'Scan Aligned'}
           </button>
           <button className={styles.projectButton} onClick={() => { setImportDirPath(null); setImportType(null); }} style={{background: '#ef4444'}}>Close</button>
         </div>
+        {isScanning && scanMessage && (
+          <div style={{color: '#aaa', fontSize: '12px', textAlign: 'center', marginTop: '5px'}}>
+            {scanMessage}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -13,4 +13,10 @@ contextBridge.exposeInMainWorld('api', {
   saveMap: (dataString: string) => ipcRenderer.invoke('map:save', dataString),
   loadMap: () => ipcRenderer.invoke('map:load'),
   exportImage: (dataUrl: string) => ipcRenderer.invoke('map:exportImage', dataUrl),
+  onPythonProgress: (callback: (data: any) => void) => {
+    ipcRenderer.on('python-progress', (_event, data) => callback(data));
+  },
+  removePythonProgress: () => {
+    ipcRenderer.removeAllListeners('python-progress');
+  },
 });

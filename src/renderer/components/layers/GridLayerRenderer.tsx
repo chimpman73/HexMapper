@@ -30,4 +30,4 @@ const GridLayerRenderer: React.FC<GridLayerRendererProps> = ({ layer, grid, orie
   );
 };
 
-export default GridLayerRenderer;
+export default React.memo(GridLayerRenderer);

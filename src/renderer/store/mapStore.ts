@@ -40,6 +40,8 @@ interface MapState {
   futureLayers: MapLayer[][];
   activeLayerId: string;
   isScanning: boolean;
+  scanProgress: number | null;
+  scanMessage: string | null;
 
   stylesList: string[];
   currentStyle: string;
@@ -78,6 +80,8 @@ interface MapState {
   setLayers: (l: MapLayer[] | ((prev: MapLayer[]) => MapLayer[])) => void;
   setActiveLayerId: (id: string) => void;
   setIsScanning: (s: boolean) => void;
+  setScanProgress: (p: number | null) => void;
+  setScanMessage: (m: string | null) => void;
   setStylesList: (l: string[]) => void;
   setCurrentStyle: (s: string) => void;
   setAssetsBasePath: (p: string) => void;
@@ -154,6 +158,8 @@ export const useMapStore = create<MapState>((set) => ({
   futureLayers: [],
   activeLayerId: '1',
   isScanning: false,
+  scanProgress: null,
+  scanMessage: null,
 
   stylesList: ['Hollow Moon'],
   currentStyle: 'Hollow Moon',
@@ -208,6 +214,8 @@ export const useMapStore = create<MapState>((set) => ({
   }),
   setActiveLayerId: (id) => set({ activeLayerId: id }),
   setIsScanning: (s) => set({ isScanning: s }),
+  setScanProgress: (p) => set({ scanProgress: p }),
+  setScanMessage: (m) => set({ scanMessage: m }),
   setStylesList: (l) => set({ stylesList: l }),
   setCurrentStyle: (s) => set({ currentStyle: s }),
   setAssetsBasePath: (p) => set({ assetsBasePath: p }),

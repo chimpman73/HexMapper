@@ -83,14 +83,33 @@ ipcMain.handle('run-python-script', async (event, args) => {
     
     let stdoutData = '';
     let stderrData = '';
+    let stdoutBuffer = '';
 
     const timer = setTimeout(() => {
       pythonProcess.kill();
       resolve({ success: false, error: 'Python script execution timed out.', code: 'PYTHON_TIMEOUT' });
-    }, 60000);
+    }, 300000); // 5 minutes
 
     pythonProcess.stdout.on('data', (data) => {
-      stdoutData += data.toString();
+      stdoutBuffer += data.toString();
+      let newlineIdx;
+      while ((newlineIdx = stdoutBuffer.indexOf('\n')) !== -1) {
+        const line = stdoutBuffer.slice(0, newlineIdx);
+        stdoutBuffer = stdoutBuffer.slice(newlineIdx + 1);
+        if (!line.trim()) continue;
+        
+        try {
+          const parsed = JSON.parse(line);
+          if (parsed.progress) {
+            if (mainWindow) {
+              mainWindow.webContents.send('python-progress', parsed);
+            }
+            continue;
+          }
+        } catch (e) {}
+        
+        stdoutData += line + '\n';
+      }
     });
 
     pythonProcess.stderr.on('data', (data) => {
@@ -99,6 +118,10 @@ ipcMain.handle('run-python-script', async (event, args) => {
 
     pythonProcess.on('close', (code) => {
       clearTimeout(timer);
+      if (stdoutBuffer.trim()) {
+        stdoutData += stdoutBuffer + '\n';
+      }
+      
       if (code !== 0) {
         resolve({ success: false, error: `Python process exited with code ${code}: ${stderrData}`, code: 'PYTHON_EXIT_ERROR' });
       } else {

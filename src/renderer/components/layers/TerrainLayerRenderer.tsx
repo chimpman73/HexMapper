@@ -87,4 +87,4 @@ const TerrainLayerRenderer: React.FC<TerrainLayerRendererProps> = ({
   return <>{tiles}</>;
 };
 
-export default TerrainLayerRenderer;
+export default React.memo(TerrainLayerRenderer);
