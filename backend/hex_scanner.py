@@ -103,7 +103,11 @@ class HexScanner:
                 t_margin_x = max(2, int(hex_w * 0.40))
                 t_margin_y = max(2, int(hex_h * 0.40))
                 
-                region_mask = data.water_mask[y_start:y_end, x_start:x_end]
+                if len(data.water_mask.shape) == 2:
+                    region_mask = data.water_mask[y_start:y_end, x_start:x_end]
+                else:
+                    region_mask = np.zeros((y_end - y_start, x_end - x_start), dtype=np.uint8)
+                
                 water_pixels = np.count_nonzero(region_mask)
                 total_pixels = (y_end - y_start) * (x_end - x_start)
                 if total_pixels == 0: continue

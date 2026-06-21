@@ -117,7 +117,7 @@ class ImageProcessor:
                 _, m = cv2.threshold(img[:, :, 3], 5, 255, cv2.THRESH_BINARY)
                 return m
             else:
-                g = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                g = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if len(img.shape) == 3 else img
                 if np.mean(g) > 127:
                     _, m = cv2.threshold(g, 240, 255, cv2.THRESH_BINARY_INV)
                 else:
