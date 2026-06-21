@@ -24,7 +24,8 @@ const MapSettingsModal: React.FC = () => {
     // Load system fonts via IPC
     const loadFonts = async () => {
       try {
-        const fonts = await window.api.getSystemFonts();
+        const res = await window.api.getSystemFonts();
+        const fonts = res?.success && res.data ? res.data : ['Arial', 'Times New Roman', 'Courier New'];
         setSystemFonts(fonts);
         // Fallback check against the actual store value
         const currentFont = useMapStore.getState().mapVariables.fontName;

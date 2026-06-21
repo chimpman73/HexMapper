@@ -2,7 +2,7 @@ import math
 from typing import Tuple, List
 
 class HexGrid:
-    def __init__(self, hex_size: int = 40):
+    def __init__(self, hex_size: int = 40) -> None:
         self._hex_size = hex_size
 
     @property

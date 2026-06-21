@@ -4,7 +4,7 @@ from layer_data import LayerData
 
 class MapData:
     """Data class to hold the preprocessed image layers and global vectors."""
-    def __init__(self):
+    def __init__(self) -> None:
         self._width: int = 0
         self._height: int = 0
         self._water_mask: np.ndarray = np.array([])

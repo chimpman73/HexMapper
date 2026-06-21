@@ -7,11 +7,11 @@ from typing import Dict, Any
 from template_manager import TemplateManager
 
 class TerrainScanner:
-    def __init__(self, base_dir: str, template_manager: TemplateManager):
+    def __init__(self, base_dir: str, template_manager: TemplateManager) -> None:
         self._base_dir = base_dir
         self._template_manager = template_manager
 
-    def process_terrain(self, ctx: Dict[str, Any]):
+    def process_terrain(self, ctx: Dict[str, Any]) -> None:
         data = ctx["data"]
         extracted_layers = ctx["extracted_layers"]
         x_start, x_end = ctx["x_start"], ctx["x_end"]

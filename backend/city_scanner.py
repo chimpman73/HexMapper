@@ -8,12 +8,12 @@ from template_manager import TemplateManager
 from hex_grid import HexGrid
 
 class CityScanner:
-    def __init__(self, base_dir: str, template_manager: TemplateManager, hex_grid: HexGrid):
+    def __init__(self, base_dir: str, template_manager: TemplateManager, hex_grid: HexGrid) -> None:
         self._base_dir = base_dir
         self._template_manager = template_manager
         self._hex_grid = hex_grid
 
-    def process_cities(self, ctx: Dict[str, Any]):
+    def process_cities(self, ctx: Dict[str, Any]) -> None:
         data = ctx["data"]
         extracted_layers = ctx["extracted_layers"]
         unknown_hexes = ctx["unknown_hexes"]

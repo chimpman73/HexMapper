@@ -9,7 +9,7 @@ HexMapper is built on a hybrid stack to leverage the strengths of modern web tec
   - **Interaction Logic**: User interactions (panning, zooming, vector drawing, hex painting) are decoupled from the rendering components via custom hooks like `useMapInteraction`.
   - **Rendering Engine**: Utilizes `react-konva` for a highly performant HTML5 canvas. The map drawing logic is decomposed into dedicated, type-safe semantic layer components (`GridLayerRenderer`, `TerrainLayerRenderer`, `VectorLayerRenderer`).
 - **Backend**: A headless Python computer-vision engine driven by `OpenCV` (cv2) and `numpy`.
-- **Communication Bridge**: The React frontend communicates with the Python backend via Electron IPC channels. Python operates as a stateless CLI process (`backend/main.py`) that accepts JSON arguments via standard input, executes the heavy image processing, and returns a structured JSON payload via standard output. A custom `local://` protocol handler in Electron bypasses browser security restrictions to serve dynamically generated images and assets directly from the local filesystem to the React UI.
+- **Communication Bridge**: The React frontend communicates with the Python backend via Electron IPC channels. Python operates as a stateless CLI process (`backend/main.py`) that accepts JSON arguments via standard input, executes the heavy image processing, and returns a structured JSON payload via standard output. The frontend adheres to a strict `IpcResponse` schema, gracefully capturing backend Python crashes, timeouts, and validation errors without crashing the renderer process. A custom `local://` protocol handler in Electron bypasses browser security restrictions to serve dynamically generated images and assets directly from the local filesystem to the React UI.
 
 ## 2. Core Features & UI
 - **Interactive Hex Grid**: A fully interactive canvas that supports zooming, panning, and rendering hex tiles natively. It supports both Flat-top and Pointy-top hex orientations.
@@ -21,6 +21,7 @@ HexMapper is built on a hybrid stack to leverage the strengths of modern web tec
 - **Unknowns Resolution Panel**: When the engine detects a symbol it does not recognize, it prompts the user in the UI. The user can choose to add the symbol to the application's permanent asset library, map it to an existing known asset, or explicitly ignore it.
 - **Undo / Redo System**: A robust layer-state history tracker allows users to safely undo or redo the last 30 map editing actions (drawing, erasing, moving nodes, changing layers) simply by pressing `CTRL+Z` and `CTRL+Y` respectively.
 - **Map Settings**: A centralized configuration menu allows users to set global variables—such as the default map font, real-world hex size, and distance units—which are embedded directly into the project save file.
+- **Global Error Notifications**: A dynamic Toast UI component cleanly surfaces deep backend Python crashes, IPC failures, timeouts, and missing files directly to the user in the bottom right corner, preventing silent failures during map rendering.
 - **Project Serialization**: Maps can be saved to and loaded from local `.json` files.
 - **Exporting**: The canvas can be exported directly to a high-resolution PNG file.
 

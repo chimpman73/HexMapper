@@ -9,7 +9,7 @@ This document provides explicit, high-signal instructions for AI models working 
     *   `src/renderer/`: React/TypeScript frontend code for the UI and map rendering.
     *   `backend/`: Python backend for AI interpretation, ML segmentation, and heavy file processing (PSD/PDF).
     *   `docs/`: Documentation and specifications.
-*   **Inter-Process Communication (IPC):** Use Electron IPC for communication between the React renderer and the Electron main process. The main process should manage the lifecycle of the Python backend (spawning it as a child process) and proxy requests to it via local HTTP or stdin/stdout.
+*   **Inter-Process Communication (IPC):** Use Electron IPC for communication between the React renderer and the Electron main process. The main process manages the lifecycle of the Python backend and proxies requests via stdin/stdout. **MANDATORY:** All IPC handlers must return responses conforming to the `IpcResponse<T>` schema (`{ success: boolean, data?: T, error?: string, code?: string }`). Unhandled promise rejections must be caught and gracefully surfaced to the UI via the global toast notification system (`useMapStore().setLastError`).
 *   **Relative Paths:** **MANDATORY.** Never use absolute paths.
 
 ## 2. Object-Oriented Programming (OOP) & S.O.L.I.D.
@@ -24,7 +24,7 @@ This document provides explicit, high-signal instructions for AI models working 
 *   **Purpose:** The Python backend is strictly for computationally heavy tasks: map/image interpretation (OpenCV/PyTorch), and complex file export (PSD, PDF).
 *   **Type Hinting:** Use Python type hints (`typing` module) for all function signatures and class attributes.
 *   **Virtual Environment:** All Python code must run within an isolated virtual environment (`venv`).
-*   **Error Handling:** Use specific exception types. Send meaningful error responses back to the Electron main process so the user can be notified.
+*   **Error Handling:** Use specific exception types. Python endpoints must return standardized dictionary objects conforming to the `IpcResponse` schema (e.g. `{"success": False, "error": "msg", "code": "ERR_CODE"}`). Never allow raw Python stack traces to silently crash the process without returning a structured JSON error response.
 
 ## 4. Frontend (React/TypeScript) & Electron Standards
 *   **Centralized Types:** Import shared TS interfaces (especially those matching Python data structures) from a central `types/` directory to ensure parity between Python and TS.

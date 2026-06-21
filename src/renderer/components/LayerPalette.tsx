@@ -89,12 +89,14 @@ const LayerPalette: React.FC = () => {
         if (activeLayer.type === 'city') folder = 'Cities';
         if (activeLayer.type === 'coastline') folder = 'Coastline';
         
-        const files = await window.api.getDefaultTiles(currentStyle || 'Hollow Moon', folder);
-        const relPaths = files.map((f: string) => {
-          const parts = f.split(/[\\/]tiles[\\/]/);
-          return parts.length > 1 ? parts[1].replace(/\\/g, '/') : f;
-        });
-        setBrushes(relPaths);
+        const res = await window.api.getDefaultTiles(currentStyle || 'Hollow Moon', folder);
+        if (res?.success && res.data) {
+          const relPaths = res.data.map((f: string) => {
+            const parts = f.split(/[\\/]tiles[\\/]/);
+            return parts.length > 1 ? parts[1].replace(/\\/g, '/') : f;
+          });
+          setBrushes(relPaths);
+        }
       }
     };
     if (activeLayer.type === 'terrain' || activeLayer.type === 'city' || activeLayer.type === 'cliff') {
@@ -105,12 +107,14 @@ const LayerPalette: React.FC = () => {
   useEffect(() => {
     const loadFeatures = async () => {
       if (window.api?.getDefaultTiles) {
-        const files = await window.api.getDefaultTiles(currentStyle || 'Hollow Moon', 'Rivers');
-        const relPaths = files.map((f: string) => {
-          const parts = f.split(/[\\/]tiles[\\/]/);
-          return parts.length > 1 ? parts[1].replace(/\\/g, '/') : f;
-        });
-        setFeatureBrushes(relPaths);
+        const res = await window.api.getDefaultTiles(currentStyle || 'Hollow Moon', 'Rivers');
+        if (res?.success && res.data) {
+          const relPaths = res.data.map((f: string) => {
+            const parts = f.split(/[\\/]tiles[\\/]/);
+            return parts.length > 1 ? parts[1].replace(/\\/g, '/') : f;
+          });
+          setFeatureBrushes(relPaths);
+        }
       }
     };
     if (activeLayer.type === 'river') {

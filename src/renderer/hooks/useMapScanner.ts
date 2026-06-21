@@ -5,12 +5,14 @@ export const useMapScanner = () => {
   const handleImportImageSelect = async () => {
     const state = useMapStore.getState();
     state.setShowImportModal(false);
-    const imagePath = await window.api.openImage();
-    if (!imagePath) return;
+    const imagePathRes = await window.api.openImage();
+    if (!imagePathRes || !imagePathRes.success || !imagePathRes.data) return;
+    const imagePath = imagePathRes.data;
     state.setImportDirPath(null);
     state.setImportType('image');
     
-    const desc = await window.api.readMapDescription(imagePath);
+    const descRes = await window.api.readMapDescription(imagePath);
+    const desc = descRes?.success ? descRes.data : null;
     if (desc) {
       if (desc['Default Style']) state.setCurrentStyle(desc['Default Style']);
       state.setBgScaleX(desc['Scale x'] !== undefined ? desc['Scale x'] : 1);
@@ -53,13 +55,15 @@ export const useMapScanner = () => {
   const handleImportDirectorySelect = async () => {
     const state = useMapStore.getState();
     state.setShowImportModal(false);
-    const dirPath = await window.api.openDirectory();
-    if (!dirPath) return;
+    const dirPathRes = await window.api.openDirectory();
+    if (!dirPathRes || !dirPathRes.success || !dirPathRes.data) return;
+    const dirPath = dirPathRes.data;
     
     state.setImportDirPath(dirPath);
     state.setImportType('directory');
     
-    const desc = await window.api.readMapDescription(dirPath);
+    const descRes = await window.api.readMapDescription(dirPath);
+    const desc = descRes?.success ? descRes.data : null;
     if (desc) {
       if (desc['Default Style']) state.setCurrentStyle(desc['Default Style']);
       state.setBgScaleX(desc['Scale x'] !== undefined ? desc['Scale x'] : 1);
@@ -73,7 +77,8 @@ export const useMapScanner = () => {
       state.setBgOffsetY(0);
     }
     
-    const files = await window.api.readDir(dirPath);
+    const filesRes = await window.api.readDir(dirPath);
+    const files = filesRes?.success && filesRes.data ? filesRes.data : [];
     const groupId = `group_${Date.now()}`;
     const groupLayer = {
       id: groupId,
@@ -111,7 +116,7 @@ export const useMapScanner = () => {
     
     state.setIsScanning(true);
     try {
-      const result = await window.api.runPythonScript({ 
+      const res = await window.api.runPythonScript({ 
         action: 'interpret', 
         mode: state.importType === 'directory' ? 'multi_layer' : 'composite',
         imagePath: state.importType === 'directory' ? state.importDirPath : firstBgImagePath,
@@ -124,46 +129,51 @@ export const useMapScanner = () => {
         orientation: state.orientation,
         layers: state.layers
       });
-      console.log('Scanner result:', result);
-      if (result.status === 'success' && result.data && result.data.layers) {
-        let newLayers = result.data.layers;
-        
-        // Auto-snap any newly imported borders that were detected as snapped
-        const borderLayer = newLayers.find((l: any) => l.type === 'border');
-        if (borderLayer && Array.isArray(borderLayer.data)) {
-           const grid = generateRectangularGrid(state.mapWidth, state.mapHeight, state.orientation);
-           const graph = buildHexEdgeGraph(state.orientation, grid);
-           borderLayer.data = borderLayer.data.map((line: any) => {
-              if (line.borderStyle === 'snapped' && line.points.length >= 4) {
-                 let newPoints: number[] = [];
-                 for (let i = 0; i < line.points.length - 2; i += 2) {
-                     const p1 = {x: line.points[i], y: line.points[i+1]};
-                     const p2 = {x: line.points[i+2], y: line.points[i+3]};
-                     const path = findHexEdgePath(p1, p2, graph);
-                     if (i === 0) newPoints.push(path[0], path[1]);
-                     newPoints.push(...path.slice(2));
-                 }
-                 return { ...line, points: newPoints };
-              }
-              return line;
-           });
+      console.log('Scanner result:', res);
+      if (res.success && res.data) {
+        const payload = res.data;
+        if (payload.status === 'success' && payload.data && payload.data.layers) {
+          let newLayers = payload.data.layers;
+          
+          // Auto-snap any newly imported borders that were detected as snapped
+          const borderLayer = newLayers.find((l: any) => l.type === 'border');
+          if (borderLayer && Array.isArray(borderLayer.data)) {
+             const grid = generateRectangularGrid(state.mapWidth, state.mapHeight, state.orientation);
+             const graph = buildHexEdgeGraph(state.orientation, grid);
+             borderLayer.data = borderLayer.data.map((line: any) => {
+                if (line.borderStyle === 'snapped' && line.points.length >= 4) {
+                   let newPoints: number[] = [];
+                   for (let i = 0; i < line.points.length - 2; i += 2) {
+                       const p1 = {x: line.points[i], y: line.points[i+1]};
+                       const p2 = {x: line.points[i+2], y: line.points[i+3]};
+                       const path = findHexEdgePath(p1, p2, graph);
+                       if (i === 0) newPoints.push(path[0], path[1]);
+                       newPoints.push(...path.slice(2));
+                   }
+                   return { ...line, points: newPoints };
+                }
+                return line;
+             });
+          }
+          
+          state.setLayers(newLayers);
+          if (payload.data.globalCoastlines) {
+            state.setGlobalCoastlines(payload.data.globalCoastlines);
+          }
+          if (payload.data.globalBorders) {
+            state.setGlobalBorders(payload.data.globalBorders);
+          }
+          if (payload.data.unknowns) {
+            state.setUnknowns(payload.data.unknowns);
+          }
+          state.setImportDirPath(null);
+          state.setImportType(null);
+          alert(state.importType === 'directory' ? 'Directory scanned successfully!' : 'Image scanned successfully!');
+        } else {
+          alert('Scan failed: ' + (payload.message || payload.error || 'Unknown error'));
         }
-        
-        state.setLayers(newLayers);
-        if (result.data.globalCoastlines) {
-          state.setGlobalCoastlines(result.data.globalCoastlines);
-        }
-        if (result.data.globalBorders) {
-          state.setGlobalBorders(result.data.globalBorders);
-        }
-        if (result.data.unknowns) {
-          state.setUnknowns(result.data.unknowns);
-        }
-        state.setImportDirPath(null);
-        state.setImportType(null);
-        alert(state.importType === 'directory' ? 'Directory scanned successfully!' : 'Image scanned successfully!');
       } else {
-        alert('Scan failed: ' + (result.message || 'Unknown error'));
+        alert('Scan IPC failed: ' + (res.error || 'Unknown IPC error'));
       }
     } catch (err) {
       console.error(err);

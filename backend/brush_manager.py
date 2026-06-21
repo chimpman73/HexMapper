@@ -4,12 +4,15 @@ import cv2
 from typing import Dict, Any
 
 class BrushManager:
+    def __init__(self, base_dir: str) -> None:
+        self._base_dir = base_dir
+
     def save_brush(self, uid: str, name: str) -> Dict[str, Any]:
-        src_path = os.path.join("saves", ".temp_unknowns", f"{uid}.png")
+        src_path = os.path.join(self._base_dir, "saves", ".temp_unknowns", f"{uid}.png")
         if not name.endswith(".png"):
             name += ".png"
             
-        dest_path = os.path.join("assets", "tiles", "Cities", name)
+        dest_path = os.path.join(self._base_dir, "assets", "tiles", "Cities", name)
         
         try:
             shutil.copy(src_path, dest_path)
@@ -18,7 +21,7 @@ class BrushManager:
             return {"status": "error", "message": f"File operation failed: {str(e)}"}
 
     def ignore_brush(self, uid: str) -> Dict[str, Any]:
-        src_path = os.path.join("saves", ".temp_unknowns", f"{uid}.png")
+        src_path = os.path.join(self._base_dir, "saves", ".temp_unknowns", f"{uid}.png")
         
         try:
             # We need to extract the ink and save it as an alpha-masked PNG in Ignored
@@ -33,7 +36,7 @@ class BrushManager:
             b, g, r = cv2.split(img)
             bgra = cv2.merge((b, g, r, ink_mask))
             
-            ignore_dir = os.path.join("assets", "tiles", "Ignored")
+            ignore_dir = os.path.join(self._base_dir, "assets", "tiles", "Ignored")
             os.makedirs(ignore_dir, exist_ok=True)
             
             dest_path = os.path.join(ignore_dir, f"{uid}.png")

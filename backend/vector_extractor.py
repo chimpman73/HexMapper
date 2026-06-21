@@ -3,7 +3,7 @@ import numpy as np
 from typing import List, Dict
 
 class VectorExtractor:
-    def __init__(self, bg_scale_x: float, bg_scale_y: float, bg_offset_x: float, bg_offset_y: float):
+    def __init__(self, bg_scale_x: float, bg_scale_y: float, bg_offset_x: float, bg_offset_y: float) -> None:
         self._bg_scale_x = bg_scale_x
         self._bg_scale_y = bg_scale_y
         self._bg_offset_x = bg_offset_x

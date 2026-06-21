@@ -5,7 +5,7 @@ import urllib.parse
 from typing import Dict, List, Any, Optional, Tuple
 
 class TemplateManager:
-    def __init__(self, base_dir: str, style: str = "Hollow Moon"):
+    def __init__(self, base_dir: str, style: str = "Hollow Moon") -> None:
         self._base_dir = base_dir
         self._style = style
         self._templates: Dict[str, List[Dict[str, Any]]] = {

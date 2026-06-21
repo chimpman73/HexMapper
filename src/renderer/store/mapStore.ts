@@ -100,6 +100,10 @@ interface MapState {
   setMapVariables: (v: Partial<import('../types').MapVariables>) => void;
   showMapSettingsModal: boolean;
   setShowMapSettingsModal: (s: boolean) => void;
+
+  lastError: string | null;
+  setLastError: (e: string | null) => void;
+  clearError: () => void;
 }
 
 export const useMapStore = create<MapState>((set) => ({
@@ -162,6 +166,10 @@ export const useMapStore = create<MapState>((set) => ({
   setMapVariables: (v) => set((state) => ({ mapVariables: { ...state.mapVariables, ...v } })),
   showMapSettingsModal: false,
   setShowMapSettingsModal: (s) => set({ showMapSettingsModal: s }),
+
+  lastError: null,
+  setLastError: (e) => set({ lastError: e }),
+  clearError: () => set({ lastError: null }),
 
   setOrientation: (o) => set({ orientation: o }),
   setShowCoordinates: (s) => set({ showCoordinates: s }),

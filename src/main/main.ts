@@ -73,14 +73,21 @@ app.on('window-all-closed', () => {
 });
 
 ipcMain.handle('run-python-script', async (event, args) => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
+    if (!args || typeof args !== 'object') {
+      return resolve({ success: false, error: 'Invalid arguments provided to Python script.', code: 'INVALID_ARGS' });
+    }
+
     const scriptPath = path.join(app.getAppPath(), 'backend', 'main.py');
-    
-    // Using the user's global python since venv might not be configured identically yet
     const pythonProcess = spawn('python', [scriptPath]);
     
     let stdoutData = '';
     let stderrData = '';
+
+    const timer = setTimeout(() => {
+      pythonProcess.kill();
+      resolve({ success: false, error: 'Python script execution timed out.', code: 'PYTHON_TIMEOUT' });
+    }, 60000);
 
     pythonProcess.stdout.on('data', (data) => {
       stdoutData += data.toString();
@@ -91,14 +98,20 @@ ipcMain.handle('run-python-script', async (event, args) => {
     });
 
     pythonProcess.on('close', (code) => {
+      clearTimeout(timer);
       if (code !== 0) {
-        reject(new Error(`Python process exited with code ${code}: ${stderrData}`));
+        resolve({ success: false, error: `Python process exited with code ${code}: ${stderrData}`, code: 'PYTHON_EXIT_ERROR' });
       } else {
         try {
           const result = JSON.parse(stdoutData);
-          resolve(result);
+          // If python already returns success property, return it directly
+          if (result && typeof result.success === 'boolean') {
+            resolve(result);
+          } else {
+            resolve({ success: true, data: result });
+          }
         } catch (e) {
-          resolve({ rawOutput: stdoutData });
+          resolve({ success: false, error: 'Invalid JSON from Python backend: ' + stdoutData, code: 'INVALID_JSON' });
         }
       }
     });
@@ -110,34 +123,33 @@ ipcMain.handle('run-python-script', async (event, args) => {
 });
 
 ipcMain.handle('dialog:openDirectory', async () => {
-  if (!mainWindow) return null;
+  if (!mainWindow) return { success: false, error: 'No main window' };
   const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
     properties: ['openDirectory']
   });
-  if (canceled) return null;
-  return filePaths[0];
+  if (canceled || filePaths.length === 0) return { success: false, canceled: true };
+  return { success: true, data: filePaths[0] };
 });
 
 ipcMain.handle('dialog:openImage', async () => {
-  if (!mainWindow) return null;
+  if (!mainWindow) return { success: false, error: 'No main window' };
   const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
     title: 'Select Map Image',
     properties: ['openFile'],
     filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
   });
-  if (canceled || filePaths.length === 0) return null;
-  return filePaths[0];
+  if (canceled || filePaths.length === 0) return { success: false, canceled: true };
+  return { success: true, data: filePaths[0] };
 });
 
 ipcMain.handle('fs:readDir', async (event, dirPath: string) => {
   try {
     const files = await fs.promises.readdir(dirPath);
     const images = files.filter(f => f.toLowerCase().endsWith('.png') || f.toLowerCase().endsWith('.jpg'));
-    // Return absolute paths
-    return images.map(f => path.join(dirPath, f).replace(/\\/g, '/'));
-  } catch (err) {
+    return { success: true, data: images.map(f => path.join(dirPath, f).replace(/\\/g, '/')) };
+  } catch (err: any) {
     console.error(err);
-    return [];
+    return { success: false, error: err.message, data: [] };
   }
 });
 
@@ -146,41 +158,41 @@ ipcMain.handle('fs:readMapDescription', async (event, targetPath: string) => {
     const stat = await fs.promises.stat(targetPath);
     const dirPath = stat.isDirectory() ? targetPath : path.dirname(targetPath);
     const descPath = path.join(dirPath, 'map_description.json');
-    if (!fs.existsSync(descPath)) return null;
+    if (!fs.existsSync(descPath)) return { success: true, data: null };
     const data = await fs.promises.readFile(descPath, 'utf-8');
-    return JSON.parse(data);
-  } catch (err) {
+    return { success: true, data: JSON.parse(data) };
+  } catch (err: any) {
     console.error(err);
-    return null;
+    return { success: false, error: err.message, data: null };
   }
 });
 
 ipcMain.handle('fs:getAssetsBasePath', () => {
-  return path.join(app.getAppPath(), 'assets').replace(/\\/g, '/');
+  return { success: true, data: path.join(app.getAppPath(), 'assets').replace(/\\/g, '/') };
 });
 
 ipcMain.handle('fs:getStyles', async () => {
   try {
     const stylesDir = path.join(app.getAppPath(), 'assets', 'styles');
-    if (!fs.existsSync(stylesDir)) return ['Hollow Moon'];
+    if (!fs.existsSync(stylesDir)) return { success: true, data: ['Hollow Moon'] };
     const entries = await fs.promises.readdir(stylesDir, { withFileTypes: true });
-    return entries.filter(e => e.isDirectory()).map(e => e.name);
-  } catch (err) {
+    return { success: true, data: entries.filter(e => e.isDirectory()).map(e => e.name) };
+  } catch (err: any) {
     console.error('Error reading styles:', err);
-    return ['Hollow Moon'];
+    return { success: false, error: err.message, data: ['Hollow Moon'] };
   }
 });
 
 ipcMain.handle('fs:getDefaultTiles', async (event, style: string = 'Hollow Moon', folder: string = 'Terrain') => {
   try {
     const dirPath = path.join(app.getAppPath(), 'assets', 'styles', style, 'tiles', folder);
-    if (!fs.existsSync(dirPath)) return [];
+    if (!fs.existsSync(dirPath)) return { success: true, data: [] };
     const files = await fs.promises.readdir(dirPath);
     const images = files.filter(f => f.toLowerCase().endsWith('.png') || f.toLowerCase().endsWith('.jpg'));
-    return images.map(f => path.join(dirPath, f).replace(/\\/g, '/'));
-  } catch (err) {
+    return { success: true, data: images.map(f => path.join(dirPath, f).replace(/\\/g, '/')) };
+  } catch (err: any) {
     console.error(err);
-    return [];
+    return { success: false, error: err.message, data: [] };
   }
 });
 
@@ -188,10 +200,10 @@ ipcMain.handle('fs:getSystemFonts', async () => {
   try {
     const fontManager = require('font-list');
     const fonts = await fontManager.getFonts();
-    return fonts.map((f: string) => f.replace(/"/g, ''));
-  } catch (err) {
+    return { success: true, data: fonts.map((f: string) => f.replace(/"/g, '')) };
+  } catch (err: any) {
     console.error('Error fetching system fonts:', err);
-    return ['Arial', 'Times New Roman', 'Courier New', 'Verdana', 'Georgia', 'Comic Sans MS'];
+    return { success: false, error: err.message, data: ['Arial', 'Times New Roman', 'Courier New', 'Verdana', 'Georgia', 'Comic Sans MS'] };
   }
 });
 
@@ -205,7 +217,7 @@ ipcMain.handle('map:save', async (event, dataString: string) => {
   
   try {
     await fs.promises.writeFile(filePath, dataString, 'utf-8');
-    return { success: true, filePath };
+    return { success: true, data: { filePath } };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
@@ -222,7 +234,7 @@ ipcMain.handle('map:load', async (event) => {
   
   try {
     const data = await fs.promises.readFile(filePaths[0], 'utf-8');
-    return { success: true, data, filePath: filePaths[0] };
+    return { success: true, data: { data, filePath: filePaths[0] } };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
@@ -239,7 +251,7 @@ ipcMain.handle('map:exportImage', async (event, dataUrl: string) => {
   try {
     const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
     await fs.promises.writeFile(filePath, base64Data, 'base64');
-    return { success: true, filePath };
+    return { success: true, data: { filePath } };
   } catch (err: any) {
     return { success: false, error: err.message };
   }

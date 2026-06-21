@@ -8,7 +8,7 @@ from template_manager import TemplateManager
 from map_data import MapData
 
 class LayerAssembler:
-    def __init__(self, template_manager: TemplateManager, hex_grid: HexGrid, bg_scale_x: float, bg_scale_y: float, bg_offset_x: float, bg_offset_y: float):
+    def __init__(self, template_manager: TemplateManager, hex_grid: HexGrid, bg_scale_x: float, bg_scale_y: float, bg_offset_x: float, bg_offset_y: float) -> None:
         self._template_manager = template_manager
         self._hex_grid = hex_grid
         self._bg_scale_x = bg_scale_x

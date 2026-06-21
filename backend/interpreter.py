@@ -42,8 +42,8 @@ class MapInterpreter:
             return hex_scanner.scan(map_data, map_width, map_height, orientation, existing_layers, use_ink_filter=(mode != "multi_layer"))
 
         except FileNotFoundError as e:
-            return {"status": "error", "message": f"File Not Found: {str(e)}", "trace": traceback.format_exc()}
+            return {"success": False, "error": f"File Not Found: {str(e)}", "code": "FILE_NOT_FOUND", "data": {"trace": traceback.format_exc()}}
         except cv2.error as e:
-            return {"status": "error", "message": f"OpenCV Processing Error: {str(e)}", "trace": traceback.format_exc()}
+            return {"success": False, "error": f"OpenCV Processing Error: {str(e)}", "code": "OPENCV_ERROR", "data": {"trace": traceback.format_exc()}}
         except Exception as e:
-            return {"status": "error", "message": str(e), "trace": traceback.format_exc()}
+            return {"success": False, "error": str(e), "code": "INTERPRETER_ERROR", "data": {"trace": traceback.format_exc()}}

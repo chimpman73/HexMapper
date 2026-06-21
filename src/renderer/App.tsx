@@ -8,6 +8,7 @@ import Toolbar from './components/Toolbar';
 import ImportModal from './components/ImportModal';
 import AlignmentSidebar from './components/AlignmentSidebar';
 import MapSettingsModal from './components/MapSettingsModal';
+import ErrorToast from './components/ErrorToast';
 import { useMapStore } from './store/mapStore';
 
 const App: React.FC = () => {
@@ -24,7 +25,8 @@ const App: React.FC = () => {
     currentStyle,
     assetsBasePath, setAssetsBasePath,
     setRoadConfig,
-    setRiverConfig
+    setRiverConfig,
+    setLastError
   } = useMapStore();
 
   const engineRef = useRef<HexGridEngineRef>(null);
@@ -66,8 +68,12 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (window.api && window.api.getStyles) {
-      window.api.getStyles().then(setStylesList);
-      window.api.getAssetsBasePath().then(setAssetsBasePath);
+      window.api.getStyles().then((res) => {
+        if (res.success && res.data) setStylesList(res.data);
+      });
+      window.api.getAssetsBasePath().then((res) => {
+        if (res.success && res.data) setAssetsBasePath(res.data);
+      });
     }
   }, [setStylesList, setAssetsBasePath]);
 
@@ -101,12 +107,18 @@ const App: React.FC = () => {
 
     if (action === 'ignore') {
       try {
-        await window.api.runPythonScript({
+        const res = await window.api.runPythonScript({
           command: 'ignore_brush',
           id: unknownId
         });
-      } catch(e) {
-        console.error("Failed to ignore brush:", e);
+        const payload = res.data;
+        if (!res.success || payload?.status === 'error') {
+          setLastError(payload?.message || res.error || 'Failed to ignore brush');
+          return;
+        }
+      } catch(e: any) {
+        setLastError(e.message || 'IPC failure ignoring brush');
+        return;
       }
     } else if (action === 'map') {
       setLayers((prev: any) => prev.map((l: any) => {
@@ -117,12 +129,13 @@ const App: React.FC = () => {
       }));
     } else if (action === 'save') {
       try {
-        const result = await window.api.runPythonScript({
+        const res = await window.api.runPythonScript({
           command: 'save_brush',
           id: unknownId, 
           name: payload.name
         });
-        if (result.status === 'success') {
+        const pyPayload = res.data;
+        if (res.success && pyPayload?.status !== 'error') {
           alert('Brush saved and signatures rebuilt!');
           setLayers((prev: any) => prev.map((l: any) => {
             if (l.type === 'city') {
@@ -131,10 +144,12 @@ const App: React.FC = () => {
             return l;
           }));
         } else {
-          alert('Failed to save brush: ' + result.message);
+          setLastError('Failed to save brush: ' + (pyPayload?.message || res.error));
+          return;
         }
-      } catch(e) {
-        console.error(e);
+      } catch(e: any) {
+        setLastError(e.message || 'IPC failure saving brush');
+        return;
       }
     }
 
@@ -166,6 +181,7 @@ const App: React.FC = () => {
 
       <ImportModal />
       <MapSettingsModal />
+      <ErrorToast />
     </div>
   );
 };

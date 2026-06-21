@@ -2,7 +2,7 @@ import numpy as np
 from typing import List, Optional
 
 class LayerData:
-    def __init__(self, name: str, img_bgr: np.ndarray, ink_mask: Optional[np.ndarray] = None, vectors: Optional[List] = None):
+    def __init__(self, name: str, img_bgr: np.ndarray, ink_mask: Optional[np.ndarray] = None, vectors: Optional[List] = None) -> None:
         self._name = name
         self._img_bgr = img_bgr
         self._ink_mask = ink_mask

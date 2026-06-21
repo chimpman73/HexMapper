@@ -120,25 +120,33 @@ export interface MapVariables {
   hexUnit: string;
 }
 
+export interface IpcResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  code?: string;
+  canceled?: boolean;
+}
+
 declare global {
   interface Window {
     api: {
-      runPythonScript: (args: PythonScriptArgs) => Promise<any>;
-      openDirectory: () => Promise<string | null>;
-      openImage: () => Promise<string | null>;
-      readDir: (dirPath: string) => Promise<string[]>;
-      readMapDescription: (targetPath: string) => Promise<any | null>;
-      saveMap: (dataString: string) => Promise<{ success: boolean; filePath?: string; canceled?: boolean; error?: string }>;
-      loadMap: () => Promise<{ success: boolean; data?: string; filePath?: string; canceled?: boolean; error?: string }>;
-      exportImage: (dataUrl: string) => Promise<{ success: boolean; filePath?: string; canceled?: boolean; error?: string }>;
-      getStyles: () => Promise<string[]>;
-      getAssetsBasePath: () => Promise<string>;
-      getDefaultTiles: (style: string, folder: string) => Promise<string[]>;
-      getSystemFonts: () => Promise<string[]>;
+      runPythonScript: <T = any>(args: PythonScriptArgs) => Promise<IpcResponse<T>>;
+      openDirectory: () => Promise<IpcResponse<string>>;
+      openImage: () => Promise<IpcResponse<string>>;
+      readDir: (dirPath: string) => Promise<IpcResponse<string[]>>;
+      readMapDescription: (targetPath: string) => Promise<IpcResponse<any>>;
+      saveMap: (dataString: string) => Promise<IpcResponse<{ filePath: string }>>;
+      loadMap: () => Promise<IpcResponse<{ data: string, filePath: string }>>;
+      exportImage: (dataUrl: string) => Promise<IpcResponse<{ filePath: string }>>;
+      getStyles: () => Promise<IpcResponse<string[]>>;
+      getAssetsBasePath: () => Promise<IpcResponse<string>>;
+      getDefaultTiles: (style: string, folder: string) => Promise<IpcResponse<string[]>>;
+      getSystemFonts: () => Promise<IpcResponse<string[]>>;
     };
     electron: {
       ipcRenderer: {
-        invoke: (channel: string, data: any) => Promise<any>;
+        invoke: (channel: string, ...args: any[]) => Promise<any>;
       }
     };
   }

@@ -43,7 +43,7 @@ This backlog is prioritized based on structural dependencies. Foundational infra
 - **Memory Audit:** Profile memory usage on a large map and identify the biggest consumers. Explore lazy-loading of brush assets and off-screen layer data.
 - **Benchmarking Target:** Define a concrete performance goal (e.g., smooth 60fps pan/zoom on a map 300+ hexes wide) and add a lightweight benchmark or stress-test map to validate it.
 
-**7. Backend Python Test Coverage**
+**7. ~~Backend Python Test Coverage~~ [COMPLETED]**
 *Why it's important:* The CV pipeline (`hex_scanner.py`, `interpreter.py`, `image_processor.py`, etc.) is complex and fragile. Without a regression suite, modifications to the pipeline can silently break scan accuracy on existing maps. Tests against known map fixtures are essential for confident refactoring and feature additions.
 - Set up a Python test framework (e.g., `pytest`) in the backend with a `tests/` directory.
 - Create a small set of known-good "fixture" maps — scanned inputs paired with expected JSON outputs — to validate end-to-end pipeline accuracy.
@@ -52,7 +52,7 @@ This backlog is prioritized based on structural dependencies. Foundational infra
 - Add a CI-compatible test runner script so tests can be run as a single command (e.g., `pytest backend/tests/`).
 - Establish a minimum accuracy threshold test: given the fixture map, the scanner must correctly classify at least N% of hexes to pass.
 
-**8. IPC Message Validation & Error Surfacing**
+**8. ~~IPC Message Validation & Error Surfacing~~ [COMPLETED]**
 *Why it's important:* The coding standards explicitly require IPC messages and JSON payloads to be validated before processing, and Python crashes to be gracefully surfaced to the user. Currently a backend crash or malformed payload may produce silent failures or uncaught exceptions with no user feedback.
 - Audit all Electron IPC channels and validate incoming message payloads (type-check required fields, reject malformed requests with a structured error response).
 - Wrap all Python backend invocations in the Electron main process with robust error handling — catch non-zero exit codes, `stderr` output, and timeout failures.
@@ -192,7 +192,7 @@ This backlog is prioritized based on structural dependencies. Foundational infra
 - **Custom Legend Elements:** Allow users to add arbitrary text or image elements to the Legend Layer (e.g., a terrain key with icons and descriptions).
 - Legend elements should be draggable and positionable freely on the canvas, independent of the hex grid.
 
-**21. Cliff / Plateau Layer**
+**21. ~~Cliff / Plateau Layer~~ [COMPLETED]**
 *Why it's important:* The Cliff layer is defined in the original Specs but has never been implemented. Cliffs and plateaus are a core terrain feature for D&D and fantasy maps, and the hex-splitting mechanic (showing a cliff hex on one side and a normal hex on the other) requires dedicated rendering logic not present in any current layer.
 - Create a **Cliff Layer** sitting between the Terrain and River layers in the default LayerStack order.
 - **Cliff Line Drawing:** Allow users to draw freehand or fractal cliff lines across the map. These lines can cross hex boundaries.

@@ -13,7 +13,7 @@ from layer_assembler import LayerAssembler
 
 class HexScanner:
     def __init__(self, base_dir: str, template_manager: TemplateManager, hex_grid: HexGrid, 
-                 bg_scale_x: float, bg_scale_y: float, bg_offset_x: float, bg_offset_y: float):
+                 bg_scale_x: float, bg_scale_y: float, bg_offset_x: float, bg_offset_y: float) -> None:
         self._base_dir = base_dir
         self._template_manager = template_manager
         self._hex_grid = hex_grid
