@@ -68,6 +68,41 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
     return grid.filter(h => isHexInBounds(h, orientation, visibleBounds));
   }, [grid, orientation, visibleBounds]);
 
+  const gridChunks = useMemo(() => {
+    const CHUNK_SIZE = 20;
+    const map = new Map<string, HexCube[]>();
+    grid.forEach(hex => {
+      const chunkQ = Math.floor(hex.q / CHUNK_SIZE);
+      const chunkR = Math.floor(hex.r / CHUNK_SIZE);
+      const chunkKey = `${chunkQ},${chunkR}`;
+      if (!map.has(chunkKey)) map.set(chunkKey, []);
+      map.get(chunkKey)!.push(hex);
+    });
+    
+    return Array.from(map.entries()).map(([key, hexes]) => {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      hexes.forEach(h => {
+         const center = hexToPixel(h, orientation);
+         const r = 35; // approx hex size padding
+         if (center.x - r < minX) minX = center.x - r;
+         if (center.x + r > maxX) maxX = center.x + r;
+         if (center.y - r < minY) minY = center.y - r;
+         if (center.y + r > maxY) maxY = center.y + r;
+      });
+      return { key, hexes, bounds: { minX, minY, maxX, maxY } };
+    });
+  }, [grid, orientation]);
+
+  const visibleGridChunks = useMemo(() => {
+     return gridChunks.filter(chunk => {
+        const b1 = chunk.bounds;
+        const b2 = visibleBounds;
+        return !(b1.maxX < b2.minX || b1.minX > b2.maxX || b1.maxY < b2.minY || b1.minY > b2.maxY);
+     });
+  }, [gridChunks, visibleBounds]);
+
+  const isZoomedOut = scale < 0.3;
+
   const [rawPointerPos, setRawPointerPos] = useState<{x: number, y: number} | null>(null);
 
   const isTerrainOrCity = activeLayer?.type === 'terrain' || activeLayer?.type === 'city';
@@ -121,7 +156,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
       onMouseLeave={handleStageMouseLeave}
       onContextMenu={(e) => { e.evt.preventDefault(); }}
     >
-      <Layer>
+      <Layer listening={!isZoomedOut}>
         {layers.map(layer => {
           if (!layer.visible) return null;
 
@@ -152,7 +187,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
               <TerrainLayerRenderer
                 key={`group-${layer.id}`}
                 layer={layer as any}
-                grid={visibleGrid}
+                visibleChunks={visibleGridChunks}
                 orientation={orientation}
                 isVectorMode={isVectorMode || false}
                 activeLayerId={activeLayerId}
@@ -167,6 +202,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
                 handlePaintHex={handlePaintHex}
                 activeAction={activeAction}
                 activeBrush={activeBrush}
+                isZoomedOut={isZoomedOut}
               />
             );
           }

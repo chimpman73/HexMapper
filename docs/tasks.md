@@ -42,6 +42,8 @@ This backlog is prioritized based on structural dependencies. Foundational infra
 - **Object Pooling / Canvas Tiling:** Investigate tiling the canvas into chunks so only dirty tiles are repainted, rather than invalidating the full canvas on every edit.
 - **Memory Audit:** Profile memory usage on a large map and identify the biggest consumers. Explore lazy-loading of brush assets and off-screen layer data.
 - **Benchmarking Target:** Define a concrete performance goal (e.g., smooth 60fps pan/zoom on a map 300+ hexes wide) and add a lightweight benchmark or stress-test map to validate it.
+- **[Optional] Semantic Zooming:** Hide minor details (labels, small streams, city icons) completely when zoomed very far out to further reduce object counts.
+- **[Optional] WebGL Migration:** If extreme scale (>100k interactive hexes) is strictly required, rewrite the core renderer from Canvas2D/Konva to WebGL (PixiJS) to support Sprite Batching.
 
 **7. ~~Backend Python Test Coverage~~ [COMPLETED]**
 *Why it's important:* The CV pipeline (`hex_scanner.py`, `interpreter.py`, `image_processor.py`, etc.) is complex and fragile. Without a regression suite, modifications to the pipeline can silently break scan accuracy on existing maps. Tests against known map fixtures are essential for confident refactoring and feature additions.
