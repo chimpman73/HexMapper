@@ -9,12 +9,12 @@ This document provides explicit, high-signal instructions for AI models working 
     *   `src/renderer/`: React/TypeScript frontend code for the UI and map rendering.
     *   `backend/`: Python backend for AI interpretation, ML segmentation, and heavy file processing (PSD/PDF).
     *   `docs/`: Documentation and specifications.
-*   **Inter-Process Communication (IPC):** Use Electron IPC for communication between the React renderer and the Electron main process. The main process manages the lifecycle of the Python backend and proxies requests via stdin/stdout. **MANDATORY:** All IPC handlers must return responses conforming to the `IpcResponse<T>` schema (`{ success: boolean, data?: T, error?: string, code?: string }`). Unhandled promise rejections must be caught and gracefully surfaced to the UI via the global toast notification system (`useMapStore().setLastError`).
+*   **Inter-Process Communication (IPC):** Use Electron IPC for communication between the React renderer and the Electron main process. The main process manages the lifecycle of the Python backend and proxies requests via stdin/stdout. **MANDATORY:** All IPC handlers must return responses conforming to the `IpcResponse<T>` schema (`{ success: boolean, data?: T, error?: string, code?: string }`). Unhandled promise rejections must be caught and gracefully surfaced to the UI via the global toast notification system (`useMapStore().setToastMessage({ type: 'error', text: ... })`).
 *   **Relative Paths:** **MANDATORY.** Never use absolute paths.
 
 ## 2. Object-Oriented Programming (OOP) & S.O.L.I.D.
 *   **One Class/Component Per File:** Every logical unit must be its own file.
-*   **Single Responsibility (SRP):** One class/component = One specific purpose. 
+*   **Single Responsibility Principle:** One class/component = One specific purpose. Is it Modular? (e.g. `LayerPalette` should be composed of sub-palettes like `RoadPalette`, `RiverPalette` rather than one monolithic file; similarly, complex hooks like `useMapInteraction` should compose smaller hooks like `useHexPainter`, `useVectorDrawer`).
 *   **Encapsulation:** 
     *   **Python:** Prefix internal attributes with `_`. Use `@property` for controlled access.
     *   **JS/TS:** Use `#` for private fields or standard conventions.

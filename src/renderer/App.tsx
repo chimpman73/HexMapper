@@ -8,7 +8,8 @@ import Toolbar from './components/Toolbar';
 import ImportModal from './components/ImportModal';
 import AlignmentSidebar from './components/AlignmentSidebar';
 import MapSettingsModal from './components/MapSettingsModal';
-import ErrorToast from './components/ErrorToast';
+import GlobalToast from './components/GlobalToast';
+import CityAnnotationPanel from './components/CityAnnotationPanel';
 import { useMapStore } from './store/mapStore';
 
 const App: React.FC = () => {
@@ -26,7 +27,11 @@ const App: React.FC = () => {
     assetsBasePath, setAssetsBasePath,
     setRoadConfig,
     setRiverConfig,
-    setLastError
+    setToastMessage,
+    activeAction,
+    activeLayerId,
+    highlightedHexKey,
+    updateCityAnnotation
   } = useMapStore();
 
   const engineRef = useRef<HexGridEngineRef>(null);
@@ -113,11 +118,11 @@ const App: React.FC = () => {
         });
         const payload = res.data;
         if (!res.success || payload?.status === 'error') {
-          setLastError(payload?.message || res.error || 'Failed to ignore brush');
+          setToastMessage({ type: 'error', text: payload?.message || res.error || 'Failed to ignore brush' });
           return;
         }
       } catch(e: any) {
-        setLastError(e.message || 'IPC failure ignoring brush');
+        setToastMessage({ type: 'error', text: e.message || 'IPC failure ignoring brush' });
         return;
       }
     } else if (action === 'map') {
@@ -136,7 +141,7 @@ const App: React.FC = () => {
         });
         const pyPayload = res.data;
         if (res.success && pyPayload?.status !== 'error') {
-          alert('Brush saved and signatures rebuilt!');
+          setToastMessage({ type: 'success', text: 'Brush saved and signatures rebuilt!' });
           setLayers((prev: any) => prev.map((l: any) => {
             if (l.type === 'city') {
               return { ...l, data: { ...l.data, [unk.key]: `local://file?path=${encodeURIComponent(assetsBasePath + '/tiles/Cities/' + payload.name)}` } };
@@ -144,17 +149,28 @@ const App: React.FC = () => {
             return l;
           }));
         } else {
-          setLastError('Failed to save brush: ' + (pyPayload?.message || res.error));
+          setToastMessage({ type: 'error', text: 'Failed to save brush: ' + (pyPayload?.message || res.error) });
           return;
         }
       } catch(e: any) {
-        setLastError(e.message || 'IPC failure saving brush');
+        setToastMessage({ type: 'error', text: e.message || 'IPC failure saving brush' });
         return;
       }
     }
 
     setUnknowns((prev: any) => prev.filter((u: any) => u.id !== unknownId));
   };
+
+  const activeLayer = layers.find(l => l.id === activeLayerId);
+  const isCitySelected = activeAction === 'select' && activeLayer?.type === 'city' && highlightedHexKey;
+  
+  let selectedCityData: any = null;
+  if (isCitySelected && activeLayer && highlightedHexKey) {
+    const cell = (activeLayer.data as any)[highlightedHexKey];
+    if (typeof cell === 'object') {
+      selectedCityData = cell;
+    }
+  }
 
   return (
     <div className={styles.appContainer}>
@@ -175,13 +191,23 @@ const App: React.FC = () => {
               onClose={() => setShowUnknownsPanel(false)}
             />
           )}
+          {isCitySelected && (
+            <CityAnnotationPanel
+              layerId={activeLayerId}
+              hexKey={highlightedHexKey!}
+              name={selectedCityData?.name}
+              notes={selectedCityData?.notes}
+              onUpdate={updateCityAnnotation}
+              onClose={() => setHighlightedHexKey(null)}
+            />
+          )}
         </div>
         <AlignmentSidebar />
       </div>
 
       <ImportModal />
       <MapSettingsModal />
-      <ErrorToast />
+      <GlobalToast />
     </div>
   );
 };

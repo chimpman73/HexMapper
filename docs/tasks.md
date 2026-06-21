@@ -246,6 +246,13 @@ This backlog is prioritized based on structural dependencies. Foundational infra
 - Surface confidence scores visually (e.g., low-confidence hexes shown with a warning indicator) so users know where to focus their corrections.
 - Document the tuning workflow in an in-app help panel or tooltip so users understand the train→correct→retrain loop.
 
+**27. Map Projection Transformation** *(Needs Investigation)*
+*Why it's important:* Allowing users to convert maps between different projections (e.g., from cylindrical to spherical/globe, orthographic, etc.) enhances the tool's versatility for world-building and rendering realistic planets.
+- Investigate and confirm the current default projection type (likely cylindrical).
+- Implement mathematical transformations to warp the hex grid and its contents into different map projections. This may be complicated for certain projections.
+- Update the Map Global Variables (in the JSON save file) to include map-level scale data needed for certain projections, such as overall planet size or global coordinate bounds.
+- Provide a UI toggle or setting to switch between supported projection types.
+
 **11. ~~Advanced River Enhancements~~ [COMPLETED]**
 *Why it's important:* Adds dynamic scaling and attachments to vector lines.
 - ~~**River Details:** Add new River tools (adding fords, waterfalls, etc.). These brushes can only be painted along a river, perpendicular to a river. We might want some way to attach them to a river (in case the river is moved) and to slide them up or down the river if edited.~~ [COMPLETED]

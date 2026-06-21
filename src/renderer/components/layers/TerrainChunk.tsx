@@ -54,8 +54,15 @@ const TerrainChunk: React.FC<TerrainChunkProps> = ({
     const isColorLayer = layer.type === 'border';
     const isImageLayer = layer.type === 'terrain' || layer.type === 'city';
     
-    let imageSrc = isImageLayer ? layer.data[key] : undefined;
-    
+    let imageSrc = undefined;
+    if (isImageLayer) {
+      const cellData = layer.data[key];
+      if (typeof cellData === 'string') {
+        imageSrc = cellData;
+      } else if (cellData && typeof cellData === 'object') {
+        imageSrc = (cellData as any).brushUrl;
+      }
+    }
     if (activeAction === 'highlight' && activeLayerId === layer.id && isImageLayer && activeBrush && imageSrc === activeBrush) {
       isHovered = true;
     }

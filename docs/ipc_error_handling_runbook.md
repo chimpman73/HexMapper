@@ -26,12 +26,12 @@ Instead of using `console.error` or letting unhandled Promise rejections crash t
 import { useMapStore } from './store/mapStore';
 
 const MyComponent = () => {
-  const { setLastError } = useMapStore();
+  const { setToastMessage } = useMapStore();
 
   const handleAction = async () => {
     const res = await window.api.runPythonScript({ command: 'my_cmd' });
     if (!res.success) {
-      setLastError(res.error || 'Unknown IPC Error');
+      setToastMessage({ type: 'error', text: res.error || 'Unknown IPC Error' });
       return;
     }
     // Proceed with res.data

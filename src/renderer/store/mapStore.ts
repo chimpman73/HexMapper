@@ -99,15 +99,16 @@ interface MapState {
   toggleLayerVisibility: (id: string) => void;
   setActiveBorderColor: (c: string) => void;
   setActiveBorderWidth: (w: number) => void;
+  updateCityAnnotation: (layerId: string, hexKey: string, annotation: { name?: string, notes?: string }) => void;
 
   mapVariables: import('../types').MapVariables;
   setMapVariables: (v: Partial<import('../types').MapVariables>) => void;
   showMapSettingsModal: boolean;
   setShowMapSettingsModal: (s: boolean) => void;
 
-  lastError: string | null;
-  setLastError: (e: string | null) => void;
-  clearError: () => void;
+  toastMessage: { text: string, type: 'error' | 'success' | 'info' } | null;
+  setToastMessage: (msg: { text: string, type: 'error' | 'success' | 'info' } | null) => void;
+  clearToast: () => void;
 }
 
 export const useMapStore = create<MapState>((set) => ({
@@ -168,14 +169,21 @@ export const useMapStore = create<MapState>((set) => ({
   riverConfig: null,
   selectedVertex: null,
   
-  mapVariables: { fontName: 'Arial', hexSize: 1, hexUnit: 'miles' },
+  mapVariables: {
+    fontName: 'Arial',
+    hexSize: 1,
+    hexUnit: 'miles',
+    cityLabelSize: 32,
+    cityLabelColor: '#000000',
+    cityLabelOutline: '#ffffff'
+  },
   setMapVariables: (v) => set((state) => ({ mapVariables: { ...state.mapVariables, ...v } })),
   showMapSettingsModal: false,
   setShowMapSettingsModal: (s) => set({ showMapSettingsModal: s }),
 
-  lastError: null,
-  setLastError: (e) => set({ lastError: e }),
-  clearError: () => set({ lastError: null }),
+  toastMessage: null,
+  setToastMessage: (msg) => set({ toastMessage: msg }),
+  clearToast: () => set({ toastMessage: null }),
 
   setOrientation: (o) => set({ orientation: o }),
   setShowCoordinates: (s) => set({ showCoordinates: s }),
@@ -302,6 +310,33 @@ export const useMapStore = create<MapState>((set) => ({
         if (l.parentId === id) return { ...l, visible: newVisible };
         return l;
       })
+    };
+  }),
+
+  updateCityAnnotation: (layerId, hexKey, annotation) => set((state) => {
+    return {
+      layers: state.layers.map(l => {
+        if (l.id === layerId && l.type === 'city') {
+          const currentData = l.data as Record<string, string | import('../types').CityObjectData>;
+          const cell = currentData[hexKey];
+          if (!cell) return l;
+          
+          let newData;
+          if (typeof cell === 'string') {
+            newData = { brushUrl: cell, ...annotation };
+          } else {
+            newData = { ...cell, ...annotation };
+          }
+          
+          return {
+            ...l,
+            data: { ...currentData, [hexKey]: newData }
+          };
+        }
+        return l;
+      }),
+      pastLayers: [...state.pastLayers.slice(-30), state.layers],
+      futureLayers: []
     };
   })
 }));

@@ -21,6 +21,7 @@ import GridLayerRenderer from './layers/GridLayerRenderer';
 import TerrainLayerRenderer from './layers/TerrainLayerRenderer';
 import VectorLayerRenderer from './layers/VectorLayerRenderer';
 import CliffHexRenderer from './layers/CliffHexRenderer';
+import CityLabelOverlay from './layers/CityLabelOverlay';
 
 import Konva from 'konva';
 import { Image as KonvaImage } from 'react-konva';
@@ -28,7 +29,7 @@ import { Image as KonvaImage } from 'react-konva';
 
 const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, ref) => {
   const {
-    orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeFeatureBrush, activeColor, activeBorderColor, activeLineWidth, activeBorderWidth, activeRoadStyle, activeRiverStyle, activeCoastlineStyle, roadConfig, riverConfig, layers, setLayers, activeLayerId, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines, globalBorders, highlightedHexKey, currentStyle, assetsBasePath, activeAction
+    orientation, showCoordinates, mapWidth, mapHeight, activeBrush, activeFeatureBrush, activeColor, activeBorderColor, activeLineWidth, activeBorderWidth, activeRoadStyle, activeRiverStyle, activeCoastlineStyle, roadConfig, riverConfig, layers, setLayers, activeLayerId, bgScaleX, bgScaleY, bgOffsetX, bgOffsetY, globalCoastlines, globalBorders, highlightedHexKey, currentStyle, assetsBasePath, activeAction, mapVariables
   } = useMapStore();
   const stageRef = useRef<Konva.Stage>(null);
 
@@ -256,26 +257,35 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
 
           const vLayer = layer as import('../types').VectorLayer;
           return (
-            <VectorLayerRenderer
-              key={`group-${layer.id}`}
-              layer={vLayer}
-              activeLayer={activeLayer}
-              activeLayerId={activeLayerId}
-              hoveredLineId={hoveredLineId}
-              selectedLineId={selectedLineId}
-              isVectorMode={isVectorMode || false}
-              activeRoadStyle={activeRoadStyle || 'road'}
-              activeRiverStyle={activeRiverStyle || 'river'}
-              activeCoastlineStyle={activeCoastlineStyle || 'smooth'}
-              roadConfig={roadConfig}
-              riverConfig={riverConfig}
-              activeColor={activeColor}
-              coastlines={coastlines}
-              setLayers={setLayers}
-              setSelectedLineId={setSelectedLineId}
-              setHoveredLineId={setHoveredLineId}
-              visibleBounds={visibleBounds}
-            />
+            <Group key={`group-${layer.id}`}>
+              <VectorLayerRenderer
+                layer={vLayer}
+                activeLayer={activeLayer}
+                activeLayerId={activeLayerId}
+                hoveredLineId={hoveredLineId}
+                selectedLineId={selectedLineId}
+                isVectorMode={isVectorMode || false}
+                activeRoadStyle={activeRoadStyle || 'road'}
+                activeRiverStyle={activeRiverStyle || 'river'}
+                activeCoastlineStyle={activeCoastlineStyle || 'smooth'}
+                roadConfig={roadConfig}
+                riverConfig={riverConfig}
+                activeColor={activeColor}
+                coastlines={coastlines}
+                setLayers={setLayers}
+                setSelectedLineId={setSelectedLineId}
+                setHoveredLineId={setHoveredLineId}
+                visibleBounds={visibleBounds}
+              />
+              {layer.type === 'label' && (
+                <CityLabelOverlay
+                  layers={layers}
+                  orientation={orientation}
+                  mapVariables={mapVariables}
+                  visibleBounds={visibleBounds}
+                />
+              )}
+            </Group>
           );
         })}
 

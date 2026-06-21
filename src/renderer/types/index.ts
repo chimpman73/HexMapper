@@ -28,9 +28,15 @@ export interface TerrainLayer extends BaseLayer {
   data: Record<string, string>; // hex coords to image url
 }
 
+export interface CityObjectData {
+  brushUrl: string;
+  name?: string;
+  notes?: string;
+}
+
 export interface CityLayer extends BaseLayer {
   type: 'city';
-  data: Record<string, string>; 
+  data: Record<string, string | CityObjectData>; 
 }
 
 export type CoastlineStyle = 'smooth' | 'fractal' | 'highlight';
@@ -118,6 +124,9 @@ export interface MapVariables {
   fontName: string;
   hexSize: number;
   hexUnit: string;
+  cityLabelSize?: number;
+  cityLabelColor?: string;
+  cityLabelOutline?: string;
 }
 
 export interface IpcResponse<T = any> {

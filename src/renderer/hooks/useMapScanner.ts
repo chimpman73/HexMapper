@@ -180,16 +180,16 @@ export const useMapScanner = () => {
           }
           state.setImportDirPath(null);
           state.setImportType(null);
-          alert(state.importType === 'directory' ? 'Directory scanned successfully!' : 'Image scanned successfully!');
+          state.setToastMessage({ type: 'success', text: state.importType === 'directory' ? 'Directory scanned successfully!' : 'Image scanned successfully!' });
         } else {
-          alert('Scan failed: ' + (payload.message || payload.error || 'Unknown error'));
+          state.setToastMessage({ type: 'error', text: 'Scan failed: ' + (payload.message || payload.error || 'Unknown error') });
         }
       } else {
-        alert('Scan IPC failed: ' + (res.error || 'Unknown IPC error'));
+        state.setToastMessage({ type: 'error', text: 'Scan IPC failed: ' + (res.error || 'Unknown IPC error') });
       }
     } catch (err) {
       console.error(err);
-      alert('Error during scan');
+      state.setToastMessage({ type: 'error', text: 'Error during scan' });
     } finally {
       state.setIsScanning(false);
       state.setScanProgress(null);

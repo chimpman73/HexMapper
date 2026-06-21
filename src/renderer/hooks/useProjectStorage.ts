@@ -13,17 +13,18 @@ export const useProjectStorage = (engineRef: React.RefObject<any>) => {
     };
     const result = await window.api.saveMap(JSON.stringify(projectData, null, 2));
     if (result.success) {
-      console.log('Project saved to', result.filePath);
+      state.setToastMessage({ type: 'success', text: `Project saved to ${result.filePath}` });
     } else if (result.error) {
-      console.error('Save failed:', result.error);
+      state.setToastMessage({ type: 'error', text: `Save failed: ${result.error}` });
     }
   };
 
   const handleLoadProject = async () => {
     const result = await window.api.loadMap();
-    if (result.success && result.data) {
+    const jsonString = typeof result.data === 'string' ? result.data : (result.data as any)?.data;
+    if (result.success && jsonString) {
       try {
-        const projectData = JSON.parse(result.data);
+        const projectData = JSON.parse(jsonString);
         if (projectData.layers) {
           let loadedLayers = projectData.layers as MapLayer[];
           if (!loadedLayers.some(l => l.type === 'grid')) {
@@ -90,8 +91,8 @@ export const useProjectStorage = (engineRef: React.RefObject<any>) => {
             useMapStore.getState().setMapVariables({ fontName: 'Arial', hexSize: 1, hexUnit: 'miles' });
           }
         }
-      } catch (err) {
-        console.error('Invalid project file:', err);
+      } catch (err: any) {
+        useMapStore.getState().setToastMessage({ type: 'error', text: 'Invalid project file: ' + err.message });
       }
     }
   };
@@ -102,9 +103,9 @@ export const useProjectStorage = (engineRef: React.RefObject<any>) => {
       if (dataUrl) {
         const result = await window.api.exportImage(dataUrl);
         if (result.success) {
-          console.log('Exported to', result.filePath);
+          useMapStore.getState().setToastMessage({ type: 'success', text: `Exported to ${result.filePath}` });
         } else if (result.error) {
-          console.error('Export failed:', result.error);
+          useMapStore.getState().setToastMessage({ type: 'error', text: `Export failed: ${result.error}` });
         }
       }
     }
