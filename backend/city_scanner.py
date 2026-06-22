@@ -30,7 +30,7 @@ class CityScanner:
                 
                 is_coastal_hex_sym = False
                 for path in data.global_coastlines:
-                    for pt in path:
+                    for pt in path.get("points", []):
                         if math.hypot(pt["x"] - ctx["cx"], pt["y"] - ctx["cy"]) < self._hex_grid.hex_size * 0.8:
                             is_coastal_hex_sym = True
                             break

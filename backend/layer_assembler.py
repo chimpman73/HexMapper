@@ -6,6 +6,7 @@ from typing import Dict, Any, List
 from hex_grid import HexGrid
 from template_manager import TemplateManager
 from map_data import MapData
+from color_matcher import ColorMatcher
 
 class LayerAssembler:
     def __init__(self, template_manager: TemplateManager, hex_grid: HexGrid, bg_scale_x: float, bg_scale_y: float, bg_offset_x: float, bg_offset_y: float) -> None:
@@ -15,6 +16,7 @@ class LayerAssembler:
         self._bg_scale_y = bg_scale_y
         self._bg_offset_x = bg_offset_x
         self._bg_offset_y = bg_offset_y
+        self._color_matcher = ColorMatcher(template_manager)
 
     def _snap_path_to_hex_vertices(self, path_points: List[Dict[str, float]], orientation: str) -> List[Dict[str, float]]:
         snapped_path = []
@@ -117,39 +119,10 @@ class LayerAssembler:
             if not isinstance(river_layer.get("data"), list):
                 river_layer["data"] = []
                 
-            for river_obj in data.global_rivers:
-                path_points = river_obj["points"]
-                river_color = river_obj.get("color", "#3b82f6")
+            for path_points in data.global_rivers:
                 
                 # Match river style based on color from templates
-                river_style = "river"
-                try:
-                    r_val = int(river_color[1:3], 16)
-                    g_val = int(river_color[3:5], 16)
-                    b_val = int(river_color[5:7], 16)
-                    
-                    debug_log = f"Extracted raw color: {river_color} (R:{r_val} G:{g_val} B:{b_val})\n"
-                    
-                    if self._template_manager.templates.get("river"):
-                        best_dist = float('inf')
-                        for t in self._template_manager.templates["river"]:
-                            if t.get("mean_color") is not None and "hex_" in t["key"].lower():
-                                tb, tg, tr = t["mean_color"]
-                                dist = math.sqrt((b_val - tb)**2 + (g_val - tg)**2 + (r_val - tr)**2)
-                                debug_log += f"  Compared to {t['key']} (R:{int(tr)} G:{int(tg)} B:{int(tb)}): dist={dist}\n"
-                                if dist < best_dist:
-                                    best_dist = dist
-                                    filename = t["key"].split('/')[-1]
-                                    style_name = filename.lower().replace('hex_', '').replace('.png', '')
-                                    river_style = style_name
-                                    river_color = f"#{int(tr):02x}{int(tg):02x}{int(tb):02x}"
-                        
-                        debug_log += f"  FINAL MATCH: {river_style} with color {river_color}\n"
-                        with open("debug_rivers.txt", "a") as f:
-                            f.write(debug_log)
-                except Exception as e:
-                    with open("debug_rivers.txt", "a") as f:
-                        f.write(f"Exception matching colors: {e}\n")
+                river_color, river_style = self._color_matcher.match_river_color(data.source_unknowns, path_points, self._bg_scale_x, self._bg_scale_y, self._bg_offset_x, self._bg_offset_y)
 
                 if len(path_points) < 2: continue
                 
@@ -231,55 +204,56 @@ class LayerAssembler:
                 
             if not isinstance(border_layer.get("data"), list):
                 border_layer["data"] = []
-                for path_points in data.global_borders:
-                    if len(path_points) < 2: continue
+                
+            for path_points in data.global_borders:
+                if len(path_points) < 2: continue
                     
-                    # Heuristic to detect if it's a snapped line vs smooth
-                    snapped = False
-                    if len(path_points) > 2:
-                        border_mask = np.zeros((data.height, data.width), dtype=np.uint8)
-                        pts = []
-                        for p in path_points:
-                            img_x = int((p["x"] - self._bg_offset_x) / self._bg_scale_x)
-                            img_y = int((p["y"] - self._bg_offset_y) / self._bg_scale_y)
-                            pts.append([img_x, img_y])
+                # Heuristic to detect if it's a snapped line vs smooth
+                snapped = False
+                if len(path_points) > 2:
+                    border_mask = np.zeros((data.height, data.width), dtype=np.uint8)
+                    pts = []
+                    for p in path_points:
+                        img_x = int((p["x"] - self._bg_offset_x) / self._bg_scale_x)
+                        img_y = int((p["y"] - self._bg_offset_y) / self._bg_scale_y)
+                        pts.append([img_x, img_y])
                         
-                        cv2.polylines(border_mask, [np.array(pts, dtype=np.int32)], False, 255, 1)
+                    cv2.polylines(border_mask, [np.array(pts, dtype=np.int32)], False, 255, 1)
                         
-                        # Slightly dilate the hex grid mask (which is already 4px thick) to tolerate hand-drawn wobble
-                        kernel = np.ones((3, 3), np.uint8)
-                        thick_grid_mask = cv2.morphologyEx(hex_grid_mask, cv2.MORPH_DILATE, kernel)
+                    # Slightly dilate the hex grid mask (which is already 4px thick) to tolerate hand-drawn wobble
+                    kernel = np.ones((3, 3), np.uint8)
+                    thick_grid_mask = cv2.morphologyEx(hex_grid_mask, cv2.MORPH_DILATE, kernel)
                         
-                        overlap = cv2.bitwise_and(border_mask, thick_grid_mask)
+                    overlap = cv2.bitwise_and(border_mask, thick_grid_mask)
                         
-                        total_pixels = cv2.countNonZero(border_mask)
-                        overlap_pixels = cv2.countNonZero(overlap)
+                    total_pixels = cv2.countNonZero(border_mask)
+                    overlap_pixels = cv2.countNonZero(overlap)
                         
-                        # 60% overlap is enough to confirm it intended to follow the grid
-                        if total_pixels > 0 and (overlap_pixels / total_pixels) > 0.6:
-                            snapped = True
+                    # 60% overlap is enough to confirm it intended to follow the grid
+                    if total_pixels > 0 and (overlap_pixels / total_pixels) > 0.6:
+                        snapped = True
                             
-                    if snapped:
-                        final_points = self._snap_path_to_hex_vertices(path_points, orientation)
-                        if len(final_points) < 2:
-                            # Too short to span between hex vertices, it was likely just a small smooth detail
-                            snapped = False
-                            final_points = path_points
-                    else:
+                if snapped:
+                    final_points = self._snap_path_to_hex_vertices(path_points, orientation)
+                    if len(final_points) < 2:
+                        # Too short to span between hex vertices, it was likely just a small smooth detail
+                        snapped = False
                         final_points = path_points
+                else:
+                    final_points = path_points
                         
-                    flat_points = []
-                    for p in final_points:
-                        flat_points.extend([p["x"], p["y"]])
+                flat_points = []
+                for p in final_points:
+                    flat_points.extend([p["x"], p["y"]])
 
-                    border_layer["data"].append({
-                        "id": f"border_{str(uuid.uuid4())[:8]}",
-                        "points": flat_points,
-                        "stroke": "#dc2626",
-                        "strokeWidth": 5,
-                        "tension": 0 if snapped else 0.5,
-                        "borderStyle": "snapped" if snapped else "smooth"
-                    })
+                border_layer["data"].append({
+                    "id": f"border_{str(uuid.uuid4())[:8]}",
+                    "points": flat_points,
+                    "stroke": "#dc2626",
+                    "strokeWidth": 5,
+                    "tension": 0 if snapped else 0.5,
+                    "borderStyle": "snapped" if snapped else "smooth"
+                })
 
         # Convert global cliffs to vector lines
         if data.global_cliffs:
@@ -302,21 +276,21 @@ class LayerAssembler:
                 old_data = cliff_layer["data"]
                 cliff_layer["data"] = {"lines": [], "hexes": old_data}
                 
-                for path_points in data.global_cliffs:
-                    if len(path_points) < 2: continue
-                    
-                    flat_points = []
-                    for p in path_points:
-                        flat_points.extend([p["x"], p["y"]])
+            for path_points in data.global_cliffs:
+                if len(path_points) < 2: continue
+                
+                flat_points = []
+                for p in path_points:
+                    flat_points.extend([p["x"], p["y"]])
 
-                    cliff_layer["data"]["lines"].append({
-                        "id": f"cliff_{str(uuid.uuid4())[:8]}",
-                        "points": flat_points,
-                        "stroke": "#555555",
-                        "strokeWidth": 8,
-                        "tension": 0.5,
-                        "cliffStyle": "default"
-                    })
+                cliff_layer["data"]["lines"].append({
+                    "id": f"cliff_{str(uuid.uuid4())[:8]}",
+                    "points": flat_points,
+                    "stroke": "#555555",
+                    "strokeWidth": 8,
+                    "tension": 0.5,
+                    "cliffStyle": "default"
+                })
 
         # Convert coastline layers to vector layers with matched colors
         if data.coastline_layers:
@@ -352,55 +326,15 @@ class LayerAssembler:
                 for poly_data in c_layer.vectors:
                     if isinstance(poly_data, dict):
                         path_points = poly_data.get("points", [])
-                        provided_fill = poly_data.get("fill")
                         holes = poly_data.get("holes", [])
+                        source_hex = poly_data.get("source_color", "")
                     else:
                         path_points = poly_data
-                        provided_fill = None
                         holes = []
-
-                    best_match_key = "Coastline/hex_104.png"
-                    best_fill_hex = "#3b82f6"
-                    
-                    if provided_fill:
-                        # Snap provided fill to exact template color
-                        r_val = int(provided_fill[1:3], 16)
-                        g_val = int(provided_fill[3:5], 16)
-                        b_val = int(provided_fill[5:7], 16)
+                        source_hex = ""
                         
-                        best_dist = float('inf')
-                        for t in self._template_manager.templates["coastline"]:
-                            if t.get("mean_color") is not None:
-                                tb, tg, tr = t["mean_color"]
-                                dist = math.sqrt((b_val - tb)**2 + (g_val - tg)**2 + (r_val - tr)**2)
-                                if dist < best_dist:
-                                    best_dist = dist
-                                    best_match_key = t["key"]
-                                    best_fill_hex = f"#{int(tr):02x}{int(tg):02x}{int(tb):02x}"
-                    elif c_layer.img_bgr is not None and c_layer.ink_mask is not None:
-                        vector_mask = np.zeros(c_layer.ink_mask.shape, dtype=np.uint8)
-                        pts = []
-                        for p in path_points:
-                            img_x = int((p["x"] - self._bg_offset_x) / self._bg_scale_x)
-                            img_y = int((p["y"] - self._bg_offset_y) / self._bg_scale_y)
-                            pts.append([img_x, img_y])
-                            
-                        if len(pts) >= 3:
-                            cv2.fillPoly(vector_mask, [np.array(pts, dtype=np.int32)], 255)
-                            combined_mask = cv2.bitwise_and(vector_mask, c_layer.ink_mask)
-                            
-                            if cv2.countNonZero(combined_mask) > 0:
-                                mean_color = cv2.mean(c_layer.img_bgr, mask=combined_mask)[:3]
-                                best_dist = float('inf')
-                                b, g, r = mean_color
-                                for t in self._template_manager.templates["coastline"]:
-                                    if t.get("mean_color") is not None:
-                                        tb, tg, tr = t["mean_color"]
-                                        dist = math.sqrt((b - tb)**2 + (g - tg)**2 + (r - tr)**2)
-                                        if dist < best_dist:
-                                            best_dist = dist
-                                            best_match_key = t["key"]
-                                            best_fill_hex = f"#{int(tr):02x}{int(tg):02x}{int(tb):02x}"
+                    # Match coastline template using ColorMatcher
+                    best_fill_hex, best_match_key = self._color_matcher.match_coastline_color(source_hex)
                                             
                     flat_points = []
                     for p in path_points:

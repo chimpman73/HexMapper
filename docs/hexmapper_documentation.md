@@ -28,8 +28,10 @@ HexMapper is built on a hybrid stack to leverage the strengths of modern web tec
 ## 3. Optical Map Reconstruction Engine
 The crown jewel of HexMapper is its multi-pass computer vision pipeline. The engine operates using a modular, object-oriented architecture with strict type-safety to enforce the Single Responsibility Principle:
 - **`template_manager.py`**: Loads, caches, and pre-processes template tiles, isolating alpha channels and computing inherent ink masks.
-- **`image_processor.py`**: Handles the heavyweight OpenCV operations, masking out regions, contour analysis for vectors, and image inpainting.
-- **`hex_grid.py`**: Encapsulates all mathematical conversions between axial hex coordinates and pixel space for various orientations.
+- **`mask_generator.py`**: Responsible purely for thresholding and topological separation of images into binary masks. Knows nothing about geometry or colors.
+- **`vector_extractor.py`**: A pure geometric parsing class that converts raw binary masks into geometric paths and polygons. Knows nothing about colors.
+- **`color_matcher.py`**: Responsible purely for matching exact extracted colors against approved templates, isolating color logic from geometry.
+- **`image_processor.py`**: Orchestrates the heavyweight OpenCV pipeline, connecting the mask generator, vector extractor, and color matcher.
 - **`hex_scanner.py`**: Performs the sliding-window template matching algorithm over the mapped hex grid to classify terrain, coastlines, and cities.
 - **`interpreter.py`**: A lightweight orchestrator that initializes the pipeline, connects the components, and specifically catches internal errors (like `cv2.error` or `FileNotFoundError`).
 
