@@ -227,7 +227,7 @@ export function useMapInteraction() {
             const newData = {
               id: Date.now().toString(),
               points: vectorDrawer.currentLine!,
-              stroke: l.type === 'border' ? activeBorderColor : (activeColor || (l.type === 'coastline' ? '#222222' : (l.type === 'cliff' ? '#555555' : (l.type === 'river' ? undefined : '#000000')))),
+              stroke: l.type === 'border' ? activeBorderColor : (l.type === 'river' || l.type === 'road' ? undefined : (activeColor || (l.type === 'coastline' ? '#222222' : (l.type === 'cliff' ? '#555555' : '#000000')))),
               strokeWidth: l.type === 'border' ? activeBorderWidth : activeLineWidth,
               tension: l.type === 'coastline' && state.activeCoastlineStyle === 'fractal' ? 0 : l.type === 'border' && state.activeBorderStyle === 'snapped' ? 0 : 0.5,
               invert: vectorDrawer.isShiftPressed,
@@ -280,7 +280,7 @@ export function useMapInteraction() {
           const newData = {
             id: Date.now().toString(),
             points: finalPoints,
-            stroke: l.type === 'border' ? activeBorderColor : (activeColor || (l.type === 'coastline' ? '#222222' : (l.type === 'cliff' ? '#555555' : (l.type === 'river' ? undefined : '#000000')))),
+            stroke: l.type === 'border' ? activeBorderColor : (l.type === 'river' || l.type === 'road' ? undefined : (activeColor || (l.type === 'coastline' ? '#222222' : (l.type === 'cliff' ? '#555555' : '#000000')))),
             strokeWidth: l.type === 'border' ? activeBorderWidth : activeLineWidth,
             tension: l.type === 'coastline' && state.activeCoastlineStyle === 'fractal' ? 0 : l.type === 'border' && state.activeBorderStyle === 'snapped' ? 0 : 0.5,
             invert: vectorDrawer.isShiftPressed,
