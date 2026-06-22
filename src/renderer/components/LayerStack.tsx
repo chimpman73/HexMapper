@@ -64,6 +64,15 @@ const LayerIcon: React.FC<{ type: string, assetsBasePath: string }> = ({ type, a
     );
   }
   
+  if (type === 'legend') {
+    return (
+      <svg width="20" height="20" viewBox="0 0 100 100">
+        <polygon points={hexPoints} fill={green} />
+        <text x="50" y="65" fontSize="55" fontWeight="bold" fill="#222" textAnchor="middle">L</text>
+      </svg>
+    );
+  }
+  
   if (type === 'grid') {
     return (
       <svg width="20" height="20" viewBox="0 0 100 100">

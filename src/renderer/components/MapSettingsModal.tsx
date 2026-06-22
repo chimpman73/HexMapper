@@ -5,9 +5,10 @@ import { useMapStore } from '../store/mapStore';
 const MapSettingsModal: React.FC = () => {
   const { mapVariables, setMapVariables, setShowMapSettingsModal, showMapSettingsModal, bgScaleX: storeBgScaleX, bgScaleY: storeBgScaleY, bgOffsetX: storeBgOffsetX, bgOffsetY: storeBgOffsetY, setBgScaleX, setBgScaleY, setBgOffsetX, setBgOffsetY } = useMapStore();
   
-  const [fontName, setFontName] = useState(mapVariables.fontName);
-  const [hexSize, setHexSize] = useState(mapVariables.hexSize.toString());
-  const [hexUnit, setHexUnit] = useState(mapVariables.hexUnit);
+  const [hexSize, setHexSize] = useState(mapVariables.hexSize?.toString() || '1');
+  const [hexUnit, setHexUnit] = useState(mapVariables.hexUnit || 'miles');
+  const [fontName, setFontName] = useState(mapVariables.fontName || 'Arial');
+  const [secondaryFontName, setSecondaryFontName] = useState(mapVariables.secondaryFontName || 'Arial');
   const [systemFonts, setSystemFonts] = useState<string[]>([]);
 
   const [bgScaleXInput, setBgScaleXInput] = useState(storeBgScaleX.toString());
@@ -15,15 +16,25 @@ const MapSettingsModal: React.FC = () => {
   const [bgOffsetXInput, setBgOffsetXInput] = useState(storeBgOffsetX.toString());
   const [bgOffsetYInput, setBgOffsetYInput] = useState(storeBgOffsetY.toString());
 
+  const [mapTitle, setMapTitle] = useState(mapVariables.mapTitle || '');
+  const [mapSubtitle, setMapSubtitle] = useState(mapVariables.mapSubtitle || '');
+  const [mapAuthor, setMapAuthor] = useState(mapVariables.mapAuthor || '');
+  const [compassRoseAsset, setCompassRoseAsset] = useState(mapVariables.compassRoseAsset || '');
+
   useEffect(() => {
     if (showMapSettingsModal) {
-      setFontName(mapVariables.fontName);
       setHexSize(mapVariables.hexSize.toString());
-      setHexUnit(mapVariables.hexUnit);
+      setHexUnit(mapVariables.hexUnit || 'miles');
+      setFontName(mapVariables.fontName || 'Arial');
+      setSecondaryFontName(mapVariables.secondaryFontName || 'Arial');
       setBgScaleXInput(storeBgScaleX.toString());
       setBgScaleYInput(storeBgScaleY.toString());
       setBgOffsetXInput(storeBgOffsetX.toString());
       setBgOffsetYInput(storeBgOffsetY.toString());
+      setMapTitle(mapVariables.mapTitle || '');
+      setMapSubtitle(mapVariables.mapSubtitle || '');
+      setMapAuthor(mapVariables.mapAuthor || '');
+      setCompassRoseAsset(mapVariables.compassRoseAsset || '');
     }
   }, [showMapSettingsModal, mapVariables, storeBgScaleX, storeBgScaleY, storeBgOffsetX, storeBgOffsetY]);
 
@@ -68,7 +79,7 @@ const MapSettingsModal: React.FC = () => {
     if (!isNaN(boX)) setBgOffsetX(boX);
     if (!isNaN(boY)) setBgOffsetY(boY);
     
-    setMapVariables({ fontName, hexSize: size, hexUnit });
+    setMapVariables({ fontName, secondaryFontName, hexSize: size, hexUnit, mapTitle, mapSubtitle, mapAuthor, compassRoseAsset });
     setShowMapSettingsModal(false);
   };
 
@@ -76,7 +87,7 @@ const MapSettingsModal: React.FC = () => {
 
   return (
     <div className={styles.modalOverlay}>
-      <div className={styles.modalContent} style={{ maxWidth: '400px' }}>
+      <div className={styles.modalContent} style={{ maxWidth: '400px', maxHeight: '80vh', overflowY: 'auto' }}>
         <h2 className={styles.modalTitle}>Map Settings</h2>
         
         <div style={{ marginBottom: '15px' }}>
@@ -89,6 +100,83 @@ const MapSettingsModal: React.FC = () => {
             {systemFonts.map(f => <option key={f} value={f}>{f}</option>)}
           </select>
         </div>
+
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', color: '#ccc' }}>Secondary Font (Fallback)</label>
+          <select 
+            value={secondaryFontName} 
+            onChange={e => setSecondaryFontName(e.target.value)}
+            style={{ width: '100%', padding: '8px', background: '#333', color: 'white', border: '1px solid #555', borderRadius: '4px', marginBottom: '8px' }}
+          >
+            {systemFonts.map(f => <option key={f} value={f}>{f}</option>)}
+          </select>
+        </div>
+
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', color: '#ccc' }}>Map Title</label>
+          <input 
+            type="text" 
+            value={mapTitle} 
+            onChange={e => setMapTitle(e.target.value)}
+            style={{ width: '100%', padding: '8px', background: '#333', color: 'white', border: '1px solid #555', borderRadius: '4px' }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', color: '#ccc' }}>Map Subtitle</label>
+          <input 
+            type="text" 
+            value={mapSubtitle} 
+            onChange={e => setMapSubtitle(e.target.value)}
+            style={{ width: '100%', padding: '8px', background: '#333', color: 'white', border: '1px solid #555', borderRadius: '4px' }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', color: '#ccc' }}>Author</label>
+          <input 
+            type="text" 
+            value={mapAuthor} 
+            onChange={e => setMapAuthor(e.target.value)}
+            style={{ width: '100%', padding: '8px', background: '#333', color: 'white', border: '1px solid #555', borderRadius: '4px' }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', color: '#ccc' }}>Compass Rose Asset</label>
+          <div style={{ display: 'flex', gap: '5px' }}>
+            <input 
+              type="text" 
+              value={compassRoseAsset} 
+              readOnly
+              style={{ flex: 1, padding: '8px', background: '#333', color: '#aaa', border: '1px solid #555', borderRadius: '4px' }}
+            />
+            <button 
+              onClick={async () => {
+                const res = await window.api.openImage();
+                if (res.success && res.data) {
+                  setCompassRoseAsset(`local://file?path=${encodeURIComponent(res.data.replace(/\\/g, '/'))}`);
+                }
+              }}
+              style={{ padding: '8px 12px', background: '#555', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+            >
+              Browse
+            </button>
+            <button 
+              onClick={() => setCompassRoseAsset('')}
+              style={{ padding: '8px 12px', background: '#d32f2f', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+
+        {mapVariables.dateLastSaved && (
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', color: '#ccc' }}>Date Last Saved</label>
+            <div style={{ color: '#888' }}>{mapVariables.dateLastSaved}</div>
+          </div>
+        )}
 
         <div style={{ marginBottom: '15px' }}>
           <label style={{ display: 'block', marginBottom: '5px', color: '#ccc' }}>Hex Size</label>

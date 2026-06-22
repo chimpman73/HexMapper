@@ -4,12 +4,19 @@ import { MapLayer } from '../types';
 export const useProjectStorage = (engineRef: React.RefObject<any>) => {
   const handleSaveProject = async () => {
     const state = useMapStore.getState();
+    
+    const now = new Date();
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const formattedDate = `${months[now.getMonth()]} ${String(now.getDate()).padStart(2, '0')}, ${now.getFullYear()}`;
+    
+    state.setMapVariables({ dateLastSaved: formattedDate });
+
     const projectData = {
       layers: state.layers,
       mapWidth: state.mapWidth,
       mapHeight: state.mapHeight,
       orientation: state.orientation,
-      mapVariables: state.mapVariables,
+      mapVariables: { ...state.mapVariables, dateLastSaved: formattedDate },
       bgScaleX: state.bgScaleX,
       bgScaleY: state.bgScaleY,
       bgOffsetX: state.bgOffsetX,
@@ -39,6 +46,11 @@ export const useProjectStorage = (engineRef: React.RefObject<any>) => {
             } else {
               loadedLayers.push(gridLayer);
             }
+          }
+          
+          if (!loadedLayers.some(l => l.type === 'legend')) {
+            const legendLayer: MapLayer = { id: `legend_${Date.now()}`, name: 'Legend', type: 'legend', visible: true, opacity: 1, data: [] };
+            loadedLayers.push(legendLayer);
           }
           
           // Migrate legacy cliff layers

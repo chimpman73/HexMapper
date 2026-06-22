@@ -103,7 +103,25 @@ export interface GroupLayer extends BaseLayer {
   data: {};
 }
 
-export type MapLayer = TerrainLayer | CityLayer | VectorLayer | CliffLayer | GridLayer | BgImageLayer | GroupLayer;
+export interface LegendElement {
+  id: string;
+  type: 'titleBlock' | 'compassRose' | 'distanceShield' | 'customText' | 'customImage';
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  content?: string;
+  fontSize?: number;
+  fontColor?: string;
+  scale?: number;
+}
+
+export interface LegendLayer extends BaseLayer {
+  type: 'legend';
+  data: LegendElement[];
+}
+
+export type MapLayer = TerrainLayer | CityLayer | VectorLayer | CliffLayer | GridLayer | BgImageLayer | GroupLayer | LegendLayer;
 
 export interface PythonScriptArgs {
   action?: string;
@@ -124,11 +142,17 @@ export interface PythonScriptArgs {
 
 export interface MapVariables {
   fontName: string;
+  secondaryFontName?: string;
   hexSize: number;
   hexUnit: string;
   cityLabelSize?: number;
   cityLabelColor?: string;
   cityLabelOutline?: string;
+  mapTitle?: string;
+  mapSubtitle?: string;
+  mapAuthor?: string;
+  dateLastSaved?: string;
+  compassRoseAsset?: string;
 }
 
 export interface IpcResponse<T = any> {

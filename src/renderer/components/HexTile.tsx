@@ -2,6 +2,8 @@ import React, { useMemo } from 'react';
 import { Line, Text, Group, Image as KonvaImage } from 'react-konva';
 import { HexCube, HexOrientation, hexToPixel, getHexCorners, HEX_SIZE } from '../utils/hexMath';
 import useImage from '../utils/useImage';
+import { useMapStore } from '../store/mapStore';
+import { doesFontHaveVisibleNumbers } from '../utils/fontUtils';
 
 interface HexTileProps {
   hex: HexCube;
@@ -25,6 +27,13 @@ const HexTile: React.FC<HexTileProps> = ({
   const points = useMemo(() => getHexCorners({ x: 0, y: 0 }, orientation), [orientation]);
   
   const image = useImage(imageSrc);
+  const { mapVariables } = useMapStore();
+  const fontToUse = useMemo(() => {
+    if (!doesFontHaveVisibleNumbers(mapVariables.fontName) && mapVariables.secondaryFontName) {
+      return `${mapVariables.secondaryFontName}, sans-serif`;
+    }
+    return `${mapVariables.fontName}, sans-serif`;
+  }, [mapVariables.fontName, mapVariables.secondaryFontName]);
 
   return (
     <Group 
@@ -109,6 +118,7 @@ const HexTile: React.FC<HexTileProps> = ({
           align="center"
           fill={isHovered ? '#000' : '#888'}
           fontSize={10}
+          fontFamily={fontToUse}
           listening={false}
         />
       )}

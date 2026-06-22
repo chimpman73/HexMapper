@@ -174,11 +174,17 @@ export const useMapStore = create<MapState>((set) => ({
   
   mapVariables: {
     fontName: 'Arial',
+    secondaryFontName: 'Arial',
     hexSize: 1,
     hexUnit: 'miles',
     cityLabelSize: 32,
     cityLabelColor: '#000000',
-    cityLabelOutline: '#ffffff'
+    cityLabelOutline: '#ffffff',
+    mapTitle: '',
+    mapSubtitle: '',
+    mapAuthor: '',
+    dateLastSaved: '',
+    compassRoseAsset: ''
   },
   setMapVariables: (v) => set((state) => ({ mapVariables: { ...state.mapVariables, ...v } })),
   showMapSettingsModal: false,
@@ -289,7 +295,7 @@ export const useMapStore = create<MapState>((set) => ({
       type: type as any,
       visible: true,
       opacity: 1,
-      data: type === 'cliff' ? { lines: [], hexes: {} } : (type === 'river' || type === 'label' || type === 'road' || type === 'coastline' || type === 'border' ? [] : {})
+      data: type === 'cliff' ? { lines: [], hexes: {} } : (type === 'river' || type === 'label' || type === 'road' || type === 'coastline' || type === 'border' || type === 'legend' ? [] : {})
     };
     return { layers: [...state.layers, newLayer] };
   }),

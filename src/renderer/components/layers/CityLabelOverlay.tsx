@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Group, Text } from 'react-konva';
+import MixedFontText from '../MixedFontText';
 import { MapLayer, HexOrientation, MapVariables } from '../../types';
 import { hexToPixel, BoundingBox } from '../../utils/hexMath';
 
@@ -49,21 +50,23 @@ const CityLabelOverlay: React.FC<CityLabelOverlayProps> = ({ layers, orientation
   return (
     <Group listening={false}>
       {cityLabels.map(label => (
-        <Text
-          key={label.id}
-          text={label.text}
-          x={label.x - 100} // Centering trick: width 200, align center
-          y={label.y}
-          width={200}
-          align="center"
-          fontFamily={mapVariables.fontName || 'Arial'}
-          fontSize={mapVariables.cityLabelSize || 32}
-          fontStyle="bold"
-          fill={mapVariables.cityLabelColor || '#000000'}
-          stroke={mapVariables.cityLabelOutline || '#ffffff'}
-          strokeWidth={3}
-          fillAfterStrokeEnabled
-        />
+        <Group key={label.id}>
+          <MixedFontText
+            text={label.text}
+            x={label.x - 100}
+            y={label.y}
+            width={200}
+            align="center"
+            primaryFont={mapVariables.fontName}
+            secondaryFont={mapVariables.secondaryFontName}
+            fontSize={mapVariables.cityLabelSize || 32}
+            fontStyle="bold"
+            fill={mapVariables.cityLabelColor || '#000000'}
+            stroke={mapVariables.cityLabelOutline || '#ffffff'}
+            strokeWidth={3}
+            fillAfterStrokeEnabled
+          />
+        </Group>
       ))}
     </Group>
   );

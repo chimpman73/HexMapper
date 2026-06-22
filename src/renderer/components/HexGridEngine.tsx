@@ -22,6 +22,7 @@ import TerrainLayerRenderer from './layers/TerrainLayerRenderer';
 import VectorLayerRenderer from './layers/VectorLayerRenderer';
 import CliffHexRenderer from './layers/CliffHexRenderer';
 import CityLabelOverlay from './layers/CityLabelOverlay';
+import { LegendOverlay } from './layers/LegendOverlay';
 
 import Konva from 'konva';
 import { Image as KonvaImage } from 'react-konva';
@@ -140,6 +141,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
   };
 
   return (
+    <React.Fragment>
     <Stage
       onDblClick={handleDblClick}
       ref={stageRef}
@@ -255,6 +257,14 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
             );
           }
 
+          if (layer.type === 'legend') {
+            return (
+              <Group key={`group-${layer.id}`}>
+                <LegendOverlay layers={[layer]} mapVariables={mapVariables} />
+              </Group>
+            );
+          }
+
           const vLayer = layer as import('../types').VectorLayer;
           return (
             <Group key={`group-${layer.id}`}>
@@ -354,6 +364,7 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
         )}
       </Layer>
     </Stage>
+    </React.Fragment>
   );
 });
 

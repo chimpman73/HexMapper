@@ -10,6 +10,7 @@ import { LabelPalette } from './palettes/LabelPalette';
 import { GridPalette } from './palettes/GridPalette';
 import { TerrainPalette } from './palettes/TerrainPalette';
 import { CityPalette } from './palettes/CityPalette';
+import { LegendPalette } from './palettes/LegendPalette';
 
 const LayerPalette: React.FC = () => {
   const { layers, activeLayerId } = useMapStore();
@@ -27,6 +28,7 @@ const LayerPalette: React.FC = () => {
     case 'grid': return <GridPalette />;
     case 'terrain': return <TerrainPalette />;
     case 'city': return <CityPalette />;
+    case 'legend': return <LegendPalette />;
     default: return null;
   }
 };
