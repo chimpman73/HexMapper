@@ -309,44 +309,7 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps & { visibleBounds?:
           {layer.type === 'river' && riverFlows ? (
             <Group>
               {riverFlows[line.id]?.map((segment, idx) => {
-                if (segment.isTaper) {
-                  const x1 = segment.points[0], y1 = segment.points[1];
-                  const x2 = segment.points[2], y2 = segment.points[3];
-                  const dx = x2 - x1, dy = y2 - y1;
-                  const len = Math.sqrt(dx*dx + dy*dy);
-                  const nx = len === 0 ? 0 : -dy / len;
-                  const ny = len === 0 ? 0 : dx / len;
-                  const endW = segment.width / 2;
-                  
-                  const mx = x1 + dx / 2;
-                  const my = y1 + dy / 2;
-                  
-                  return (
-                    <Group key={`river-seg-${line.id}-${idx}`}>
-                      <Line
-                        points={[
-                          x1, y1,
-                          mx + nx * endW, my + ny * endW,
-                          mx - nx * endW, my - ny * endW
-                        ]}
-                        fill={strokeColor}
-                        closed={true}
-                        opacity={hoveredLineId === line.id ? 0.5 : layer.opacity}
-                      />
-                      <Line
-                        points={[mx, my, x2, y2]}
-                        stroke={strokeColor}
-                        strokeWidth={segment.width}
-                        hitStrokeWidth={Math.max(20, segment.width)}
-                        tension={0}
-                        lineCap="round"
-                        lineJoin="round"
-                        dash={roadDash}
-                        opacity={hoveredLineId === line.id ? 0.5 : layer.opacity}
-                      />
-                    </Group>
-                  );
-                }
+                // Removed straight taper logic to ensure the first segment curves smoothly
                 return (
                   <Line
                     key={`river-seg-${line.id}-${idx}`}
