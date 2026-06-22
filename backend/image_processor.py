@@ -136,9 +136,11 @@ class ImageProcessor:
                         
         elif lname.startswith("river"):
             masks = MaskGenerator.generate_river_masks(img)
-            for mask in masks:
+            for color_bgr, mask in masks:
                 paths = self._vector_extractor.extract_rivers(mask)
-                data.global_rivers.extend(paths)
+                hex_color = f"#{int(color_bgr[2]):02x}{int(color_bgr[1]):02x}{int(color_bgr[0]):02x}"
+                for p in paths:
+                    data.global_rivers.append({"points": p, "source_color": hex_color})
 
         elif lname.startswith("cliff"):
             masks, ink_mask = MaskGenerator.generate_cliff_masks(img)

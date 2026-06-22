@@ -119,10 +119,16 @@ class LayerAssembler:
             if not isinstance(river_layer.get("data"), list):
                 river_layer["data"] = []
                 
-            for path_points in data.global_rivers:
+            for path_data in data.global_rivers:
+                if isinstance(path_data, dict):
+                    path_points = path_data["points"]
+                    source_color = path_data.get("source_color", "")
+                else:
+                    path_points = path_data
+                    source_color = ""
                 
-                # Match river style based on color from templates
-                river_color, river_style = self._color_matcher.match_river_color(data.source_unknowns, path_points, self._bg_scale_x, self._bg_scale_y, self._bg_offset_x, self._bg_offset_y)
+                # Match river style based on exact source color
+                river_color, river_style = self._color_matcher.match_river_color(source_color)
 
                 if len(path_points) < 2: continue
                 

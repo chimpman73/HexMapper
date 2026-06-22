@@ -81,11 +81,31 @@ class MaskGenerator:
             return []
             
         kernel_tiny = np.ones((2, 2), np.uint8)
-        mask = cv2.morphologyEx(base_mask, cv2.MORPH_DILATE, kernel_tiny, iterations=1)
+        mask_clean = cv2.morphologyEx(base_mask, cv2.MORPH_DILATE, kernel_tiny, iterations=1)
         
-        # We can also split rivers by color blobs if needed, but the current extraction
-        # handles them as one mask. Let's return just the base mask in a list for now.
-        return [mask]
+        masks = []
+        if len(img.shape) == 3:
+            bgr = img[:, :, :3] if img.shape[2] == 4 else img
+            quantized = (bgr // 32) * np.uint8(32) + np.uint8(16)
+            flat_quantized = quantized[mask_clean > 0]
+            
+            if len(flat_quantized) > 0:
+                unique_colors, counts = np.unique(flat_quantized, axis=0, return_counts=True)
+                total_pixels = len(flat_quantized)
+                
+                for color, count in zip(unique_colors, counts):
+                    if count / total_pixels < 0.001 and count < 100:
+                        continue
+                        
+                    color_mask = np.all(quantized == color, axis=-1)
+                    final_mask = np.logical_and(color_mask, mask_clean > 0).astype(np.uint8) * 255
+                    color_tuple = (int(color[0]), int(color[1]), int(color[2]))
+                    masks.append((color_tuple, final_mask))
+        
+        if not masks:
+            masks.append(((255, 255, 255), mask_clean))
+            
+        return masks
         
     @staticmethod
     def generate_cliff_masks(img: np.ndarray) -> tuple[List[np.ndarray], Optional[np.ndarray]]:

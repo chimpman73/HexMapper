@@ -64,21 +64,27 @@ class ColorMatcher:
                     
         return default_hex, default_key
 
-    def match_river_color(self, img: np.ndarray, path_points: List[Dict[str, float]], bg_scale_x: float, bg_scale_y: float, bg_offset_x: float, bg_offset_y: float) -> tuple[str, str]:
+    def match_river_color(self, source_hex: str) -> tuple[str, str]:
         """Returns (best_stroke_hex, style_name) for a river."""
         default_hex = "#3b82f6"
-        default_style = "river"
-        
-        mean_bgr = self._get_mean_color(img, path_points, bg_scale_x, bg_scale_y, bg_offset_x, bg_offset_y)
-        if not mean_bgr:
-            return default_hex, default_style
-            
-        b, g, r = mean_bgr
-        best_dist = float('inf')
+        default_style = "River"
         
         templates = self._template_manager.templates.get("river", [])
-        if not templates:
+        
+        for t in templates:
+            if t["key"].endswith("hex_River.png") and t.get("mean_color") is not None:
+                tb, tg, tr = t["mean_color"]
+                default_hex = f"#{int(tr):02x}{int(tg):02x}{int(tb):02x}"
+                break
+                
+        if not source_hex or len(source_hex) != 7:
             return default_hex, default_style
+            
+        r = int(source_hex[1:3], 16)
+        g = int(source_hex[3:5], 16)
+        b = int(source_hex[5:7], 16)
+        
+        best_dist = float('inf')
             
         for t in templates:
             if t.get("mean_color") is not None and "hex_" in t["key"].lower():
