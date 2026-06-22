@@ -15,7 +15,7 @@ export interface HexGridEngineRef {
   exportToDataURL: () => string | null;
 }
 
-import { generateCliffHashes } from '../utils/vectorMath';
+import { CliffHashes } from './layers/CliffHashes';
 import { useMapInteraction } from '../hooks/useMapInteraction';
 import GridLayerRenderer from './layers/GridLayerRenderer';
 import TerrainLayerRenderer from './layers/TerrainLayerRenderer';
@@ -350,7 +350,15 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
                 }
               />
             )}
-            {activeLayer?.type === 'cliff' && generateCliffHashes(currentLine, isShiftPressed, activeColor || '#555555', activeLineWidth, 'current')}
+            {activeLayer?.type === 'cliff' && (
+              <CliffHashes 
+                points={currentLine} 
+                invert={isShiftPressed} 
+                color={activeColor || '#555555'} 
+                width={activeLineWidth} 
+                id="current" 
+              />
+            )}
           </React.Fragment>
         )}
       </Layer>

@@ -73,14 +73,27 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (window.api && window.api.getStyles) {
-      window.api.getStyles().then((res) => {
-        if (res.success && res.data) setStylesList(res.data);
-      });
-      window.api.getAssetsBasePath().then((res) => {
-        if (res.success && res.data) setAssetsBasePath(res.data);
-      });
+      window.api.getStyles()
+        .then((res) => {
+          if (res.success && res.data) {
+            setStylesList(res.data);
+          } else {
+            setToastMessage({ type: 'error', text: 'Failed to load styles: ' + (res.error || 'Unknown error') });
+          }
+        })
+        .catch((e: any) => setToastMessage({ type: 'error', text: 'IPC failure loading styles: ' + e.message }));
+        
+      window.api.getAssetsBasePath()
+        .then((res) => {
+          if (res.success && res.data) {
+            setAssetsBasePath(res.data);
+          } else {
+            setToastMessage({ type: 'error', text: 'Failed to load assets path: ' + (res.error || 'Unknown error') });
+          }
+        })
+        .catch((e: any) => setToastMessage({ type: 'error', text: 'IPC failure loading assets path: ' + e.message }));
     }
-  }, [setStylesList, setAssetsBasePath]);
+  }, [setStylesList, setAssetsBasePath, setToastMessage]);
 
   // Determine the primary background image to use for auto-sizing the map
   const firstBgImagePath = layers.find(l => l.type === 'bg_image')?.data?.imagePath;

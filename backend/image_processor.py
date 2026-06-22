@@ -136,10 +136,23 @@ class ImageProcessor:
                         
         elif lname.startswith("river"):
             masks = MaskGenerator.generate_river_masks(img)
-            for color_bgr, mask in masks:
+            for mask in masks:
                 paths = self._vector_extractor.extract_rivers(mask)
-                hex_color = f"#{int(color_bgr[2]):02x}{int(color_bgr[1]):02x}{int(color_bgr[0]):02x}"
                 for p in paths:
+                    samples = []
+                    for pt in p:
+                        cx = int((pt["x"] - self._vector_extractor._bg_offset_x) / self._vector_extractor._bg_scale_x)
+                        cy = int((pt["y"] - self._vector_extractor._bg_offset_y) / self._vector_extractor._bg_scale_y)
+                        if 0 <= cy < img.shape[0] and 0 <= cx < img.shape[1]:
+                            if img.shape[2] == 4 and img[cy, cx, 3] == 0:
+                                continue
+                            samples.append(img[cy, cx, :3])
+                    
+                    hex_color = "#3b82f6" # default fallback
+                    if samples:
+                        avg_bgr = np.median(samples, axis=0)
+                        hex_color = f"#{int(avg_bgr[2]):02x}{int(avg_bgr[1]):02x}{int(avg_bgr[0]):02x}"
+                        
                     data.global_rivers.append({"points": p, "source_color": hex_color})
 
         elif lname.startswith("cliff"):

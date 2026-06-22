@@ -79,7 +79,7 @@ ipcMain.handle('run-python-script', async (event, args) => {
     }
 
     const scriptPath = path.join(app.getAppPath(), 'backend', 'main.py');
-    const pythonProcess = spawn('python', [scriptPath]);
+    const pythonProcess = spawn('python', [scriptPath, app.getAppPath()]);
     
     let stdoutData = '';
     let stderrData = '';

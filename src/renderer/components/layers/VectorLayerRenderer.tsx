@@ -2,7 +2,8 @@ import React from 'react';
 import { Group, Line, Shape } from 'react-konva';
 import { Circle } from 'react-konva';
 import { VectorLayer, Layer, VectorLine, CliffLayer } from '../../types';
-import { generateCliffHashes, distToSegment, getRelativePointerPosition } from '../../utils/vectorMath';
+import { distToSegment, getRelativePointerPosition } from '../../utils/vectorMath';
+import { CliffHashes } from './CliffHashes';
 import { pixelToHex, hexToPixel, getHexCorners } from '../../utils/hexMath';
 import { generateFractalLine } from '../../utils/fractalMath';
 import { useMapStore } from '../../store/mapStore';
@@ -444,7 +445,16 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps & { visibleBounds?:
                 listening={false}
              />
           )}
-          {layer.type === 'cliff' && generateCliffHashes(displayPoints, line.invert, hoveredLineId === line.id ? '#ff5252' : line.stroke, line.strokeWidth, line.id, hoveredLineId === line.id ? 0.5 : layer.opacity)}
+          {layer.type === 'cliff' && (
+            <CliffHashes 
+              points={displayPoints} 
+              invert={line.invert} 
+              color={hoveredLineId === line.id ? '#ff5252' : line.stroke || '#000'} 
+              width={line.strokeWidth} 
+              id={line.id} 
+              opacity={hoveredLineId === line.id ? 0.5 : layer.opacity} 
+            />
+          )}
           {selectedLineId === line.id && (layer.type === 'road' || layer.type === 'river' || layer.type === 'coastline' || layer.type === 'border' || layer.type === 'cliff') && (
             <Group>
               {Array.from({ length: line.points.length / 2 }).map((_, ptIndex) => (

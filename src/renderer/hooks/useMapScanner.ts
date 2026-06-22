@@ -187,9 +187,8 @@ export const useMapScanner = () => {
       } else {
         state.setToastMessage({ type: 'error', text: 'Scan IPC failed: ' + (res.error || 'Unknown IPC error') });
       }
-    } catch (err) {
-      console.error(err);
-      state.setToastMessage({ type: 'error', text: 'Error during scan' });
+    } catch (err: any) {
+      state.setToastMessage({ type: 'error', text: 'Error during scan: ' + (err.message || err) });
     } finally {
       state.setIsScanning(false);
       state.setScanProgress(null);

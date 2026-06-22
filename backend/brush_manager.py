@@ -16,9 +16,9 @@ class BrushManager:
         
         try:
             shutil.copy(src_path, dest_path)
-            return {"status": "success"}
+            return {"success": True, "data": {"message": "Brush saved successfully"}}
         except (FileNotFoundError, PermissionError, OSError) as e:
-            return {"status": "error", "message": f"File operation failed: {str(e)}"}
+            return {"success": False, "error": f"File operation failed: {str(e)}", "code": "BRUSH_ERROR"}
 
     def ignore_brush(self, uid: str) -> Dict[str, Any]:
         src_path = os.path.join(self._base_dir, "saves", ".temp_unknowns", f"{uid}.png")
@@ -43,10 +43,10 @@ class BrushManager:
             if not cv2.imwrite(dest_path, bgra):
                 raise cv2.error(f"Failed to write image to {dest_path}")
             
-            return {"status": "success"}
+            return {"success": True, "data": {"message": "Brush ignored successfully"}}
         except FileNotFoundError as e:
-            return {"status": "error", "message": str(e)}
+            return {"success": False, "error": str(e), "code": "BRUSH_ERROR"}
         except cv2.error as e:
-            return {"status": "error", "message": f"OpenCV processing error: {str(e)}"}
+            return {"success": False, "error": f"OpenCV processing error: {str(e)}", "code": "BRUSH_ERROR"}
         except OSError as e:
-            return {"status": "error", "message": f"File system error: {str(e)}"}
+            return {"success": False, "error": f"File system error: {str(e)}", "code": "BRUSH_ERROR"}

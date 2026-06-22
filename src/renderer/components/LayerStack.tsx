@@ -279,13 +279,11 @@ const LayerStack: React.FC<LayerStackProps> = () => {
                            state.setLayers([...updatedExistingLayers, ...newLayers]);
                            state.setToastMessage({ type: 'success', text: `Re-import of ${layer.name} complete! Added ${newLayers.length} new layer(s).` });
                          } else {
-                           console.error('Re-import failed:', res);
                            state.setToastMessage({ type: 'error', text: 'Re-import failed: ' + (res.error || res.data?.message || 'Unknown error') });
                          }
-                       } catch (err) {
+                       } catch (err: any) {
                          state.setScanProgress(null, '');
-                         console.error(err);
-                         state.setToastMessage({ type: 'error', text: 'Re-import failed due to an exception' });
+                         state.setToastMessage({ type: 'error', text: 'Re-import failed due to an exception: ' + (err.message || err) });
                        } finally {
                          setReimportingIds(prev => prev.filter(id => id !== layer.id));
                        }

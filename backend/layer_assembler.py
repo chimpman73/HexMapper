@@ -213,7 +213,7 @@ class LayerAssembler:
                 
             for path_points in data.global_borders:
                 if len(path_points) < 2: continue
-                    
+                
                 # Heuristic to detect if it's a snapped line vs smooth
                 snapped = False
                 if len(path_points) > 2:
@@ -235,8 +235,10 @@ class LayerAssembler:
                     total_pixels = cv2.countNonZero(border_mask)
                     overlap_pixels = cv2.countNonZero(overlap)
                         
+                    ratio = overlap_pixels / total_pixels if total_pixels > 0 else 0
+                    
                     # 60% overlap is enough to confirm it intended to follow the grid
-                    if total_pixels > 0 and (overlap_pixels / total_pixels) > 0.6:
+                    if total_pixels > 0 and ratio > 0.6:
                         snapped = True
                             
                 if snapped:

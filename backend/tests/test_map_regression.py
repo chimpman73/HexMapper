@@ -94,6 +94,18 @@ def test_multi_layer_regression(multi_layer_test_case):
     gold_borders_count = len(gold_data.get("globalBorders", []))
     out_borders_count = len(result["data"].get("globalBorders", []))
     
-    if "Albheldri" in input_path:
-        assert abs(gold_cliffs_count - out_cliffs_count) <= 5, f"Cliff count mismatch. Out: {out_cliffs_count}, Gold: {gold_cliffs_count}"
-        assert abs(gold_borders_count - out_borders_count) <= 5, f"Border count mismatch. Out: {out_borders_count}, Gold: {gold_borders_count}"
+    gold_rivers = []
+    for layer in gold_data.get("layers", []):
+        if layer.get("type") == "river":
+            gold_rivers.extend(layer.get("data", []))
+    gold_rivers_count = len(gold_rivers)
+    
+    out_rivers = []
+    for layer in result["data"]["layers"]:
+        if layer.get("type") == "river":
+            out_rivers.extend(layer.get("data", []))
+    out_rivers_count = len(out_rivers)
+    
+    assert abs(gold_cliffs_count - out_cliffs_count) <= 5, f"Cliff count mismatch. Out: {out_cliffs_count}, Gold: {gold_cliffs_count}"
+    assert abs(gold_borders_count - out_borders_count) <= 5, f"Border count mismatch. Out: {out_borders_count}, Gold: {gold_borders_count}"
+    assert abs(gold_rivers_count - out_rivers_count) <= 5, f"River count mismatch. Out: {out_rivers_count}, Gold: {gold_rivers_count}"

@@ -55,8 +55,8 @@ const MapSettingsModal: React.FC = () => {
             setFontName(fallback);
           }
         }
-      } catch (err) {
-        console.error('Failed to load system fonts:', err);
+      } catch (err: any) {
+        useMapStore.getState().setToastMessage({ type: 'error', text: 'Failed to load system fonts: ' + (err.message || err) });
         setSystemFonts(['Arial', 'Times New Roman', 'Courier New']);
       }
     };
