@@ -309,7 +309,50 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps & { visibleBounds?:
           {layer.type === 'river' && riverFlows ? (
             <Group>
               {riverFlows[line.id]?.map((segment, idx) => {
-                // Removed straight taper logic to ensure the first segment curves smoothly
+                if (segment.isTaper && segment.points.length >= 4) {
+                  const x1 = segment.points[0], y1 = segment.points[1];
+                  const x2 = segment.points[2], y2 = segment.points[3];
+                  const dx = x2 - x1, dy = y2 - y1;
+                  const len = Math.sqrt(dx*dx + dy*dy);
+                  const nx = len === 0 ? 0 : -dy / len;
+                  const ny = len === 0 ? 0 : dx / len;
+                  const endW = segment.width / 2;
+                  
+                  const mx = x1 + dx / 2;
+                  const my = y1 + dy / 2;
+                  
+                  const restPoints = [mx, my];
+                  for (let i = 2; i < segment.points.length; i++) {
+                     restPoints.push(segment.points[i]);
+                  }
+                  
+                  return (
+                    <Group key={`river-seg-${line.id}-${idx}`}>
+                      <Line
+                        points={[
+                          x1, y1,
+                          mx + nx * endW, my + ny * endW,
+                          mx - nx * endW, my - ny * endW
+                        ]}
+                        fill={strokeColor}
+                        closed={true}
+                        opacity={hoveredLineId === line.id ? 0.5 : layer.opacity}
+                      />
+                      <Line
+                        points={restPoints}
+                        stroke={strokeColor}
+                        strokeWidth={segment.width}
+                        hitStrokeWidth={Math.max(20, segment.width)}
+                        tension={line.tension}
+                        lineCap="round"
+                        lineJoin="round"
+                        dash={roadDash}
+                        opacity={hoveredLineId === line.id ? 0.5 : layer.opacity}
+                      />
+                    </Group>
+                  );
+                }
+                
                 return (
                   <Line
                     key={`river-seg-${line.id}-${idx}`}

@@ -134,8 +134,8 @@ export function computeRiverFlows(riverLines: VectorLine[], baseWidth: number): 
         currentWidth = edgeWidth;
         currentIsTaper = edgeIsTaper;
         currentPoints = [line.points[edge.segmentIndex], line.points[edge.segmentIndex+1], line.points[edge.segmentIndex+2], line.points[edge.segmentIndex+3]];
-      } else if (edgeWidth === currentWidth && !edgeIsTaper && !currentIsTaper) {
-        // Continue the same segment
+      } else if (edgeWidth === currentWidth) {
+        // Continue the same segment, even if the start was a taper, so the spline is continuous
         currentPoints.push(line.points[edge.segmentIndex+2], line.points[edge.segmentIndex+3]);
       } else {
         // Flush current
