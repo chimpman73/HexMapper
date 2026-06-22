@@ -45,3 +45,8 @@ This document provides explicit, high-signal instructions for AI models working 
 2.  **Is it Validated?** Are IPC messages and JSON payloads validated before processing?
 3.  **Are Paths Relative?** Does it avoid hardcoded machine-specific paths?
 4.  **Error Handling?** Does it gracefully handle Python crashes or image processing failures in the UI?
+
+## 7. Testing & Validation Protocol
+*   **Test Suite:** HexMapper uses a Python-based regression testing suite located in `backend/tests/`. The `run_report.py` script is used to execute golden file regression tests across multiple map instances. The `test_partial_hexes.py` script is used to test the engine's ability to match partial (full, half, and quarter) hexes on an artificial map.
+*   **Regression Reporting:** The test suite generates tabular reports for both tests. `run_report.py` outputs `actual / expected` metrics across critical layers (Borders, Rivers, Terrain, Coastlines, Cities, Roads, and Unknowns) with `PASS`, `WARN` (80-99%), and `FAIL` statuses. `test_partial_hexes.py` outputs detailed accuracies per individual hex type. Both tests also write their results to a timestamped file in `backend/tests/results/`.
+*   **Mandatory User Review:** The AI assistant must ALWAYS run the test suite and present the tabular test output to the user for review after any core algorithm modifications or map scanning updates. The AI must NEVER autonomously decide if a test failure or warning is acceptable. The user must explicitly confirm if the deviation is an actual error or if the expected "golden data" needs to be updated.

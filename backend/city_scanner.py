@@ -38,7 +38,11 @@ class CityScanner:
                         break
 
                 if cv2.countNonZero(ink_region) > 20:
+                    region_bgr = city_layer.img_bgr[y_start:y_end, x_start:x_end]
+                    mean_color = cv2.mean(region_bgr, mask=ink_region)[:3]
+                    
                     best_score = float('inf')
+                    best_shape_score = float('inf')
                     best_match = None
                     match_type = None
                     
@@ -51,13 +55,22 @@ class CityScanner:
                                              
                             if ink_region.shape[0] <= t_crop.shape[0] and ink_region.shape[1] <= t_crop.shape[1]:
                                 score_map = cv2.matchTemplate(t_crop, ink_region, cv2.TM_SQDIFF_NORMED)
-                                score = np.min(score_map)
+                                shape_score = np.min(score_map)
+                                score = shape_score
+                                
+                                if t.get("mean_color") is not None:
+                                    t_b, t_g, t_r = t["mean_color"]
+                                    m_b, m_g, m_r = mean_color
+                                    color_dist = math.sqrt((t_b - m_b)**2 + (t_g - m_g)**2 + (t_r - m_r)**2)
+                                    score += (color_dist / 441.0) * 1.5
+                                    
                                 if score < best_score:
                                     best_score = score
+                                    best_shape_score = shape_score
                                     best_match = t["key"]
                                     match_type = cat
                                 
-                    if best_score < 0.3 and best_match:
+                    if best_shape_score < 0.3 and best_match:
                         if match_type == 'city':
                             extracted_layers[ext_key]["data"][ctx["key"]] = best_match
                     elif not is_coastal_hex_sym and data.source_unknowns is not None:

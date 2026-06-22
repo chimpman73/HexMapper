@@ -25,12 +25,13 @@ def generate_map():
     water_color = (255, 0, 0) # BGR pure blue for K-Means water separation
     
     all_brushes = terrain_files + city_files
+
     num_brushes = len(all_brushes)
     
-    map_width = int(20 * hex_size * 2)
+    map_width = int(40 * hex_size * 2)
     map_height = int((num_brushes * 2 + 5) * hex_size * math.sqrt(3))
     
-    img = np.full((map_height, map_width, 3), bg_color, dtype=np.uint8)
+    img = np.zeros((map_height, map_width, 4), dtype=np.uint8)
     
     ground_truth = {
         "Terrain": {},
@@ -58,28 +59,60 @@ def generate_map():
         # Row index (space them out vertically)
         r = i * 2 
         
-        # Col indices for full, half, quarter
-        q_full = 2
-        q_half = 6
-        q_quarter = 10
+        # Col indices
+        # We handle this inline below
         
         rel_path = f"assets/styles/Hollow Moon/tiles/{'Cities' if is_city else 'Terrain'}/{filename}"
         
         # Draw full hex
-        draw_brush(img, brush, grid, q_full, r, w, h)
-        ground_truth[layer_name][f"{q_full},{r},{-q_full-r}"] = rel_path
+        draw_brush(img, brush, grid, 2, r, w, h)
+        ground_truth[layer_name][f"2,{r},{-2-r}"] = rel_path
         
-        # Draw half hex
-        cx, cy = draw_brush(img, brush, grid, q_half, r, w, h)
-        # Cover left half with water
-        cv2.rectangle(img, (int(cx - w/2), int(cy - h/2)), (int(cx), int(cy + h/2)), water_color, -1)
-        ground_truth[layer_name][f"{q_half},{r},{-q_half-r}"] = rel_path
+        # --- HALVES ---
+        # Draw half hex (keep left)
+        cx, cy = draw_brush(img, brush, grid, 6, r, w, h)
+        img[int(cy - h/2):int(cy + h/2), int(cx):int(cx + w/2)] = 0
+        ground_truth[layer_name][f"6,{r},{-6-r}"] = rel_path
         
-        # Draw quarter hex
-        cx, cy = draw_brush(img, brush, grid, q_quarter, r, w, h)
-        # Cover bottom 3/4 with water
-        cv2.rectangle(img, (int(cx - w/2), int(cy - h/4)), (int(cx + w/2), int(cy + h/2)), water_color, -1)
-        ground_truth[layer_name][f"{q_quarter},{r},{-q_quarter-r}"] = rel_path
+        # Draw half hex (keep right)
+        cx, cy = draw_brush(img, brush, grid, 10, r, w, h)
+        img[int(cy - h/2):int(cy + h/2), int(cx - w/2):int(cx)] = 0
+        ground_truth[layer_name][f"10,{r},{-10-r}"] = rel_path
+
+        # Draw half hex (keep top)
+        cx, cy = draw_brush(img, brush, grid, 14, r, w, h)
+        img[int(cy):int(cy + h/2), int(cx - w/2):int(cx + w/2)] = 0
+        ground_truth[layer_name][f"14,{r},{-14-r}"] = rel_path
+
+        # Draw half hex (keep bottom)
+        cx, cy = draw_brush(img, brush, grid, 18, r, w, h)
+        img[int(cy - h/2):int(cy), int(cx - w/2):int(cx + w/2)] = 0
+        ground_truth[layer_name][f"18,{r},{-18-r}"] = rel_path
+
+        # --- QUARTERS ---
+        # Draw quarter hex (keep top-left)
+        cx, cy = draw_brush(img, brush, grid, 22, r, w, h)
+        img[int(cy - h/2):int(cy + h/2), int(cx):int(cx + w/2)] = 0
+        img[int(cy):int(cy + h/2), int(cx - w/2):int(cx + w/2)] = 0
+        ground_truth[layer_name][f"22,{r},{-22-r}"] = rel_path
+
+        # Draw quarter hex (keep top-right)
+        cx, cy = draw_brush(img, brush, grid, 26, r, w, h)
+        img[int(cy - h/2):int(cy + h/2), int(cx - w/2):int(cx)] = 0
+        img[int(cy):int(cy + h/2), int(cx - w/2):int(cx + w/2)] = 0
+        ground_truth[layer_name][f"26,{r},{-26-r}"] = rel_path
+
+        # Draw quarter hex (keep bottom-left)
+        cx, cy = draw_brush(img, brush, grid, 30, r, w, h)
+        img[int(cy - h/2):int(cy + h/2), int(cx):int(cx + w/2)] = 0
+        img[int(cy - h/2):int(cy), int(cx - w/2):int(cx + w/2)] = 0
+        ground_truth[layer_name][f"30,{r},{-30-r}"] = rel_path
+
+        # Draw quarter hex (keep bottom-right)
+        cx, cy = draw_brush(img, brush, grid, 34, r, w, h)
+        img[int(cy - h/2):int(cy + h/2), int(cx - w/2):int(cx)] = 0
+        img[int(cy - h/2):int(cy), int(cx - w/2):int(cx + w/2)] = 0
+        ground_truth[layer_name][f"34,{r},{-34-r}"] = rel_path
 
     # Save
     out_dir = os.path.join(base_dir, "backend", "tests")
@@ -113,6 +146,7 @@ def draw_brush(img, brush, grid, q, r, w, h):
     alpha = brush[:, :, 3] / 255.0
     for c in range(3):
         img[y1:y2, x1:x2, c] = (brush[:, :, c] * alpha + img[y1:y2, x1:x2, c] * (1 - alpha))
+    img[y1:y2, x1:x2, 3] = np.maximum(img[y1:y2, x1:x2, 3], brush[:, :, 3])
         
     return cx, cy
 

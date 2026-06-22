@@ -23,9 +23,14 @@ class ImageProcessor:
     def process_aligned_map(self, image_path: str, coastline_templates: List[Dict[str, Any]]) -> MapData:
         data = MapData()
         
-        img = cv2.imread(image_path)
+        img = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
         if img is None:
             raise FileNotFoundError(f"Could not load image: {image_path}")
+
+        alpha_mask = None
+        if len(img.shape) == 3 and img.shape[2] == 4:
+            _, alpha_mask = cv2.threshold(img[:, :, 3], 10, 255, cv2.THRESH_BINARY)
+            img = img[:, :, :3]
 
         height, width, _ = img.shape
         data.width = width
@@ -47,6 +52,12 @@ class ImageProcessor:
         red_mask = mask1 | mask2
         kernel_border = np.ones((3, 3), np.uint8)
         red_mask_clean = cv2.morphologyEx(red_mask, cv2.MORPH_OPEN, kernel_border)
+        
+        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(red_mask_clean, connectivity=8)
+        min_size = 500
+        for i in range(1, num_labels):
+            if stats[i, cv2.CC_STAT_AREA] < min_size:
+                red_mask_clean[labels == i] = 0
         
         data.global_borders.extend(self._vector_extractor.extract_borders(red_mask_clean))
 
@@ -97,10 +108,12 @@ class ImageProcessor:
         data.global_coastlines.extend(self._vector_extractor.extract_coastlines(water_mask))
 
         data.coastline_layers.append(LayerData("Coastline", img, None))
-        data.terrain_layers.append(LayerData("Terrain", img, None))
+        data.terrain_layers.append(LayerData("Terrain", img, alpha_mask))
         
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         _, ink_mask = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY_INV)
+        if alpha_mask is not None:
+            ink_mask = cv2.bitwise_and(ink_mask, alpha_mask)
         kernel_ink = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
         ink_mask = cv2.morphologyEx(ink_mask, cv2.MORPH_OPEN, kernel_ink)
         

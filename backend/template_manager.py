@@ -64,7 +64,22 @@ class TemplateManager:
 
                 if use_alpha and len(img.shape) == 3 and img.shape[2] == 4:
                     _, mask = cv2.threshold(img[:, :, 3], 1, 255, cv2.THRESH_BINARY)
-                    self._templates[category].append({"key": f"{dir_name}/{f}", "mask": mask})
+                    
+                    gray = cv2.cvtColor(img[:, :, :3], cv2.COLOR_BGR2GRAY)
+                    _, dark_mask = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY_INV)
+                    ink_mask = cv2.bitwise_and(mask, dark_mask)
+                    
+                    if cv2.countNonZero(ink_mask) == 0:
+                        ink_mask = mask
+                        
+                    mean_color = cv2.mean(img[:, :, :3], mask=ink_mask)[:3]
+                    
+                    self._templates[category].append({
+                        "key": f"{dir_name}/{f}", 
+                        "mask": mask,
+                        "bgr": img[:, :, :3],
+                        "mean_color": mean_color
+                    })
                 else:
                     mean_color: Optional[Tuple[float, float, float]] = None
                     if len(img.shape) == 3 and img.shape[2] == 4:

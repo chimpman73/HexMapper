@@ -8,3 +8,9 @@ __pycache__/
 saves/
 backend/*.png
 backend/signatures.json
+
+backend/tests/results/
+backend/tests/test_debug.log
+backend/tests/test_output_layers.json
+backend/tests/artificial_map.png
+backend/tests/artificial_map_truth.json
