@@ -93,17 +93,29 @@ class MaskGenerator:
     @staticmethod
     def generate_cliff_masks(img: np.ndarray) -> tuple[List[np.ndarray], Optional[np.ndarray]]:
         """Extracts cliffs into binary masks. Returns (masks, ink_mask)"""
-        base_mask = MaskGenerator.get_base_mask(img)
-        if base_mask is None:
+        if img is None:
             return [], None
             
-        kernel_close = np.ones((21, 21), np.uint8)
-        mask_closed = cv2.morphologyEx(base_mask, cv2.MORPH_CLOSE, kernel_close)
+        # Isolate the dark ink of the cliff lines, completely ignoring alpha transparency
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if len(img.shape) == 3 or len(img.shape) == 4 else img
+        if len(img.shape) == 3 and img.shape[2] == 4:
+            # If there's an alpha channel, we can still use it to ZERO OUT pure transparent areas,
+            # but we threshold on GRAY to drop the parchment background.
+            _, ink_mask = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY_INV)
+            _, alpha_mask = cv2.threshold(img[:, :, 3], 10, 255, cv2.THRESH_BINARY)
+            ink_mask = cv2.bitwise_and(ink_mask, alpha_mask)
+        else:
+            _, ink_mask = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY_INV)
+            
+        # Smudge hachures into the ridgeline using an elliptical kernel
+        kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
+        mask_closed = cv2.morphologyEx(ink_mask, cv2.MORPH_CLOSE, kernel_close)
         
+        # Clean up stray noise
         kernel_open = np.ones((11, 11), np.uint8)
         mask_clean = cv2.morphologyEx(mask_closed, cv2.MORPH_OPEN, kernel_open)
         
-        return [mask_clean], mask_clean
+        return [mask_clean], ink_mask
 
     @staticmethod
     def generate_border_masks(img: np.ndarray) -> List[np.ndarray]:

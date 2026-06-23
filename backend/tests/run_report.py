@@ -40,7 +40,10 @@ def parse_layers(layers):
         elif l_type == 'coastline':
             data['coastline_layers'][l_name] = len(l_data)
         elif l_type == 'cliff':
-            data['cliffs'] += len(l_data)
+            if isinstance(l_data, dict):
+                data['cliffs'] += len(l_data.get('lines', []))
+            else:
+                data['cliffs'] += len(l_data)
         elif l_type == 'terrain':
             data['terrain_layers'][l_name] = l_data
         elif l_type == 'city':

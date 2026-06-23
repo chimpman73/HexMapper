@@ -14,3 +14,7 @@ backend/tests/test_debug.log
 backend/tests/test_output_layers.json
 backend/tests/artificial_map.png
 backend/tests/artificial_map_truth.json
+
+*.log
+backend/tests/cliff_ink_mask.png
+backend/tests/cliff_skel.png
