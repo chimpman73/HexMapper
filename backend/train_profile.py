@@ -47,20 +47,32 @@ class TerrainProfileTrainer:
         except json.JSONDecodeError as e:
             raise json.JSONDecodeError(f"Failed to parse JSON at {fix_json_path}: {e.msg}", e.doc, e.pos)
 
-        map_width = fix_data.get("mapWidth", 30)
-        map_height = fix_data.get("mapHeight", 30)
-        orientation = fix_data.get("orientation", "flat")
+        is_synthetic = "Terrain" in fix_data and isinstance(fix_data["Terrain"], dict)
+        
+        if is_synthetic:
+            map_width = 200
+            map_height = 200
+            orientation = "flat"
+            bg_scale_x = scale_x if scale_x is not None else 1.0
+            bg_scale_y = scale_y if scale_y is not None else 1.0
+            bg_offset_x = offset_x if offset_x is not None else -150.0
+            bg_offset_y = offset_y if offset_y is not None else -150.0
+            terrain_layer = fix_data["Terrain"]
+        else:
+            map_width = fix_data.get("mapWidth", 30)
+            map_height = fix_data.get("mapHeight", 30)
+            orientation = fix_data.get("orientation", "flat")
 
-        bg_scale_x = scale_x if scale_x is not None else float(fix_data.get("bgScaleX", 1.0))
-        bg_scale_y = scale_y if scale_y is not None else float(fix_data.get("bgScaleY", 1.0))
-        bg_offset_x = offset_x if offset_x is not None else float(fix_data.get("bgOffsetX", 0.0))
-        bg_offset_y = offset_y if offset_y is not None else float(fix_data.get("bgOffsetY", 0.0))
+            bg_scale_x = scale_x if scale_x is not None else float(fix_data.get("bgScaleX", 1.0))
+            bg_scale_y = scale_y if scale_y is not None else float(fix_data.get("bgScaleY", 1.0))
+            bg_offset_x = offset_x if offset_x is not None else float(fix_data.get("bgOffsetX", 0.0))
+            bg_offset_y = offset_y if offset_y is not None else float(fix_data.get("bgOffsetY", 0.0))
 
-        terrain_layer = {}
-        for layer in fix_data.get("layers", []):
-            if layer.get("name") == "Terrain":
-                terrain_layer = layer.get("data", {})
-                break
+            terrain_layer = {}
+            for layer in fix_data.get("layers", []):
+                if layer.get("name") == "Terrain":
+                    terrain_layer = layer.get("data", {})
+                    break
 
         height, width = img_terrain.shape[:2]
         profile: List[Dict[str, Any]] = []
