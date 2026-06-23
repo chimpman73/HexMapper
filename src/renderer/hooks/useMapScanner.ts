@@ -147,27 +147,6 @@ export const useMapScanner = () => {
         if (payload.status === 'success' && payload.data && payload.data.layers) {
           let newLayers = payload.data.layers;
           
-          // Auto-snap any newly imported borders that were detected as snapped
-          const borderLayer = newLayers.find((l: any) => l.type === 'border');
-          if (borderLayer && Array.isArray(borderLayer.data)) {
-             const grid = generateRectangularGrid(state.mapWidth, state.mapHeight, state.orientation);
-             const graph = buildHexEdgeGraph(state.orientation, grid);
-             borderLayer.data = borderLayer.data.map((line: any) => {
-                if (line.borderStyle === 'snapped' && line.points.length >= 4) {
-                   let newPoints: number[] = [];
-                   for (let i = 0; i < line.points.length - 2; i += 2) {
-                       const p1 = {x: line.points[i], y: line.points[i+1]};
-                       const p2 = {x: line.points[i+2], y: line.points[i+3]};
-                       const path = findHexEdgePath(p1, p2, graph);
-                       if (i === 0) newPoints.push(path[0], path[1]);
-                       newPoints.push(...path.slice(2));
-                   }
-                   return { ...line, points: newPoints };
-                }
-                return line;
-             });
-          }
-          
           state.setLayers(newLayers);
           if (payload.data.globalCoastlines) {
             state.setGlobalCoastlines(payload.data.globalCoastlines);

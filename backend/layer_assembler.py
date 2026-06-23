@@ -42,7 +42,7 @@ class LayerAssembler:
                     
         return snapped_path
 
-    def assemble(self, data: MapData, extracted_layers: Dict[str, Any], existing_layers: List[Dict[str, Any]], hex_grid_mask: np.ndarray, orientation: str = 'flat', is_reimport: bool = False) -> List[Dict[str, Any]]:
+    def assemble(self, data: MapData, extracted_layers: Dict[str, Any], existing_layers: List[Dict[str, Any]], hex_grid_mask: np.ndarray, map_width: int, map_height: int, orientation: str = 'flat', is_reimport: bool = False) -> List[Dict[str, Any]]:
         if not existing_layers and not is_reimport:
             existing_layers = [
                 { "id": '1', "name": 'Terrain', "type": 'terrain', "visible": True, "opacity": 1, "data": {} },
@@ -196,6 +196,11 @@ class LayerAssembler:
         # Convert global borders to vector lines
         if data.global_borders:
             border_layer = next((l for l in existing_layers if l.get("type") == "border"), None)
+            
+            # Precompute graph for A* pathfinding
+            from hex_grid import build_hex_edge_graph, find_hex_edge_path
+            grid_hexes = self._hex_grid.generate_rectangular_grid(map_width, map_height, orientation)
+            hex_graph = build_hex_edge_graph(self._hex_grid, orientation, grid_hexes)
             if not border_layer:
                 border_layer = {
                     "id": f"layer_{str(uuid.uuid4())[:8]}",
@@ -242,11 +247,22 @@ class LayerAssembler:
                         snapped = True
                             
                 if snapped:
-                    final_points = self._snap_path_to_hex_vertices(path_points, orientation)
-                    if len(final_points) < 2:
+                    snapped_vertices = self._snap_path_to_hex_vertices(path_points, orientation)
+                    if len(snapped_vertices) < 2:
                         # Too short to span between hex vertices, it was likely just a small smooth detail
                         snapped = False
                         final_points = path_points
+                    else:
+                        final_points = []
+                        for i in range(len(snapped_vertices) - 1):
+                            p1 = snapped_vertices[i]
+                            p2 = snapped_vertices[i + 1]
+                            edge_path = find_hex_edge_path(p1, p2, hex_graph)
+                            # avoid duplicating intermediate points
+                            if i == 0:
+                                final_points.append({"x": edge_path[0], "y": edge_path[1]})
+                            for j in range(2, len(edge_path), 2):
+                                final_points.append({"x": edge_path[j], "y": edge_path[j+1]})
                 else:
                     final_points = path_points
                         
