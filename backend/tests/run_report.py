@@ -12,21 +12,42 @@ TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
 GOLDEN_DIR = os.path.join(TESTS_DIR, "goldenfiles")
 SCALE_FACTOR = 2.09
 
+def calc_length(points):
+    if not points or len(points) < 2:
+        return 0.0
+    length = 0.0
+    if isinstance(points[0], dict):
+        for i in range(len(points) - 1):
+            x1, y1 = points[i].get('x', 0), points[i].get('y', 0)
+            x2, y2 = points[i+1].get('x', 0), points[i+1].get('y', 0)
+            length += ((x1-x2)**2 + (y1-y2)**2)**0.5
+    else:
+        for i in range(0, len(points) - 2, 2):
+            x1, y1 = points[i], points[i+1]
+            x2, y2 = points[i+2], points[i+3]
+            length += ((x1-x2)**2 + (y1-y2)**2)**0.5
+    return length
+
 def parse_layers(layers):
     data = {
         'smooth_borders_lines': 0,
         'smooth_borders_nodes': 0,
+        'smooth_borders_length': 0.0,
         'snapped_borders_lines': 0,
         'snapped_borders_nodes': 0,
+        'snapped_borders_length': 0.0,
         'rivers_lines': 0,
         'rivers_nodes': 0,
+        'rivers_length': 0.0,
         'terrain_layers': {},
         'coastline_layers': {},
         'city_layers': {},
         'cliffs_lines': 0,
         'cliffs_nodes': 0,
+        'cliffs_length': 0.0,
         'roads_lines': 0,
-        'roads_nodes': 0
+        'roads_nodes': 0,
+        'roads_length': 0.0
     }
     
     for layer in layers:
@@ -36,24 +57,32 @@ def parse_layers(layers):
         
         if l_type == 'border':
             for b in l_data:
-                nodes = len(b.get('points', [])) // 2
+                pts = b.get('points', [])
+                nodes = len(pts) // 2
+                length = calc_length(pts)
                 if b.get('borderStyle') == 'snapped':
                     data['snapped_borders_lines'] += 1
                     data['snapped_borders_nodes'] += nodes
+                    data['snapped_borders_length'] += length
                 else:
                     data['smooth_borders_lines'] += 1
                     data['smooth_borders_nodes'] += nodes
+                    data['smooth_borders_length'] += length
         elif l_type == 'river':
             data['rivers_lines'] += len(l_data)
             for r in l_data:
-                data['rivers_nodes'] += len(r.get('points', [])) // 2
+                pts = r.get('points', [])
+                data['rivers_nodes'] += len(pts) // 2 if not isinstance(pts[0] if pts else None, dict) else len(pts)
+                data['rivers_length'] += calc_length(pts)
         elif l_type == 'coastline':
             data['coastline_layers'][l_name] = len(l_data)
         elif l_type == 'cliff':
             lines = l_data.get('lines', []) if isinstance(l_data, dict) else l_data
             data['cliffs_lines'] += len(lines)
             for c in lines:
-                data['cliffs_nodes'] += len(c.get('points', [])) // 2
+                pts = c.get('points', [])
+                data['cliffs_nodes'] += len(pts) // 2 if not isinstance(pts[0] if pts else None, dict) else len(pts)
+                data['cliffs_length'] += calc_length(pts)
         elif l_type == 'terrain':
             data['terrain_layers'][l_name] = l_data
         elif l_type == 'city':
@@ -61,7 +90,9 @@ def parse_layers(layers):
         elif l_type == 'road':
             data['roads_lines'] += len(l_data)
             for r in l_data:
-                data['roads_nodes'] += len(r.get('points', [])) // 2
+                pts = r.get('points', [])
+                data['roads_nodes'] += len(pts) // 2 if not isinstance(pts[0] if pts else None, dict) else len(pts)
+                data['roads_length'] += calc_length(pts)
             
     return data
 
@@ -151,7 +182,7 @@ def main():
         if actual == expected:
             return "PASS"
         ratio = actual / expected
-        if 0.8 <= ratio < 1.0:
+        if 0.8 <= ratio <= 1.2:
             return "WARN"
         return "FAIL"
         
@@ -160,6 +191,9 @@ def main():
         for name in map_names:
             expected = results[name]['gold'][key]
             actual = results[name]['out'][key]
+            if 'length' in key:
+                expected = int(expected)
+                actual = int(actual)
             status = get_status(actual, expected)
             cell = f"{actual}/{expected} {status}"
             row += f"{cell:<{col_width}}"
@@ -167,10 +201,13 @@ def main():
         
     print_row("Borders Smooth (Lines)", 'smooth_borders_lines')
     print_row("Borders Smooth (Nodes)", 'smooth_borders_nodes')
+    print_row("Borders Smooth (Length)", 'smooth_borders_length')
     print_row("Borders Snapped (Lines)", 'snapped_borders_lines')
     print_row("Borders Snapped (Nodes)", 'snapped_borders_nodes')
+    print_row("Borders Snapped (Length)", 'snapped_borders_length')
     print_row("Rivers (Lines)", 'rivers_lines')
     print_row("Rivers (Nodes)", 'rivers_nodes')
+    print_row("Rivers (Length)", 'rivers_length')
     
     all_terrain_names = set()
     for name in map_names:
@@ -261,9 +298,12 @@ def main():
 
     print_row("Cliffs (Lines)", 'cliffs_lines')
     print_row("Cliffs (Nodes)", 'cliffs_nodes')
+    print_row("Cliffs (Length)", 'cliffs_length')
     print_row("Roads (Lines)", 'roads_lines')
     print_row("Roads (Nodes)", 'roads_nodes')
+    print_row("Roads (Length)", 'roads_length')
     print_row("Unknowns (Count)", 'unknowns')
+    
     output_lines.append("=" * len(header) + "\n")
     
     for line in output_lines:

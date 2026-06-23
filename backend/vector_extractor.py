@@ -146,9 +146,57 @@ class VectorExtractor:
                 result.append(path_points)
         return result
 
+    def merge_paths(self, paths: List[List[Dict[str, float]]], max_raw_dist: float) -> List[List[Dict[str, float]]]:
+        if not paths:
+            return []
+            
+        max_dist = max_raw_dist * max(self._bg_scale_x, self._bg_scale_y)
+        merged = []
+        active_paths = paths.copy()
+        
+        def dist(p1, p2):
+            return ((p1["x"] - p2["x"])**2 + (p1["y"] - p2["y"])**2)**0.5
+            
+        while active_paths:
+            current = active_paths.pop(0)
+            merged_something = True
+            
+            while merged_something:
+                merged_something = False
+                i = 0
+                while i < len(active_paths):
+                    other = active_paths[i]
+                    
+                    c_start, c_end = current[0], current[-1]
+                    o_start, o_end = other[0], other[-1]
+                    
+                    if dist(c_end, o_start) <= max_dist:
+                        current.extend(other)
+                        active_paths.pop(i)
+                        merged_something = True
+                    elif dist(c_end, o_end) <= max_dist:
+                        current.extend(reversed(other))
+                        active_paths.pop(i)
+                        merged_something = True
+                    elif dist(c_start, o_end) <= max_dist:
+                        current = other + current
+                        active_paths.pop(i)
+                        merged_something = True
+                    elif dist(c_start, o_start) <= max_dist:
+                        current = list(reversed(other)) + current
+                        active_paths.pop(i)
+                        merged_something = True
+                    else:
+                        i += 1
+                        
+            merged.append(current)
+            
+        return merged
+
     def extract_cliffs(self, cliff_mask: np.ndarray) -> List[List[Dict[str, float]]]:
         skeleton_cliffs = cv2.ximgproc.thinning(cliff_mask, thinningType=cv2.ximgproc.THINNING_ZHANGSUEN)
-        return self.walk_skeleton_to_paths(skeleton_cliffs)
+        paths = self.walk_skeleton_to_paths(skeleton_cliffs)
+        return self.merge_paths(paths, max_raw_dist=30.0)
 
     def extract_coastlines(self, water_mask: np.ndarray) -> List[Dict[str, Any]]:
         coastlines = []
