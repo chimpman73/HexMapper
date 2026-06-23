@@ -7,7 +7,6 @@ import { generateRectangularGrid, hexToPixel, getHexCorners, isHexEqual, HEX_NEI
 import { HexCube, HexOrientation, MapLayer, TerrainLayer, VectorLayer, CityLayer, CoastlineLayer, BorderLayer, LayerType, RoadStyle, RiverStyle } from '../types';
 import { useMapStore } from '../store/mapStore';
 import BgImageRenderer from './BgImageRenderer';
-import BrushCursorOverlay from './BrushCursorOverlay';
 
 interface HexGridEngineProps {}
 
@@ -108,16 +107,12 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
 
   const [rawPointerPos, setRawPointerPos] = useState<{x: number, y: number} | null>(null);
 
-  const isTerrainOrCity = activeLayer?.type === 'terrain' || activeLayer?.type === 'city';
-  const isRiverFeature = activeLayer?.type === 'river' && activeFeatureBrush !== null;
-  const showBrushOverlay = activeAction === 'paint' && ((isTerrainOrCity && activeBrush) || isRiverFeature);
-
   const getCursor = () => {
     if (activeAction === 'move' || isRightClickPan) return 'grab';
     if (activeAction === 'select') return 'pointer';
     if (activeAction === 'highlight') return 'crosshair';
     if (activeAction === 'erase') return 'crosshair';
-    if (showBrushOverlay) return 'none';
+    if (activeAction === 'paint') return 'crosshair';
     if (isPaintingHex || isVectorMode) return 'crosshair';
     return 'default';
   };
@@ -360,15 +355,6 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
               />
             )}
           </React.Fragment>
-        )}
-      </Layer>
-      <Layer listening={false}>
-        {showBrushOverlay && rawPointerPos && (
-           <BrushCursorOverlay 
-             url={(activeLayer?.type === 'river' ? activeFeatureBrush : activeBrush) || ''} 
-             x={rawPointerPos.x} 
-             y={rawPointerPos.y} 
-           />
         )}
       </Layer>
     </Stage>

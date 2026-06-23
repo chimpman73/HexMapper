@@ -94,12 +94,11 @@ const CliffHexRenderer: React.FC<CliffHexRendererProps> = ({
         isBaseLayer={false}
         isActiveLayer={activeLayerId === layer.id}
         clipPolygon={clipPolygon}
-        onHover={(h) => {
-          setHoveredHex(h);
-          if (isPaintingHex) handlePaintHex(h);
+        onHover={(h, e) => {
+          const isDragging = e && e.evt && e.evt.buttons === 1;
+          if (isDragging) handlePaintHex(h);
         }}
         onLeave={() => {
-          setHoveredHex(null);
         }}
         onPointerDown={(e) => {
           if (e && e.evt && e.evt.button === 0 && !e.evt.altKey) {
@@ -114,4 +113,22 @@ const CliffHexRenderer: React.FC<CliffHexRendererProps> = ({
   return <>{tiles}</>;
 };
 
-export default React.memo(CliffHexRenderer);
+export default React.memo(CliffHexRenderer, (prevProps, nextProps) => {
+  if (prevProps.orientation !== nextProps.orientation) return false;
+  if (prevProps.isVectorMode !== nextProps.isVectorMode) return false;
+  if (prevProps.activeLayerId !== nextProps.activeLayerId) return false;
+  if (prevProps.highlightedHexKey !== nextProps.highlightedHexKey) return false;
+  if (prevProps.currentStyle !== nextProps.currentStyle) return false;
+  if (prevProps.assetsBasePath !== nextProps.assetsBasePath) return false;
+  if (prevProps.showCoordinates !== nextProps.showCoordinates) return false;
+  if (prevProps.activeAction !== nextProps.activeAction) return false;
+  if (prevProps.activeBrush !== nextProps.activeBrush) return false;
+
+  if (prevProps.layer.id !== nextProps.layer.id) return false;
+  if (prevProps.layer.visible !== nextProps.layer.visible) return false;
+  
+  if (prevProps.layer.data !== nextProps.layer.data) return false;
+  if (prevProps.grid !== nextProps.grid) return false;
+  
+  return true;
+});

@@ -9,7 +9,7 @@ interface HexTileProps {
   hex: HexCube;
   orientation: HexOrientation;
   isHovered: boolean;
-  onHover: (hex: HexCube) => void;
+  onHover: (hex: HexCube, e?: any) => void;
   onLeave: () => void;
   onPointerDown: (e: any) => void;
   showCoordinates: boolean;
@@ -39,7 +39,7 @@ const HexTile: React.FC<HexTileProps> = ({
     <Group 
       x={center.x} 
       y={center.y}
-      onMouseEnter={() => onHover(hex)}
+      onMouseEnter={(e) => onHover(hex, e)}
       onMouseLeave={onLeave}
       onPointerDown={onPointerDown}
       listening={isActiveLayer}
