@@ -27,5 +27,8 @@ if __name__ == "__main__":
             print(json.dumps(result))
         except json.JSONDecodeError:
             print(json.dumps({"success": False, "error": "Invalid JSON input", "code": "INVALID_JSON"}))
+        except Exception as e:
+            import traceback
+            print(json.dumps({"success": False, "error": str(e), "code": "INTERNAL_ERROR", "trace": traceback.format_exc()}))
     else:
         print(json.dumps({"success": False, "error": "No input received", "code": "NO_INPUT"}))

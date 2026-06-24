@@ -16,7 +16,12 @@ export const useMapScanner = () => {
     const state = useMapStore.getState();
     state.setShowImportModal(false);
     const imagePathRes = await window.api.openImage();
-    if (!imagePathRes || !imagePathRes.success || !imagePathRes.data) return;
+    if (!imagePathRes || !imagePathRes.success || !imagePathRes.data) {
+      if (imagePathRes && !imagePathRes.success && !imagePathRes.canceled) {
+        state.setToastMessage({ type: 'error', text: `Failed to open image: ${imagePathRes.error || 'Unknown error'}` });
+      }
+      return;
+    }
     const imagePath = imagePathRes.data;
     state.setImportDirPath(null);
     state.setImportType('image');
@@ -66,7 +71,12 @@ export const useMapScanner = () => {
     const state = useMapStore.getState();
     state.setShowImportModal(false);
     const dirPathRes = await window.api.openDirectory();
-    if (!dirPathRes || !dirPathRes.success || !dirPathRes.data) return;
+    if (!dirPathRes || !dirPathRes.success || !dirPathRes.data) {
+      if (dirPathRes && !dirPathRes.success && !dirPathRes.canceled) {
+        state.setToastMessage({ type: 'error', text: `Failed to open directory: ${dirPathRes.error || 'Unknown error'}` });
+      }
+      return;
+    }
     const dirPath = dirPathRes.data;
     
     state.setImportDirPath(dirPath);
@@ -88,6 +98,9 @@ export const useMapScanner = () => {
     }
     
     const filesRes = await window.api.readDir(dirPath);
+    if (filesRes && !filesRes.success && !filesRes.canceled) {
+      state.setToastMessage({ type: 'error', text: `Failed to read directory: ${filesRes.error || 'Unknown error'}` });
+    }
     const files = filesRes?.success && filesRes.data ? filesRes.data : [];
     const groupId = `group_${Date.now()}`;
     const groupLayer = {

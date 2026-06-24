@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useMapStore } from '../store/mapStore';
 
 const globalImageCache: Record<string, HTMLImageElement> = {};
 const globalImagePromises: Record<string, Promise<HTMLImageElement>> = {};
@@ -35,7 +36,7 @@ export default function useImage(url: string | null | undefined) {
     globalImagePromises[url].then(img => {
       if (isMounted) setImage(img);
     }).catch(e => {
-      console.error("Failed to load image", url, e);
+      useMapStore.getState().setToastMessage({ type: 'error', text: 'Failed to load image: ' + url });
       if (isMounted) setImage(null);
     });
 

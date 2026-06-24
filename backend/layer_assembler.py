@@ -198,7 +198,7 @@ class LayerAssembler:
             border_layer = next((l for l in existing_layers if l.get("type") == "border"), None)
             
             # Precompute graph for A* pathfinding
-            from hex_grid import build_hex_edge_graph, find_hex_edge_path
+            from hex_edge_graph import build_hex_edge_graph, find_hex_edge_path
             grid_hexes = self._hex_grid.generate_rectangular_grid(map_width, map_height, orientation)
             hex_graph = build_hex_edge_graph(self._hex_grid, orientation, grid_hexes)
             if not border_layer:

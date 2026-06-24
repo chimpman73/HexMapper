@@ -122,9 +122,7 @@ class ImageProcessor:
         
         return data
 
-    def process_multi_layer(self, dir_path: str) -> MapData:
-        data = MapData()
-        
+
     def _process_single_file(self, img: np.ndarray, filename: str, data: MapData, accumulated_water_mask: Optional[np.ndarray]) -> Optional[np.ndarray]:
         def composite_over_bg(img: np.ndarray) -> Optional[np.ndarray]:
             if img is None: return None

@@ -115,6 +115,8 @@ export const useProjectStorage = (engineRef: React.RefObject<any>) => {
       } catch (err: any) {
         useMapStore.getState().setToastMessage({ type: 'error', text: 'Invalid project file: ' + err.message });
       }
+    } else if (!result.success && !result.canceled) {
+      useMapStore.getState().setToastMessage({ type: 'error', text: `Failed to load project: ${result.error || 'Unknown error'}` });
     }
   };
 
