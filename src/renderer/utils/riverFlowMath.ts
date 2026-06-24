@@ -115,10 +115,19 @@ export function computeRiverFlows(riverLines: VectorLine[], baseWidth: number): 
 
   // 3. Map flows back to lines
   const result: FlowResult = {};
+  
+  const edgesByLineId = new Map<string, Edge[]>();
+  for (const edge of edges) {
+    if (!edgesByLineId.has(edge.lineId)) {
+      edgesByLineId.set(edge.lineId, []);
+    }
+    edgesByLineId.get(edge.lineId)!.push(edge);
+  }
+
   for (const line of riverLines) {
     result[line.id] = [];
     
-    const lineEdges = edges.filter(e => e.lineId === line.id).sort((a,b) => a.segmentIndex - b.segmentIndex);
+    const lineEdges = (edgesByLineId.get(line.id) || []).sort((a,b) => a.segmentIndex - b.segmentIndex);
     
     let currentWidth = -1;
     let currentPoints: number[] = [];

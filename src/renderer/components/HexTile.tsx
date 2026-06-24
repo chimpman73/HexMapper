@@ -27,7 +27,7 @@ const HexTile: React.FC<HexTileProps> = ({
   const points = useMemo(() => getHexCorners({ x: 0, y: 0 }, orientation), [orientation]);
   
   const image = useImage(imageSrc);
-  const { mapVariables } = useMapStore();
+  const mapVariables = useMapStore(state => state.mapVariables);
   const fontToUse = useMemo(() => {
     if (!doesFontHaveVisibleNumbers(mapVariables.fontName) && mapVariables.secondaryFontName) {
       return `${mapVariables.secondaryFontName}, sans-serif`;

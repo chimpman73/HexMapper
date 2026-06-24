@@ -11,9 +11,10 @@ import { computeRiverFlows, FlowResult } from '../../utils/riverFlowMath';
 import Konva from 'konva';
 import { Image as KonvaImage } from 'react-konva';
 
-const RiverFeatureImage: React.FC<{ feature: import('../../types').VectorFeature, x: number, y: number, rotation: number, opacity: number }> = ({ feature, x, y, rotation, opacity }) => {
+const RiverFeatureImage: React.FC<{ feature: import('../../types').VectorFeature, x: number, y: number, rotation: number, opacity: number }> = React.memo(({ feature, x, y, rotation, opacity }) => {
   const [image, setImage] = React.useState<HTMLImageElement | null>(null);
-  const { assetsBasePath, currentStyle } = useMapStore();
+  const assetsBasePath = useMapStore(state => state.assetsBasePath);
+  const currentStyle = useMapStore(state => state.currentStyle);
 
   React.useEffect(() => {
     const img = new window.Image();
@@ -42,9 +43,9 @@ const RiverFeatureImage: React.FC<{ feature: import('../../types').VectorFeature
       opacity={opacity}
     />
   );
-};
+});
 
-const PatternFilledShape: React.FC<{ line: import('../../types').VectorLine & { displayPoints: number[] }, assetsBasePath: string, currentStyle: string }> = ({ line, assetsBasePath, currentStyle }) => {
+const PatternFilledShape: React.FC<{ line: import('../../types').VectorLine & { displayPoints: number[] }, assetsBasePath: string, currentStyle: string }> = React.memo(({ line, assetsBasePath, currentStyle }) => {
   const [image, setImage] = React.useState<HTMLImageElement | null>(null);
   React.useEffect(() => {
     if (!line.fillPatternUrl) return;
@@ -88,7 +89,14 @@ const PatternFilledShape: React.FC<{ line: import('../../types').VectorLine & { 
       listening={false}
     />
   );
-};
+}, (prev, next) => 
+  prev.line.id === next.line.id && 
+  prev.line.displayPoints === next.line.displayPoints && 
+  prev.line.fill === next.line.fill && 
+  prev.line.fillPatternUrl === next.line.fillPatternUrl && 
+  prev.assetsBasePath === next.assetsBasePath && 
+  prev.currentStyle === next.currentStyle
+);
 
 interface VectorLayerRendererProps {
   layer: VectorLayer | CliffLayer;
@@ -116,9 +124,9 @@ const VectorLayerRenderer: React.FC<VectorLayerRendererProps & { visibleBounds?:
   activeRoadStyle, activeRiverStyle, activeCoastlineStyle, roadConfig, riverConfig, activeColor,
   coastlines, setLayers, setSelectedLineId, setHoveredLineId, visibleBounds
 }) => {
-  const { selectedVertex, setSelectedVertex, activeAction } = useMapStore();
-
-
+  const selectedVertex = useMapStore(state => state.selectedVertex);
+  const setSelectedVertex = useMapStore(state => state.setSelectedVertex);
+  const activeAction = useMapStore(state => state.activeAction);
 
   const updateLines = React.useCallback((updater: (lines: VectorLine[]) => VectorLine[]) => {
     setLayers(prev => prev.map(l => {

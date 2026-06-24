@@ -135,6 +135,8 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
     setRawPointerPos(null);
   };
 
+  const coastlines = useMemo(() => layers.filter(l => l.type === 'coastline').flatMap(l => l.data as import('../types').VectorLine[]), [layers]);
+
   return (
     <React.Fragment>
     <Stage
@@ -206,8 +208,6 @@ const HexGridEngine = forwardRef<HexGridEngineRef, HexGridEngineProps>((props, r
             );
           }
 
-          const coastlines = layers.filter(l => l.type === 'coastline').flatMap(l => l.data as import('../types').VectorLine[]);
-          
           if (layer.type === 'cliff') {
             const cliffLayer = layer as import('../types').CliffLayer;
             return (

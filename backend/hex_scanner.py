@@ -63,9 +63,13 @@ class HexScanner:
             cv2.polylines(hex_grid_mask, [np.array(hex_poly, dtype=np.int32)], True, 255, 4)
 
         total_hexes = len(hexes)
+        last_percent = -1
         for i, (q, r) in enumerate(hexes):
             if i % 50 == 0:
-                print(json.dumps({"progress": True, "message": "Scanning hexes...", "percent": int((i / total_hexes) * 100)}), flush=True)
+                percent = int((i / total_hexes) * 100)
+                if percent != last_percent:
+                    print(json.dumps({"progress": True, "message": "Scanning hexes...", "percent": percent}), flush=True)
+                    last_percent = percent
 
             cx, cy = self._hex_grid.hex_to_pixel(q, r, orientation)
             
